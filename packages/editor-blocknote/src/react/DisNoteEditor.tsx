@@ -19,7 +19,7 @@ import {
   getDefaultReactSlashMenuItems,
   type DefaultReactSuggestionItem,
 } from "@blocknote/react";
-import { filterSuggestionItems, insertOrUpdateBlock } from "@blocknote/core";
+import { filterSuggestionItems, insertOrUpdateBlockForSlashMenu } from "@blocknote/core";
 import type { DisNoteBlock, DisNoteDocument } from "@disnote/document-core";
 import { createBlockNoteAdapter, type BlockNoteEditorDocument } from "../adapter/adapter.js";
 import { disNoteBlockNoteSchema } from "./schema.js";
@@ -65,7 +65,7 @@ function disNoteSlashItems(editor: {
     group: "Advanced",
     icon: <span aria-hidden>💡</span>,
     onItemClick: () => {
-      insertOrUpdateBlock(ed, { type: "callout", props: { intent: "info" } } as never);
+      insertOrUpdateBlockForSlashMenu(ed, { type: "callout", props: { intent: "info" } } as never);
     },
   };
   return [...getDefaultReactSlashMenuItems(ed), calloutItem];

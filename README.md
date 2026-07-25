@@ -90,7 +90,7 @@ storage contracts, Legal Service content layer + landing, import/export, assets,
 comments, search + AI, hardening (XSS + performance), OSS tooling, and the
 CRDT collaboration core. The verification pipeline builds the editor facade,
 Yjs binding, transactional NestJS/Mongo example, React and Next.js demos,
-Storybook, and every publishable package.
+Storybook, and every publishable packag.
 
 ## License
 
