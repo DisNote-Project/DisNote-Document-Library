@@ -1,6 +1,6 @@
 import React from "react";
-import type { DisNoteDocument } from "@disnote/document-core";
-import { DisNoteEditor } from "@disnote/editor-blocknote/react";
+import type { DisNoteDocument } from "@disnote/core";
+import { DisNoteEditor } from "@disnote/core/editor/react";
 
 export interface EditorPanelProps {
   initialDocument: DisNoteDocument;

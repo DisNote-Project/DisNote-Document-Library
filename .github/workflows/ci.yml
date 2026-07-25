@@ -49,8 +49,8 @@ jobs:
       - name: Verify editor React export is packaged
         shell: bash
         run: |
-          npm pack --workspace @disnote/editor-blocknote --dry-run
-          test -f packages/editor-blocknote/dist/react/index.js
+          npm pack --workspace @disnote/core --dry-run
+          test -f packages/disnote/dist/editor/react/index.js
       - name: Verify every public package can be packed
         shell: bash
         run: |

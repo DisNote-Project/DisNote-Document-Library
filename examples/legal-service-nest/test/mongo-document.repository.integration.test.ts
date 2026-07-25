@@ -7,12 +7,12 @@ import {
   paragraph,
   text,
   type DisNoteDocument,
-} from "@disnote/document-core";
-import { runDocumentRepositoryContract } from "@disnote/document-testing";
+} from "@disnote/core";
+import { runDocumentRepositoryContract } from "@disnote/core/testing";
 import type {
   DocumentRevision,
   StoredDocument,
-} from "@disnote/storage-contracts";
+} from "@disnote/core/storage";
 import {
   MongoDocumentRepository,
   type MongoDocumentRepositoryCollections,

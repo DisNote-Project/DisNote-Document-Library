@@ -1,0 +1,112 @@
+{
+  "name": "@disnote/core",
+  "version": "0.3.0",
+  "description": "DisNote Document unified core library.",
+  "license": "Apache-2.0",
+  "type": "module",
+  "main": "./dist/core/index.js",
+  "types": "./dist/core/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/core/index.d.ts",
+      "import": "./dist/core/index.js"
+    },
+    "./assets": {
+      "types": "./dist/assets/index.d.ts",
+      "import": "./dist/assets/index.js"
+    },
+    "./collaboration": {
+      "types": "./dist/collaboration/index.d.ts",
+      "import": "./dist/collaboration/index.js"
+    },
+    "./comments": {
+      "types": "./dist/comments/index.d.ts",
+      "import": "./dist/comments/index.js"
+    },
+    "./editor": {
+      "types": "./dist/editor/index.d.ts",
+      "import": "./dist/editor/index.js"
+    },
+    "./editor/react": {
+      "types": "./dist/editor/react/index.d.ts",
+      "import": "./dist/editor/react/index.js"
+    },
+    "./import-export": {
+      "types": "./dist/import-export/index.d.ts",
+      "import": "./dist/import-export/index.js"
+    },
+    "./legal": {
+      "types": "./dist/legal/index.d.ts",
+      "import": "./dist/legal/index.js"
+    },
+    "./renderer/html": {
+      "types": "./dist/renderer-html/index.d.ts",
+      "import": "./dist/renderer-html/index.js"
+    },
+    "./renderer/native": {
+      "types": "./dist/renderer-native/index.d.ts",
+      "import": "./dist/renderer-native/index.js"
+    },
+    "./renderer/react": {
+      "types": "./dist/renderer-react/index.d.ts",
+      "import": "./dist/renderer-react/index.js"
+    },
+    "./search-ai": {
+      "types": "./dist/search-ai/index.d.ts",
+      "import": "./dist/search-ai/index.js"
+    },
+    "./storage": {
+      "types": "./dist/storage/index.d.ts",
+      "import": "./dist/storage/index.js"
+    },
+    "./testing": {
+      "types": "./dist/testing/index.d.ts",
+      "import": "./dist/testing/index.js"
+    },
+    "./presets/article": {
+      "types": "./dist/presets/article/index.d.ts",
+      "import": "./dist/presets/article/index.js"
+    },
+    "./presets/legal": {
+      "types": "./dist/presets/legal/index.d.ts",
+      "import": "./dist/presets/legal/index.js"
+    },
+    "./presets/workspace": {
+      "types": "./dist/presets/workspace/index.d.ts",
+      "import": "./dist/presets/workspace/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "tsc -b",
+    "clean": "rimraf dist *.tsbuildinfo"
+  },
+  "peerDependencies": {
+    "@blocknote/core": "0.52.1",
+    "@blocknote/mantine": "0.52.1",
+    "@blocknote/react": "0.52.1",
+    "react": "^18.3.0 || ^19.0.0",
+    "yjs": "^13.6.18"
+  },
+  "peerDependenciesMeta": {
+    "@blocknote/core": {
+      "optional": true
+    },
+    "@blocknote/mantine": {
+      "optional": true
+    },
+    "@blocknote/react": {
+      "optional": true
+    },
+    "react": {
+      "optional": true
+    },
+    "yjs": {
+      "optional": true
+    }
+  }
+}

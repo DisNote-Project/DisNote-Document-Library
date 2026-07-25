@@ -8,13 +8,10 @@
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
-    "@disnote/document-core": "0.2.0",
-    "@disnote/document-testing": "0.2.0",
-    "@disnote/storage-contracts": "0.2.0",
-    "@disnote/legal-content": "0.2.0",
     "@nestjs/common": "^11.1.28",
     "mongodb": "^6.8.0",
     "reflect-metadata": "^0.2.2",
-    "rxjs": "^7.8.1"
+    "rxjs": "^7.8.1",
+    "@disnote/core": "0.3.0"
   }
 }

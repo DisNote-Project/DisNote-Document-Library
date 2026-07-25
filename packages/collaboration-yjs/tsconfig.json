@@ -1,6 +1,0 @@
-{
-  "extends": "../../tsconfig.base.json",
-  "compilerOptions": { "rootDir": "src", "outDir": "dist", "lib": ["ES2021"], "types": [] },
-  "include": ["src/**/*.ts"],
-  "references": [{ "path": "../document-core" }]
-}

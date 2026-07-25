@@ -3,8 +3,8 @@
  * The controller is only an HTTP boundary; all rules live in the application service.
  */
 import { Body, Controller, Get, Param, Patch, Post, BadRequestException, UseGuards } from "@nestjs/common";
-import { ContentApplicationService } from "@disnote/legal-content";
-import type { DisNoteDocument } from "@disnote/document-core";
+import { ContentApplicationService } from "@disnote/core/legal";
+import type { DisNoteDocument } from "@disnote/core";
 import { ContentActor, ContentAdminGuard } from "./content-admin-auth.js";
 
 interface CreateDto {

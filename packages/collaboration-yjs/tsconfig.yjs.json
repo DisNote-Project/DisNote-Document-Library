@@ -1,6 +1,0 @@
-{
-  "extends": "../../tsconfig.base.json",
-  "compilerOptions": { "rootDir": "src", "outDir": "dist", "lib": ["ES2021"], "composite": false },
-  "include": ["src/yjs/**/*.ts"],
-  "references": [{ "path": "../document-core" }]
-}

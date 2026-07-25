@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto";
 import type { Collection, Db } from "mongodb";
 import { Binary } from "mongodb";
 import * as Y from "yjs";
-import type { UpdatePersistence } from "@disnote/collaboration-yjs";
+import type { UpdatePersistence } from "@disnote/core/collaboration";
 import type { CollaborationMetrics } from "./metrics.js";
 
 interface UpdateRecord {

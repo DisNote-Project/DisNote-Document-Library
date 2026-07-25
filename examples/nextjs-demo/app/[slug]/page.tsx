@@ -3,8 +3,8 @@ import {
   validateDocument,
   createMigrationRegistry,
   articleRegistry,
-} from "@disnote/document-core";
-import { renderDocumentToHtml } from "@disnote/renderer-html";
+} from "@disnote/core";
+import { renderDocumentToHtml } from "@disnote/core/renderer/html";
 import { getPublishedDocument } from "../../lib/content";
 
 // Revalidate when a new revision is published (see lib/content.ts).

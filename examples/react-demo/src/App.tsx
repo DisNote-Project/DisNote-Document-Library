@@ -5,9 +5,9 @@ import {
   paragraph,
   text,
   type DisNoteDocument,
-} from "@disnote/document-core";
-import { DocumentRenderer } from "@disnote/renderer-react";
-import { articleRegistry } from "@disnote/document-core";
+} from "@disnote/core";
+import { DocumentRenderer } from "@disnote/core/renderer/react";
+import { articleRegistry } from "@disnote/core";
 
 const EditorPanel = lazy(() => import("./EditorPanel.js"));
 

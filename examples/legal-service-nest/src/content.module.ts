@@ -3,10 +3,10 @@
  * sibling module to the existing Legal domain, not new logic inside it.
  */
 import { Module } from "@nestjs/common";
-import { ContentApplicationService } from "@disnote/legal-content";
-import { createDefaultRegistry } from "@disnote/document-core";
-import type { DocumentRevision, StoredDocument } from "@disnote/storage-contracts";
-import { createMigrationRegistry } from "@disnote/document-core";
+import { ContentApplicationService } from "@disnote/core/legal";
+import { createDefaultRegistry } from "@disnote/core";
+import type { DocumentRevision, StoredDocument } from "@disnote/core/storage";
+import { createMigrationRegistry } from "@disnote/core";
 import { ContentController } from "./content.controller.js";
 import { AdminContentController } from "./admin-content.controller.js";
 import { MongoDocumentRepository } from "./mongo-document.repository.js";

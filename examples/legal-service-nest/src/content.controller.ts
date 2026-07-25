@@ -4,7 +4,7 @@
  * Guideline section 18.3.
  */
 import { Controller, Get, Param, Query, NotFoundException } from "@nestjs/common";
-import { ContentApplicationService } from "@disnote/legal-content";
+import { ContentApplicationService } from "@disnote/core/legal";
 
 @Controller("api/content")
 export class ContentController {

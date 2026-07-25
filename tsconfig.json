@@ -1,21 +1,6 @@
 {
   "files": [],
   "references": [
-    { "path": "packages/document-core" },
-    { "path": "packages/storage-contracts" },
-    { "path": "packages/renderer-html" },
-    { "path": "packages/renderer-react" },
-    { "path": "packages/renderer-native" },
-    { "path": "packages/editor-blocknote" },
-    { "path": "packages/collaboration-yjs" },
-    { "path": "packages/import-export" },
-    { "path": "packages/assets" },
-    { "path": "packages/comments" },
-    { "path": "packages/search-ai" },
-    { "path": "packages/legal-content" },
-    { "path": "packages/testing" },
-    { "path": "presets/article" },
-    { "path": "presets/legal" },
-    { "path": "presets/workspace" }
+    { "path": "packages/disnote" }
   ]
 }

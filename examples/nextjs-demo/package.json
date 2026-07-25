@@ -9,11 +9,9 @@
     "start": "next start"
   },
   "dependencies": {
-    "@disnote/document-core": "0.2.0",
-    "@disnote/renderer-html": "0.2.0",
-    "@disnote/storage-contracts": "0.2.0",
     "next": "16.2.11",
     "react": "^19.2.8",
-    "react-dom": "^19.2.8"
+    "react-dom": "^19.2.8",
+    "@disnote/core": "0.3.0"
   }
 }

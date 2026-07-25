@@ -4,8 +4,8 @@
  * Required indexes are created by initialize(). Revision history remains in a
  * separate collection so a document record never grows without a bound.
  */
-import { checksum, extractDocumentPlainText, type BlockRegistry, type DisNoteDocument } from "@disnote/document-core";
-import type { ContentStore } from "@disnote/legal-content";
+import { checksum, extractDocumentPlainText, type BlockRegistry, type DisNoteDocument } from "@disnote/core";
+import type { ContentStore } from "@disnote/core/legal";
 import type {
   ArchiveDocumentInput,
   DocumentRevision,
@@ -16,7 +16,7 @@ import type {
   SaveDraftResult,
   StoredDocument,
   UnpublishDocumentInput,
-} from "@disnote/storage-contracts";
+} from "@disnote/core/storage";
 import type { Collection, MongoClient } from "mongodb";
 
 interface IdempotencyRecord {

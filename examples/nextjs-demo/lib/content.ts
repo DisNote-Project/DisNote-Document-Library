@@ -1,5 +1,5 @@
-import { createDocument, heading, paragraph, text } from "@disnote/document-core";
-import type { PublishedDocument } from "@disnote/storage-contracts";
+import { createDocument, heading, paragraph, text } from "@disnote/core";
+import type { PublishedDocument } from "@disnote/core/storage";
 
 /**
  * Stand-in for the DisNote Content API. In production this calls
