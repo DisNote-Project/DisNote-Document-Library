@@ -1,6 +1,6 @@
 {
   "name": "@disnote/document-testing",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Fixtures, factories and assertions for testing DisNote Document consumers and adapters.",
   "license": "Apache-2.0",
   "type": "module",
@@ -13,13 +13,16 @@
       "import": "./dist/index.js"
     }
   },
-  "files": ["dist", "README.md"],
+  "files": [
+    "dist",
+    "README.md"
+  ],
   "scripts": {
     "build": "tsc -b",
     "clean": "rimraf dist *.tsbuildinfo"
   },
   "dependencies": {
-    "@disnote/document-core": "0.1.0",
-    "@disnote/storage-contracts": "0.1.0"
+    "@disnote/document-core": "0.2.0",
+    "@disnote/storage-contracts": "0.2.0"
   }
 }

@@ -9,9 +9,9 @@
     "build": "vite build"
   },
   "dependencies": {
-    "@disnote/document-core": "0.1.0",
-    "@disnote/renderer-react": "0.1.0",
-    "@disnote/editor-blocknote": "0.1.0",
+    "@disnote/document-core": "0.2.0",
+    "@disnote/renderer-react": "0.2.0",
+    "@disnote/editor-blocknote": "0.2.0",
     "@blocknote/core": "0.52.1",
     "@blocknote/mantine": "0.52.1",
     "@blocknote/react": "0.52.1",

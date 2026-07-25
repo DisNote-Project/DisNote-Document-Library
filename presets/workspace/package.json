@@ -1,13 +1,25 @@
 {
   "name": "@disnote/preset-workspace",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "The 'workspace' document preset for DisNote Document.",
   "license": "Apache-2.0",
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
-  "exports": { ".": { "types": "./dist/index.d.ts", "import": "./dist/index.js" } },
-  "files": ["dist"],
-  "scripts": { "build": "tsc -b", "clean": "rimraf dist *.tsbuildinfo" },
-  "dependencies": { "@disnote/document-core": "0.1.0" }
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc -b",
+    "clean": "rimraf dist *.tsbuildinfo"
+  },
+  "dependencies": {
+    "@disnote/document-core": "0.2.0"
+  }
 }

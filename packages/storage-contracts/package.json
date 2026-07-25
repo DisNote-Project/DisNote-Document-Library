@@ -1,6 +1,6 @@
 {
   "name": "@disnote/storage-contracts",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Repository, publisher and asset contracts for DisNote Document, plus an in-memory reference implementation.",
   "license": "Apache-2.0",
   "type": "module",
@@ -13,12 +13,15 @@
       "import": "./dist/index.js"
     }
   },
-  "files": ["dist", "README.md"],
+  "files": [
+    "dist",
+    "README.md"
+  ],
   "scripts": {
     "build": "tsc -b",
     "clean": "rimraf dist *.tsbuildinfo"
   },
   "dependencies": {
-    "@disnote/document-core": "0.1.0"
+    "@disnote/document-core": "0.2.0"
   }
 }
