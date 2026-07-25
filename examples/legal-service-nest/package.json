@@ -1,0 +1,20 @@
+{
+  "name": "@disnote/legal-service-nest",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Reference NestJS Content module wiring the DisNote content application layer to Mongo.",
+  "type": "module",
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@disnote/document-core": "0.1.0",
+    "@disnote/document-testing": "0.1.0",
+    "@disnote/storage-contracts": "0.1.0",
+    "@disnote/legal-content": "0.1.0",
+    "@nestjs/common": "^11.1.28",
+    "mongodb": "^6.8.0",
+    "reflect-metadata": "^0.2.2",
+    "rxjs": "^7.8.1"
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "name": "@disnote/collaboration-server",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Reference authenticated WebSocket + MongoDB collaboration server for DisNote Document.",
+  "type": "module",
+  "scripts": {
+    "dev": "tsx src/server.ts",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@disnote/collaboration-yjs": "0.1.0",
+    "mongodb": "^6.8.0",
+    "ws": "^8.18.0",
+    "yjs": "^13.6.18"
+  },
+  "devDependencies": {
+    "@types/ws": "^8.5.13"
+  }
+}

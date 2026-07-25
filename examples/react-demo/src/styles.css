@@ -1,0 +1,43 @@
+:root {
+  color: #172020;
+  background: #f8fbfa;
+  font-family: Inter, Montserrat, system-ui, sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+}
+
+button {
+  min-height: 40px;
+  margin-top: 12px;
+}
+
+.demo-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 16px;
+  width: 100%;
+  padding: 16px;
+}
+
+.demo-grid > section {
+  min-width: 0;
+}
+
+.demo-editor,
+.demo-grid pre {
+  max-width: 100%;
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 720px) {
+  .demo-grid {
+    grid-template-columns: minmax(0, 1fr);
+    padding: 12px;
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "name": "@disnote/renderer-native",
+  "version": "0.1.0",
+  "description": "React Native read-only renderer for DisNote Document with injectable primitives and custom block renderers.",
+  "license": "Apache-2.0",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": { ".": { "types": "./dist/index.d.ts", "import": "./dist/index.js" } },
+  "files": ["dist"],
+  "scripts": { "build": "tsc -b", "clean": "rimraf dist *.tsbuildinfo" },
+  "dependencies": { "@disnote/document-core": "0.1.0" },
+  "peerDependencies": { "react": "^18.3.0 || ^19.0.0" }
+}

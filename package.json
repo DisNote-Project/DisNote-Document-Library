@@ -1,0 +1,57 @@
+{
+  "name": "disnote-document-library",
+  "version": "0.1.0",
+  "private": true,
+  "description": "DisNote Document - a vendor-neutral, block-based document framework with stable schema, multi-platform renderers, a replaceable editor adapter, versioning and migrations.",
+  "license": "Apache-2.0",
+  "workspaces": [
+    "packages/*",
+    "presets/*",
+    "examples/*"
+  ],
+  "scripts": {
+    "build": "tsc -b",
+    "build:examples": "npm run typecheck --workspace @disnote/legal-service-nest && npm run typecheck --workspace @disnote/collaboration-server && npm run build --workspace @disnote/react-demo && npm run build --workspace @disnote/nextjs-demo",
+    "typecheck": "tsc -b",
+    "lint": "eslint . --max-warnings=0",
+    "test": "tsx --tsconfig tsconfig.test.json --test \"packages/**/*.test.ts\" \"packages/**/*.test.tsx\" \"examples/**/*.test.ts\"",
+    "test:e2e": "playwright test --config e2e/playwright.config.ts",
+    "test:mongo": "tsx --tsconfig tsconfig.test.json --test \"examples/**/*.integration.test.ts\"",
+    "storybook": "storybook dev -p 6006",
+    "build-storybook": "storybook build",
+    "verify": "npm run typecheck && npm run lint && npm test && npm run build && npm run build:examples && npm run build-storybook",
+    "changeset": "changeset",
+    "version-packages": "changeset version",
+    "release": "npm run verify && changeset publish",
+    "clean": "rimraf packages/*/dist packages/*/*.tsbuildinfo || true"
+  },
+  "devDependencies": {
+    "@changesets/cli": "^2.31.1",
+    "@eslint/js": "^10.0.1",
+    "@playwright/test": "^1.62.0",
+    "@storybook/addon-a11y": "^8.6.14",
+    "@storybook/addon-essentials": "^8.6.14",
+    "@storybook/react": "^8.6.14",
+    "@storybook/react-vite": "^8.6.14",
+    "@types/node": "^20.11.0",
+    "@types/react": "^19.2.2",
+    "eslint": "^10.7.0",
+    "postcss": "^8.5.22",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8",
+    "sharp": "^0.35.0",
+    "storybook": "^8.6.14",
+    "tsx": "^4.16.0",
+    "typescript": "^5.4.0",
+    "typescript-eslint": "^8.65.0"
+  },
+  "engines": {
+    "node": ">=20.19"
+  },
+  "overrides": {
+    "uuid": "^11.1.1",
+    "vite": "6.4.3",
+    "postcss": "^8.5.22",
+    "sharp": "^0.35.0"
+  }
+}

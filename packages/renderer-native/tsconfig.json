@@ -1,0 +1,6 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": { "rootDir": "src", "outDir": "dist", "lib": ["ES2021"], "types": [], "jsx": "react-jsx" },
+  "include": ["src/**/*.ts", "src/**/*.tsx"],
+  "references": [{ "path": "../document-core" }]
+}

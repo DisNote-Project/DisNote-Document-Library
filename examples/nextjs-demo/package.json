@@ -1,0 +1,19 @@
+{
+  "name": "@disnote/nextjs-demo",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Published SSR page + admin edit page + metadata + cache revalidation example.",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start"
+  },
+  "dependencies": {
+    "@disnote/document-core": "0.1.0",
+    "@disnote/renderer-html": "0.1.0",
+    "@disnote/storage-contracts": "0.1.0",
+    "next": "16.2.11",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8"
+  }
+}

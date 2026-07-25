@@ -1,0 +1,66 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20.19
+          cache: npm
+      - run: npm ci
+      - name: Install Playwright browser
+        run: npx playwright install --with-deps chromium
+      - name: Start MongoDB replica set
+        shell: bash
+        run: |
+          docker run -d --name disnote-mongo -p 27017:27017 mongo:7 \
+            --replSet rs0 --bind_ip_all
+          for i in {1..30}; do
+            if docker exec disnote-mongo mongosh --quiet --eval "db.adminCommand('ping').ok" | grep -q 1; then
+              break
+            fi
+            sleep 2
+          done
+          docker exec disnote-mongo mongosh --quiet --eval \
+            "rs.initiate({_id:'rs0',members:[{_id:0,host:'127.0.0.1:27017'}]})"
+          for i in {1..30}; do
+            if docker exec disnote-mongo mongosh --quiet --eval "db.hello().isWritablePrimary" | grep -q true; then
+              break
+            fi
+            sleep 2
+          done
+      - run: npm run typecheck
+      - run: npm run lint
+      - run: npm test
+        env:
+          DISNOTE_TEST_MONGO_URI: mongodb://127.0.0.1:27017/?replicaSet=rs0
+      - run: npm run test:e2e
+      - run: npm audit --omit=dev
+      - run: npm run build
+      - run: npm run build:examples
+      - run: npm run build-storybook
+      - name: Verify editor React export is packaged
+        shell: bash
+        run: |
+          npm pack --workspace @disnote/editor-blocknote --dry-run
+          test -f packages/editor-blocknote/dist/react/index.js
+      - name: Verify every public package can be packed
+        shell: bash
+        run: |
+          for workspace in packages/* presets/*; do
+            pack_json="$(npm pack "$workspace" --dry-run --json)"
+            PACK_JSON="$pack_json" node -e '
+              const pack = JSON.parse(process.env.PACK_JSON)[0];
+              const paths = new Set(pack.files.map((file) => file.path));
+              if (!paths.has("README.md") || !paths.has("LICENSE")) {
+                throw new Error(`${pack.name} is missing README.md or LICENSE`);
+              }
+            '
+          done

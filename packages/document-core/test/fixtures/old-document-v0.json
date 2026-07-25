@@ -1,0 +1,10 @@
+{
+  "format": "disnote-document",
+  "schemaVersion": 0,
+  "id": "doc_v0",
+  "metadata": { "createdAt": "2026-01-01T00:00:00.000Z", "updatedAt": "2026-01-01T00:00:00.000Z" },
+  "blocks": [
+    { "id": "h", "type": "heading", "version": 1, "props": { "level": 1 }, "content": [{ "type": "text", "text": "Legacy" }] },
+    { "id": "c", "type": "callout", "version": 1, "props": {}, "content": [{ "type": "text", "text": "old callout" }] }
+  ]
+}

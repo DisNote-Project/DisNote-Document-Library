@@ -1,0 +1,9 @@
+{
+  "name": "@disnote/editor-engine-lab",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Educational only. A minimal block editor engine to understand selection, transactions and undo. NOT used by production packages.",
+  "license": "Apache-2.0",
+  "type": "module",
+  "scripts": { "typecheck": "tsc -p tsconfig.json --noEmit" }
+}
