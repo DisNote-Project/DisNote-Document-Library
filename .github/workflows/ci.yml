@@ -54,7 +54,7 @@ jobs:
       - name: Verify every public package can be packed
         shell: bash
         run: |
-          for workspace in packages/* presets/*; do
+          for workspace in ./packages/* ./presets/*; do
             pack_json="$(npm pack "$workspace" --dry-run --json)"
             PACK_JSON="$pack_json" node -e '
               const pack = JSON.parse(process.env.PACK_JSON)[0];
