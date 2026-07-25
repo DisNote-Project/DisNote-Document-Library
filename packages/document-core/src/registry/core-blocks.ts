@@ -74,6 +74,9 @@ function listItem(type: string): CoreBlockDefinition {
 export const bulletListItemCore = listItem("bulletListItem");
 export const numberedListItemCore = listItem("numberedListItem");
 
+/** A collapsible toggle: inline heading text plus revealed child blocks. */
+export const toggleCore = listItem("toggle");
+
 interface ChecklistProps extends Record<string, JsonValue> {
   checked: boolean;
 }
@@ -172,6 +175,7 @@ export const coreBlockDefinitions: CoreBlockDefinition[] = [
   headingCore,
   bulletListItemCore,
   numberedListItemCore,
+  toggleCore,
   checklistItemCore,
   quoteCore,
   codeBlockCore,

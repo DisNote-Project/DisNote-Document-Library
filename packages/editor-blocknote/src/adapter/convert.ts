@@ -9,18 +9,52 @@ import type { BnBlock, BnInlineContent, BnStyledText, BnStyles } from "./blockno
 
 /* ------------------------------- type names ------------------------------- */
 
-const TO_BN_TYPE: Record<string, string> = { checklistItem: "checkListItem" };
-const FROM_BN_TYPE: Record<string, string> = { checkListItem: "checklistItem" };
+/** DisNote type -> BlockNote type (only where the names differ). */
+const TO_BN_TYPE: Record<string, string> = {
+  checklistItem: "checkListItem",
+  toggle: "toggleListItem",
+};
+/** BlockNote type -> DisNote type (reverse of the above). */
+const FROM_BN_TYPE: Record<string, string> = {
+  checkListItem: "checklistItem",
+  toggleListItem: "toggle",
+};
 
-const VOID_TYPES = new Set(["image", "divider", "codeBlock"]);
-const NATIVE_BLOCK_TYPES = new Set([
+/**
+ * DisNote block types mapped DIRECTLY onto a BlockNote block spec (native or the
+ * custom `callout`), so they render with real formatting, drag handles and slash
+ * entries. Everything else (image, namespaced/custom blocks) round-trips through
+ * the generic `disnoteBlock` wrapper so no data is ever lost.
+ */
+const DIRECT_TYPES = new Set([
   "paragraph",
   "heading",
   "bulletListItem",
   "numberedListItem",
   "checklistItem",
+  "toggle",
+  "quote",
+  "codeBlock",
+  "divider",
+  "callout",
 ]);
+
+/** DisNote types that carry no inline `content` (data lives in props). */
+const NO_CONTENT_TYPES = new Set(["divider", "codeBlock"]);
+
 const GENERIC_BLOCK_TYPE = "disnoteBlock";
+
+const CALLOUT_INTENTS = new Set(["info", "warning", "success", "danger"]);
+
+function clampHeadingLevel(value: unknown): 1 | 2 | 3 {
+  return value === 2 ? 2 : (typeof value === "number" && value >= 3) ? 3 : 1;
+}
+
+function readIntent(value: unknown): "info" | "warning" | "success" | "danger" {
+  return typeof value === "string" && CALLOUT_INTENTS.has(value)
+    ? (value as "info" | "warning" | "success" | "danger")
+    : "info";
+}
 
 /* --------------------------------- inline --------------------------------- */
 
@@ -63,8 +97,10 @@ function stylesToMarks(styles: BnStyles | undefined): TextMark[] {
   if (styles.underline) marks.push({ type: "underline" });
   if (styles.strikethrough) marks.push({ type: "strike" });
   if (styles.code) marks.push({ type: "code" });
-  if (styles.textColor) marks.push({ type: "textColor", value: styles.textColor });
-  if (styles.backgroundColor) marks.push({ type: "backgroundColor", value: styles.backgroundColor });
+  if (styles.textColor && styles.textColor !== "default") marks.push({ type: "textColor", value: styles.textColor });
+  if (styles.backgroundColor && styles.backgroundColor !== "default") {
+    marks.push({ type: "backgroundColor", value: styles.backgroundColor });
+  }
   return marks;
 }
 
@@ -125,43 +161,61 @@ export function inlineFromBn(content: BnInlineContent[] | undefined): DisNoteInl
 
 /* --------------------------------- blocks --------------------------------- */
 
+function codeText(code: string): BnInlineContent[] {
+  return code ? [{ type: "text", text: code, styles: {} }] : [];
+}
+
 export function blockToBn(block: DisNoteBlock): BnBlock {
-  const type = TO_BN_TYPE[block.type] ?? block.type;
   const children = (block.children ?? []).map(blockToBn);
 
-  if (!NATIVE_BLOCK_TYPES.has(block.type)) {
-    const code = typeof block.props["code"] === "string" ? (block.props["code"] as string) : "";
-    const content = block.type === "codeBlock"
-      ? (code ? [{ type: "text" as const, text: code, styles: {} }] : [])
-      : inlineToBn(block.content);
-    return {
-      id: block.id,
-      type: GENERIC_BLOCK_TYPE,
-      props: {
-        originalType: block.type,
-        originalVersion: block.version,
-        propsJson: JSON.stringify(block.props),
-      },
-      content,
-      children,
-    };
+  if (DIRECT_TYPES.has(block.type)) {
+    const type = TO_BN_TYPE[block.type] ?? block.type;
+    const props: Record<string, unknown> = {};
+    let content: BnInlineContent[];
+
+    switch (block.type) {
+      case "heading":
+        props["level"] = clampHeadingLevel(block.props["level"]);
+        content = inlineToBn(block.content);
+        break;
+      case "checklistItem":
+        props["checked"] = block.props["checked"] === true;
+        content = inlineToBn(block.content);
+        break;
+      case "callout":
+        props["intent"] = readIntent(block.props["intent"]);
+        content = inlineToBn(block.content);
+        break;
+      case "codeBlock":
+        props["language"] = typeof block.props["language"] === "string" ? block.props["language"] : "text";
+        content = codeText(typeof block.props["code"] === "string" ? (block.props["code"] as string) : "");
+        break;
+      case "divider":
+        content = [];
+        break;
+      default:
+        content = inlineToBn(block.content);
+    }
+
+    return { id: block.id, type, props, content, children };
   }
 
-  const props: Record<string, unknown> = {};
-  if (block.type === "heading") props["level"] = block.props["level"] ?? 1;
-  if (block.type === "checklistItem") props["checked"] = block.props["checked"] === true;
+  // Generic wrapper: preserves image + any unknown/namespaced block losslessly.
   return {
     id: block.id,
-    type,
-    props,
+    type: GENERIC_BLOCK_TYPE,
+    props: {
+      originalType: block.type,
+      originalVersion: block.version,
+      propsJson: JSON.stringify(block.props),
+    },
     content: inlineToBn(block.content),
     children,
   };
 }
 
 function readVersion(value: unknown): number {
-  const v = value;
-  return typeof v === "number" && Number.isInteger(v) && v > 0 ? v : 1;
+  return typeof value === "number" && Number.isInteger(value) && value > 0 ? value : 1;
 }
 
 function readPropsJson(value: unknown): DisNoteBlock["props"] {
@@ -176,41 +230,57 @@ function readPropsJson(value: unknown): DisNoteBlock["props"] {
   }
 }
 
+function joinCode(content: BnInlineContent[] | undefined): string {
+  return (content ?? [])
+    .filter((node): node is BnStyledText => node.type === "text")
+    .map((node) => node.text)
+    .join("");
+}
+
 export function blockFromBn(bn: BnBlock, envelope?: EnvelopeMeta): DisNoteBlock {
   if (bn.type === GENERIC_BLOCK_TYPE) {
     const type = typeof bn.props["originalType"] === "string" ? bn.props["originalType"] : "paragraph";
     const props = readPropsJson(bn.props["propsJson"]);
-    if (type === "codeBlock") {
-      props["code"] = bn.content
-        .filter((node): node is BnStyledText => node.type === "text")
-        .map((node) => node.text)
-        .join("");
-    }
     const block: DisNoteBlock = {
       id: bn.id,
       type,
       version: readVersion(bn.props["originalVersion"]),
       props,
     };
-    if (!VOID_TYPES.has(type)) block.content = inlineFromBn(bn.content);
+    if (!NO_CONTENT_TYPES.has(type) && type !== "image") block.content = inlineFromBn(bn.content);
     const children = (bn.children ?? []).map((child) => blockFromBn(child, envelope));
     if (children.length > 0) block.children = children;
     return block;
   }
 
   const type = FROM_BN_TYPE[bn.type] ?? bn.type;
-  const children = (bn.children ?? []).map((child) => blockFromBn(child, envelope));
-  const props = { ...(envelope?.blockProps[bn.id] ?? {}) };
-  if (type === "heading") props["level"] = bn.props["level"] === 2 ? 2 : bn.props["level"] === 3 ? 3 : 1;
-  if (type === "checklistItem") props["checked"] = bn.props["checked"] === true;
+  const props: Record<string, unknown> = {};
+
+  switch (type) {
+    case "heading":
+      props["level"] = clampHeadingLevel(bn.props["level"]);
+      break;
+    case "checklistItem":
+      props["checked"] = bn.props["checked"] === true;
+      break;
+    case "callout":
+      props["intent"] = readIntent(bn.props["intent"]);
+      break;
+    case "codeBlock":
+      props["language"] = typeof bn.props["language"] === "string" ? bn.props["language"] : "text";
+      props["code"] = joinCode(bn.content);
+      break;
+  }
 
   const block: DisNoteBlock = {
     id: bn.id,
     type,
     version: readVersion(envelope?.blockVersions[bn.id]),
-    props,
+    props: props as DisNoteBlock["props"],
   };
-  if (!VOID_TYPES.has(type)) block.content = inlineFromBn(bn.content);
+  if (!NO_CONTENT_TYPES.has(type)) block.content = inlineFromBn(bn.content);
+
+  const children = (bn.children ?? []).map((child) => blockFromBn(child, envelope));
   if (children.length > 0) block.children = children;
   return block;
 }

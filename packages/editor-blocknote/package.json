@@ -4,7 +4,7 @@
   "description": "BlockNote editor adapter for DisNote Document. Converts between DisNoteDocument and BlockNote, and exposes <DisNoteEditor> without leaking the vendor API.",
   "license": "Apache-2.0",
   "type": "module",
-  "sideEffects": false,
+  "sideEffects": ["*.css"],
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "exports": {
@@ -27,11 +27,13 @@
   },
   "peerDependencies": {
     "@blocknote/core": "0.52.1",
+    "@blocknote/mantine": "0.52.1",
     "@blocknote/react": "0.52.1",
     "react": "^18.3.0 || ^19.0.0"
   },
   "peerDependenciesMeta": {
     "@blocknote/core": { "optional": true },
+    "@blocknote/mantine": { "optional": true },
     "@blocknote/react": { "optional": true }
   }
 }

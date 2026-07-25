@@ -13,6 +13,7 @@
     "@disnote/renderer-react": "0.1.0",
     "@disnote/editor-blocknote": "0.1.0",
     "@blocknote/core": "0.52.1",
+    "@blocknote/mantine": "0.52.1",
     "@blocknote/react": "0.52.1",
     "react": "^19.2.8",
     "react-dom": "^19.2.8"

@@ -64,6 +64,13 @@ export function BlockRenderer({ block }: { block: DisNoteBlock }): ReactNode {
           <InlineRenderer content={block.content} />
         </blockquote>
       );
+    case "toggle":
+      return (
+        <details className="disnote-toggle" open>
+          <summary><InlineRenderer content={block.content} /></summary>
+          {block.children && block.children.length > 0 ? <BlockList blocks={block.children} /> : null}
+        </details>
+      );
     case "checklistItem": {
       const checked = block.props["checked"] === true;
       return (

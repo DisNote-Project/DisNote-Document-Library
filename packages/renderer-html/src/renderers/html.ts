@@ -138,6 +138,10 @@ class RenderContext {
         const lang = typeof block.props["language"] === "string" ? (block.props["language"] as string) : "text";
         return `<pre><code class="language-${escapeHtml(lang)}">${escapeHtml(code)}</code></pre>`;
       }
+      case "toggle": {
+        const children = block.children ? this.renderBlocks(block.children) : "";
+        return `<details class="disnote-toggle" open><summary>${this.renderInline(block.content)}</summary>${children}</details>`;
+      }
       case "divider":
         return "<hr/>";
       case "callout": {

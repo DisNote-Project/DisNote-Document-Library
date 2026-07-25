@@ -74,6 +74,11 @@ export function checklistItem(content: DisNoteInline[] = [], checked = false): D
   return block("checklistItem", 1, { props: { checked }, content });
 }
 
+/** A collapsible toggle. Its `children` are the blocks revealed when expanded. */
+export function toggle(content: DisNoteInline[] = [], children: DisNoteBlock[] = []): DisNoteBlock {
+  return block("toggle", 1, children.length ? { content, children } : { content });
+}
+
 export function quote(content: DisNoteInline[] = []): DisNoteBlock {
   return block("quote", 1, { content });
 }

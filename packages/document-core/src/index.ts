@@ -15,6 +15,7 @@ export {
   headingCore,
   bulletListItemCore,
   numberedListItemCore,
+  toggleCore,
   checklistItemCore,
   quoteCore,
   codeBlockCore,
