@@ -1,5 +1,8 @@
 import { defineConfig, devices } from "@playwright/test";
 
+const port = process.env["DISNOTE_E2E_PORT"] ?? "4173";
+const baseURL = `http://127.0.0.1:${port}`;
+
 export default defineConfig({
   testDir: ".",
   testMatch: "**/*.spec.ts",
@@ -11,14 +14,14 @@ export default defineConfig({
   reporter: process.env["CI"] ? [["html", { open: "never" }], ["list"]] : "list",
   outputDir: "../test-results",
   use: {
-    baseURL: "http://127.0.0.1:4173",
+    baseURL,
     trace: "retain-on-failure",
     screenshot: "only-on-failure",
     permissions: ["clipboard-read", "clipboard-write"],
   },
   webServer: {
-    command: "npm run dev --workspace @disnote/react-demo -- --host 127.0.0.1 --port 4173",
-    url: "http://127.0.0.1:4173",
+    command: `npm run dev --workspace @disnote/react-demo -- --host 127.0.0.1 --port ${port}`,
+    url: baseURL,
     cwd: "..",
     reuseExistingServer: !process.env["CI"],
   },

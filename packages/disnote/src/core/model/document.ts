@@ -36,3 +36,9 @@ export interface DisNoteDocument {
   blocks: DisNoteBlock[];
   metadata: DocumentMetadata;
 }
+
+export interface BlockSelection {
+  anchorBlockId: string;
+  focusBlockId: string;
+}
+

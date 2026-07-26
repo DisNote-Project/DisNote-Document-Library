@@ -160,6 +160,63 @@ class RenderContext {
         if (!src) return `<figure data-asset="${escapeHtml(assetId)}"><figcaption>${escapeHtml(alt)}</figcaption></figure>`;
         return `<figure><img src="${escapeHtml(src)}" alt="${escapeHtml(alt)}" loading="lazy"/></figure>`;
       }
+      case "table": {
+        const rows = (block.props["rows"] as unknown) as Array<{ cells?: DisNoteInline[][] }> || [];
+        const body = rows.map((row) => {
+          const cells = (row.cells || []).map((cell) => `<td>${this.renderInline(cell)}</td>`).join("");
+          return `<tr>${cells}</tr>`;
+        }).join("");
+        return `<div class="disnote-table"><table><tbody>${body}</tbody></table></div>`;
+      }
+      case "math": {
+        const code = typeof block.props["code"] === "string" ? block.props["code"] : "";
+        return `<div class="disnote-math">$$${escapeHtml(code)}$$</div>`;
+      }
+      case "bookmark": {
+        const url = typeof block.props["url"] === "string" ? block.props["url"] : "";
+        const title = typeof block.props["title"] === "string" ? block.props["title"] : "Web Link";
+        return `<div class="disnote-bookmark"><a href="${escapeHtml(url)}">${escapeHtml(title)}</a></div>`;
+      }
+      case "tableOfContents":
+        return `<div class="disnote-toc">[Table of Contents]</div>`;
+      case "breadcrumb":
+        return `<div class="disnote-breadcrumb">[Breadcrumbs]</div>`;
+      case "syncedBlock":
+        return `<div class="disnote-synced">${block.children ? this.renderBlocks(block.children) : ""}</div>`;
+      case "templateButton": {
+        const label = typeof block.props["label"] === "string" ? block.props["label"] : "Template Button";
+        return `<button class="disnote-template">${escapeHtml(label)}</button>`;
+      }
+      case "toggleHeading1":
+      case "toggleHeading2":
+      case "toggleHeading3": {
+        const level = block.type === "toggleHeading1" ? 1 : block.type === "toggleHeading2" ? 2 : 3;
+        const body = block.children ? this.renderBlocks(block.children) : "";
+        return `<details class="disnote-toggle-heading"><summary><h${level}>${this.renderInline(block.content)}</h${level}></summary>${body}</details>`;
+      }
+      case "video": {
+        const url = typeof block.props["url"] === "string" ? block.props["url"] : "";
+        return `<figure><video src="${escapeHtml(url)}" controls></video></figure>`;
+      }
+      case "audio": {
+        const url = typeof block.props["url"] === "string" ? block.props["url"] : "";
+        return `<figure><audio src="${escapeHtml(url)}" controls></audio></figure>`;
+      }
+      case "file": {
+        const url = typeof block.props["url"] === "string" ? block.props["url"] : "";
+        const name = typeof block.props["name"] === "string" ? block.props["name"] : "Attachment";
+        return `<div class="disnote-file"><a href="${escapeHtml(url)}">${escapeHtml(name)}</a></div>`;
+      }
+      case "tableDb":
+      case "board":
+      case "listDb":
+      case "gallery":
+      case "calendar":
+      case "timeline":
+      case "map": {
+        const title = typeof block.props["title"] === "string" ? block.props["title"] : "Database";
+        return `<div class="disnote-database" data-view="${escapeHtml(block.type)}"><h3>📊 ${escapeHtml(title)}</h3></div>`;
+      }
       default:
         return this.renderUnknown(block);
     }

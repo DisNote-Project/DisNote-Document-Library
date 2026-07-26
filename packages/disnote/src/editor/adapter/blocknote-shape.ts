@@ -39,6 +39,6 @@ export interface BnBlock {
   id: string;
   type: string;
   props: Record<string, unknown>;
-  content: BnInlineContent[];
+  content: BnInlineContent[] | Record<string, unknown>;
   children: BnBlock[];
 }

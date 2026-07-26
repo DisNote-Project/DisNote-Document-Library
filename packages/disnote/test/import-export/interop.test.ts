@@ -15,7 +15,12 @@ import {
   extractDocumentPlainText,
   createDefaultRegistry,
 } from "../../src/core/index.js";
-import { exportMarkdownLossy, importMarkdown, importHtml } from "../../src/import-export/index.js";
+import {
+  exportMarkdownLossy,
+  importMarkdown,
+  importHtml,
+  importClipboard,
+} from "../../src/import-export/index.js";
 
 const registry = createDefaultRegistry();
 const NOW = "2026-01-01T00:00:00.000Z";
@@ -74,4 +79,86 @@ test("html import maps supported tags and sanitizes", () => {
   assert.ok(warnings.some((w) => w.code === "unsafe-url"));
   const p = document.blocks[1]!;
   assert.ok(p.content?.some((n) => n.type === "link" && n.href === "https://x.dev"));
+});
+
+test("html import correctly parses nested lists", () => {
+  const html = "<ul><li>parent<ul><li>child 1</li><li>child 2</li></ul></li></ul>";
+  const { document } = importHtml(html, { now: NOW });
+
+  assert.equal(document.blocks.length, 1);
+  const parentBlock = document.blocks[0]!;
+  assert.equal(parentBlock.type, "bulletListItem");
+
+  // Verify children
+  assert.ok(parentBlock.children);
+  assert.equal(parentBlock.children.length, 2);
+  assert.equal(parentBlock.children[0]!.type, "bulletListItem");
+  assert.equal(parentBlock.children[1]!.type, "bulletListItem");
+});
+
+test("html import correctly parses tables", () => {
+  const html = "<table><tbody><tr><td>cell A</td><td>cell B</td></tr></tbody></table>";
+  const { document } = importHtml(html, { now: NOW });
+
+  assert.equal(document.blocks.length, 1);
+  const tableBlock = document.blocks[0]!;
+  assert.equal(tableBlock.type, "table");
+
+  const rows = tableBlock.props["rows"] as Array<{ cells: Array<Array<{ text: string }>> }>;
+  assert.equal(rows.length, 1);
+  assert.equal(rows[0].cells.length, 2);
+  assert.equal(rows[0].cells[0][0].text, "cell A");
+  assert.equal(rows[0].cells[1][0].text, "cell B");
+});
+
+test("clipboard import preserves semantic structure copied from VS Code Markdown Preview", () => {
+  const html = [
+    "<meta charset='utf-8'>",
+    "<!--StartFragment-->",
+    '<div class="markdown-body">',
+    '<h1 id="disnote-checklist">DisNote checklist</h1>',
+    "<p>This is <strong>important</strong> and <a href='https://example.com'>linked</a>.</p>",
+    "<h2>Targets</h2>",
+    "<ul><li>Desktop</li><li>Mobile<ul><li>iOS</li></ul></li></ul>",
+    "<ol><li>Publish</li></ol>",
+    "<blockquote><p>Keep the block structure.</p></blockquote>",
+    "</div>",
+    "<!--EndFragment-->",
+  ].join("");
+
+  const { document } = importClipboard({
+    html,
+    text: [
+      "DisNote checklist",
+      "This is important and linked.",
+      "Targets",
+      "Desktop",
+      "Mobile",
+      "iOS",
+      "Publish",
+      "Keep the block structure.",
+    ].join("\n"),
+  }, { now: NOW });
+
+  assert.deepEqual(
+    document.blocks.map((block) => block.type),
+    ["heading", "paragraph", "heading", "bulletListItem", "bulletListItem", "numberedListItem", "quote"],
+  );
+  assert.equal(document.blocks[0]!.props["level"], 1);
+  assert.equal(document.blocks[2]!.props["level"], 2);
+  assert.equal(document.blocks[4]!.children?.[0]?.type, "bulletListItem");
+  assert.ok(document.blocks[1]!.content?.some((node) => node.type === "link"));
+  assert.ok(
+    document.blocks[1]!.content?.some(
+      (node) => node.type === "text" && node.marks?.some((mark) => mark.type === "bold"),
+    ),
+  );
+});
+
+test("clipboard import falls back to Markdown or plain text when semantic HTML is absent", () => {
+  const markdown = importClipboard({ text: "# Title\n\n- item" }, { now: NOW });
+  assert.deepEqual(markdown.document.blocks.map((block) => block.type), ["heading", "bulletListItem"]);
+
+  const plainText = importClipboard({ text: "first line\nsecond line" }, { now: NOW });
+  assert.deepEqual(plainText.document.blocks.map((block) => block.type), ["paragraph", "paragraph"]);
 });

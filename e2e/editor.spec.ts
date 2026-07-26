@@ -44,6 +44,45 @@ test("pastes plain text and supports undo and redo", async ({ page, browserName 
   await expect(editable).toContainText(clipboardText);
 });
 
+test("pastes VS Code Markdown Preview HTML as structured document blocks", async ({ page }) => {
+  await page.goto("/");
+  const editable = editor(page);
+  await editable.click();
+
+  await editable.evaluate((element) => {
+    const clipboardData = new DataTransfer();
+    clipboardData.setData(
+      "text/html",
+      [
+        "<meta charset='utf-8'>",
+        "<!--StartFragment-->",
+        '<div class="markdown-body">',
+        "<h1>Preview title</h1>",
+        "<p>Paragraph with <strong>bold text</strong>.</p>",
+        "<h2>Targets</h2>",
+        "<ul><li>Desktop</li><li>Mobile<ul><li>iOS</li></ul></li></ul>",
+        "</div>",
+        "<!--EndFragment-->",
+      ].join(""),
+    );
+    clipboardData.setData(
+      "text/plain",
+      "Preview title\nParagraph with bold text.\nTargets\nDesktop\nMobile\niOS",
+    );
+    element.dispatchEvent(new ClipboardEvent("paste", {
+      bubbles: true,
+      cancelable: true,
+      clipboardData,
+    }));
+  });
+
+  const rendered = page.getByTestId("rendered-panel");
+  await expect(rendered.getByRole("heading", { level: 1, name: "Preview title" })).toBeVisible();
+  await expect(rendered.getByRole("heading", { level: 2, name: "Targets" })).toBeVisible();
+  await expect(rendered.locator("strong")).toContainText("bold text");
+  await expect(rendered.locator("ul li")).toHaveCount(3);
+});
+
 test("mobile layout does not overflow the viewport", async ({ page }, testInfo) => {
   test.skip(!testInfo.project.name.startsWith("mobile"), "Mobile-only assertion.");
   await page.goto("/");

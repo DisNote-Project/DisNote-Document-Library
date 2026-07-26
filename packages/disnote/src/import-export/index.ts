@@ -1,6 +1,7 @@
 export { exportMarkdownLossy } from "./markdown/export.js";
 export { importMarkdown, parseInline } from "./markdown/import.js";
 export { importHtml, parseInlineHtml } from "./html/import.js";
+export { importClipboard, type ClipboardImportPayload } from "./clipboard/import.js";
 export {
   type InteropWarning,
   type LossyExportResult,

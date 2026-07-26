@@ -37,10 +37,50 @@ const DIRECT_TYPES = new Set([
   "codeBlock",
   "divider",
   "callout",
+  "table",
+  "image",
+  "video",
+  "audio",
+  "file",
+  "math",
+  "tableOfContents",
+  "breadcrumb",
+  "syncedBlock",
+  "templateButton",
+  "toggleHeading1",
+  "toggleHeading2",
+  "toggleHeading3",
+  "bookmark",
+  "tableDb",
+  "board",
+  "listDb",
+  "gallery",
+  "calendar",
+  "timeline",
+  "map",
 ]);
 
 /** DisNote types that carry no inline `content` (data lives in props). */
-const NO_CONTENT_TYPES = new Set(["divider", "codeBlock"]);
+const NO_CONTENT_TYPES = new Set([
+  "divider",
+  "codeBlock",
+  "table",
+  "image",
+  "video",
+  "audio",
+  "file",
+  "math",
+  "tableOfContents",
+  "breadcrumb",
+  "bookmark",
+  "tableDb",
+  "board",
+  "listDb",
+  "gallery",
+  "calendar",
+  "timeline",
+  "map",
+]);
 
 const GENERIC_BLOCK_TYPE = "disnoteBlock";
 
@@ -171,7 +211,7 @@ export function blockToBn(block: DisNoteBlock): BnBlock {
   if (DIRECT_TYPES.has(block.type)) {
     const type = TO_BN_TYPE[block.type] ?? block.type;
     const props: Record<string, unknown> = {};
-    let content: BnInlineContent[];
+    let content: BnInlineContent[] | Record<string, unknown>;
 
     switch (block.type) {
       case "heading":
@@ -193,7 +233,31 @@ export function blockToBn(block: DisNoteBlock): BnBlock {
       case "divider":
         content = [];
         break;
+      case "table": {
+        props["textColor"] = block.props["textColor"] ?? "default";
+        const rows = (block.props["rows"] as unknown) as Array<{ cells?: DisNoteInline[][] }> || [];
+        content = {
+          type: "tableContent",
+          rows: rows.map((row) => ({
+            cells: (row.cells ?? []).map((cell) => inlineToBn(cell)),
+          })),
+        };
+        break;
+      }
+      case "image":
+      case "video":
+      case "audio":
+      case "file":
+        props["url"] = block.props["url"] || block.props["assetId"] || "";
+        props["caption"] = block.props["caption"] || block.props["alt"] || "";
+        if (block.props["name"]) props["name"] = block.props["name"];
+        if (typeof block.props["width"] === "number") props["width"] = block.props["width"];
+        content = [];
+        break;
       default:
+        for (const [k, v] of Object.entries(block.props)) {
+          props[k] = v;
+        }
         content = inlineToBn(block.content);
     }
 
@@ -247,7 +311,9 @@ export function blockFromBn(bn: BnBlock, envelope?: EnvelopeMeta): DisNoteBlock 
       version: readVersion(bn.props["originalVersion"]),
       props,
     };
-    if (!NO_CONTENT_TYPES.has(type) && type !== "image") block.content = inlineFromBn(bn.content);
+    if (!NO_CONTENT_TYPES.has(type) && type !== "image") {
+      block.content = inlineFromBn(Array.isArray(bn.content) ? bn.content : undefined);
+    }
     const children = (bn.children ?? []).map((child) => blockFromBn(child, envelope));
     if (children.length > 0) block.children = children;
     return block;
@@ -268,7 +334,33 @@ export function blockFromBn(bn: BnBlock, envelope?: EnvelopeMeta): DisNoteBlock 
       break;
     case "codeBlock":
       props["language"] = typeof bn.props["language"] === "string" ? bn.props["language"] : "text";
-      props["code"] = joinCode(bn.content);
+      props["code"] = joinCode(Array.isArray(bn.content) ? bn.content : undefined);
+      break;
+    case "table": {
+      const tableContent = bn.content as unknown as { rows?: Array<{ cells?: BnInlineContent[][] }> };
+      const rows = (tableContent?.rows || []).map((row) => ({
+        cells: (row.cells || []).map((cell) => inlineFromBn(cell)),
+      }));
+      props["rows"] = rows;
+      props["textColor"] = bn.props["textColor"] ?? "default";
+      break;
+    }
+    case "image":
+      props["assetId"] = bn.props["url"] || "";
+      props["alt"] = bn.props["caption"] || "";
+      break;
+    case "video":
+    case "audio":
+    case "file":
+      props["url"] = bn.props["url"] || "";
+      props["caption"] = bn.props["caption"] || "";
+      if (bn.props["name"]) props["name"] = bn.props["name"];
+      if (bn.props["width"]) props["width"] = bn.props["width"];
+      break;
+    default:
+      for (const [k, v] of Object.entries(bn.props)) {
+        props[k] = v;
+      }
       break;
   }
 
@@ -278,7 +370,9 @@ export function blockFromBn(bn: BnBlock, envelope?: EnvelopeMeta): DisNoteBlock 
     version: readVersion(envelope?.blockVersions[bn.id]),
     props: props as DisNoteBlock["props"],
   };
-  if (!NO_CONTENT_TYPES.has(type)) block.content = inlineFromBn(bn.content);
+  if (!NO_CONTENT_TYPES.has(type)) {
+    block.content = inlineFromBn(Array.isArray(bn.content) ? bn.content : undefined);
+  }
 
   const children = (bn.children ?? []).map((child) => blockFromBn(child, envelope));
   if (children.length > 0) block.children = children;

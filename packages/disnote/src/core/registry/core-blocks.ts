@@ -169,6 +169,158 @@ export const calloutCore = defineCoreBlock<CalloutProps>({
   toPlainText: (block) => extractInlineText(block.content),
 });
 
+/* ------------------------------- notion blocks ---------------------------- */
+
+export const tableCore = defineCoreBlock<Record<string, JsonValue>>({
+  type: "table",
+  version: 1,
+  capabilities: VOID, // Grid data is stored in props, so no native inline content/children at block root
+  validateProps: (input) => {
+    if (!isObject(input)) return ok({ rows: [] });
+    return ok(input);
+  },
+  toPlainText: () => "[Table]",
+});
+
+export const mathCore = defineCoreBlock<Record<string, JsonValue>>({
+  type: "math",
+  version: 1,
+  capabilities: VOID,
+  validateProps: (input) => {
+    if (!isObject(input)) return ok({ code: "" });
+    return ok({ code: typeof input["code"] === "string" ? input["code"] : "" });
+  },
+  toPlainText: (block) => (typeof block.props.code === "string" ? block.props.code : ""),
+});
+
+export const tableOfContentsCore = defineCoreBlock<Record<string, JsonValue>>({
+  type: "tableOfContents",
+  version: 1,
+  capabilities: VOID,
+  validateProps: () => ok({}),
+  toPlainText: () => "[Table of Contents]",
+});
+
+export const breadcrumbCore = defineCoreBlock<Record<string, JsonValue>>({
+  type: "breadcrumb",
+  version: 1,
+  capabilities: VOID,
+  validateProps: () => ok({}),
+  toPlainText: () => "[Breadcrumbs]",
+});
+
+export const syncedBlockCore = defineCoreBlock<Record<string, JsonValue>>({
+  type: "syncedBlock",
+  version: 1,
+  capabilities: CONTAINER,
+  validateProps: (input) => {
+    if (!isObject(input)) return ok({ syncedBlockId: "" });
+    return ok({ syncedBlockId: typeof input["syncedBlockId"] === "string" ? input["syncedBlockId"] : "" });
+  },
+  toPlainText: () => "",
+});
+
+export const templateButtonCore = defineCoreBlock<Record<string, JsonValue>>({
+  type: "templateButton",
+  version: 1,
+  capabilities: CONTAINER,
+  validateProps: (input) => {
+    if (!isObject(input)) return ok({ label: "Template Button" });
+    return ok({
+      label: typeof input["label"] === "string" ? input["label"] : "Template Button",
+      ...input,
+    });
+  },
+  toPlainText: () => "",
+});
+
+export const toggleHeading1Core = defineCoreBlock<Record<string, JsonValue>>({
+  type: "toggleHeading1",
+  version: 1,
+  capabilities: CONTAINER,
+  validateProps: (input) => (isObject(input) ? ok(input) : ok({})),
+  toPlainText: (block) => extractInlineText(block.content),
+});
+
+export const toggleHeading2Core = defineCoreBlock<Record<string, JsonValue>>({
+  type: "toggleHeading2",
+  version: 1,
+  capabilities: CONTAINER,
+  validateProps: (input) => (isObject(input) ? ok(input) : ok({})),
+  toPlainText: (block) => extractInlineText(block.content),
+});
+
+export const toggleHeading3Core = defineCoreBlock<Record<string, JsonValue>>({
+  type: "toggleHeading3",
+  version: 1,
+  capabilities: CONTAINER,
+  validateProps: (input) => (isObject(input) ? ok(input) : ok({})),
+  toPlainText: (block) => extractInlineText(block.content),
+});
+
+export const bookmarkCore = defineCoreBlock<Record<string, JsonValue>>({
+  type: "bookmark",
+  version: 1,
+  capabilities: VOID,
+  validateProps: (input) => {
+    if (!isObject(input)) return ok({ url: "" });
+    return ok({
+      url: typeof input["url"] === "string" ? input["url"] : "",
+      title: typeof input["title"] === "string" ? input["title"] : "",
+      description: typeof input["description"] === "string" ? input["description"] : "",
+      image: typeof input["image"] === "string" ? input["image"] : "",
+    });
+  },
+  toPlainText: (block) => (typeof block.props.url === "string" ? block.props.url : ""),
+});
+
+function mediaItem(type: string): CoreBlockDefinition {
+  return defineCoreBlock<Record<string, JsonValue>>({
+    type,
+    version: 1,
+    capabilities: VOID,
+    validateProps: (input) => {
+      if (!isObject(input)) return ok({ url: "" });
+      return ok({
+        url: typeof input["url"] === "string" ? input["url"] : "",
+        caption: typeof input["caption"] === "string" ? input["caption"] : "",
+        name: typeof input["name"] === "string" ? input["name"] : "",
+        width: typeof input["width"] === "number" ? input["width"] : undefined,
+      });
+    },
+    toPlainText: (block) => (typeof block.props.url === "string" ? block.props.url : ""),
+  });
+}
+
+export const videoCore = mediaItem("video");
+export const audioCore = mediaItem("audio");
+export const fileCore = mediaItem("file");
+
+function dbViewItem(type: string): CoreBlockDefinition {
+  return defineCoreBlock<Record<string, JsonValue>>({
+    type,
+    version: 1,
+    capabilities: VOID,
+    validateProps: (input) => {
+      if (!isObject(input)) return ok({ databaseId: "" });
+      return ok({
+        databaseId: typeof input["databaseId"] === "string" ? input["databaseId"] : "",
+        title: typeof input["title"] === "string" ? input["title"] : "Database",
+        ...input,
+      });
+    },
+    toPlainText: () => `[Database ${type}]`,
+  });
+}
+
+export const tableDbCore = dbViewItem("tableDb");
+export const boardCore = dbViewItem("board");
+export const listDbCore = dbViewItem("listDb");
+export const galleryCore = dbViewItem("gallery");
+export const calendarCore = dbViewItem("calendar");
+export const timelineCore = dbViewItem("timeline");
+export const mapCore = dbViewItem("map");
+
 /** All V1 core block definitions. */
 export const coreBlockDefinitions: CoreBlockDefinition[] = [
   paragraphCore,
@@ -182,6 +334,26 @@ export const coreBlockDefinitions: CoreBlockDefinition[] = [
   imageCore,
   dividerCore,
   calloutCore,
+  tableCore,
+  mathCore,
+  tableOfContentsCore,
+  breadcrumbCore,
+  syncedBlockCore,
+  templateButtonCore,
+  toggleHeading1Core,
+  toggleHeading2Core,
+  toggleHeading3Core,
+  bookmarkCore,
+  videoCore,
+  audioCore,
+  fileCore,
+  tableDbCore,
+  boardCore,
+  listDbCore,
+  galleryCore,
+  calendarCore,
+  timelineCore,
+  mapCore,
 ];
 
 /** A registry seeded with every V1 core block. */

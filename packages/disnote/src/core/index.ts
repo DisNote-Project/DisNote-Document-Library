@@ -22,6 +22,26 @@ export {
   imageCore,
   dividerCore,
   calloutCore,
+  tableCore,
+  mathCore,
+  tableOfContentsCore,
+  breadcrumbCore,
+  syncedBlockCore,
+  templateButtonCore,
+  toggleHeading1Core,
+  toggleHeading2Core,
+  toggleHeading3Core,
+  bookmarkCore,
+  videoCore,
+  audioCore,
+  fileCore,
+  tableDbCore,
+  boardCore,
+  listDbCore,
+  galleryCore,
+  calendarCore,
+  timelineCore,
+  mapCore,
 } from "./registry/core-blocks.js";
 
 // Validation
@@ -44,3 +64,7 @@ export * from "./errors/index.js";
 
 // Presets
 export * from "./presets.js";
+
+// Selection Engine
+export * from "./selection/selection.js";
+
