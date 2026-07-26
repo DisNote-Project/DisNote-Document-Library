@@ -127,6 +127,21 @@ export function BlockRenderer({ block }: { block: DisNoteBlock }): ReactNode {
       return <AudioBlock block={block} />;
     case "file":
       return <FileBlock block={block} />;
+    case "columnList":
+      return (
+        <div className="disnote-column-list" style={{ display: "flex", flexDirection: "row", gap: 24, width: "100%", margin: "12px 0", flexWrap: "wrap" }}>
+          {block.children && block.children.length > 0 ? <BlockList blocks={block.children} /> : null}
+        </div>
+      );
+    case "column": {
+      const width = typeof block.props["width"] === "number" ? block.props["width"] : undefined;
+      const flexStyle = width !== undefined ? { flex: `0 0 ${width * 100}%`, maxWidth: `${width * 100}%` } : { flex: 1 };
+      return (
+        <div className="disnote-column" style={{ ...flexStyle, minWidth: 0 }}>
+          {block.children && block.children.length > 0 ? <BlockList blocks={block.children} /> : null}
+        </div>
+      );
+    }
     case "tableDb":
     case "board":
     case "listDb":
@@ -313,25 +328,46 @@ function DatabaseViewBlock({ block }: { block: DisNoteBlock }): ReactNode {
 
 function ImageBlock({ block }: { block: DisNoteBlock }): ReactNode {
   const { assetResolver } = useDocumentRenderContext();
-  const assetId = typeof block.props["assetId"] === "string" ? (block.props["assetId"] as string) : "";
-  const alt = typeof block.props["alt"] === "string" ? (block.props["alt"] as string) : "";
-  const candidate = assetResolver?.(assetId)?.trim();
-  const url = candidate && (SAFE_ASSET_SCHEME.test(candidate) || candidate.startsWith("/"))
-    ? candidate
-    : undefined;
+
+  // BlockNote stores the image URL directly in block.props.url (base64 or remote).
+  // assetId / assetResolver is an optional secondary lookup for custom asset stores.
+  const directUrl = typeof block.props["url"] === "string" ? (block.props["url"] as string).trim() : "";
+  const assetId   = typeof block.props["assetId"] === "string" ? (block.props["assetId"] as string) : "";
+  const alt       = typeof block.props["name"] === "string" ? (block.props["name"] as string) : "";
+  const caption   = typeof block.props["caption"] === "string" ? (block.props["caption"] as string) : "";
+  const previewWidth = typeof block.props["previewWidth"] === "number" ? (block.props["previewWidth"] as number) : undefined;
+
+  const isSafe = (u: string) =>
+    u.startsWith("data:image/") || SAFE_ASSET_SCHEME.test(u) || u.startsWith("/");
+
+  let url: string | undefined;
+  if (directUrl && isSafe(directUrl)) {
+    url = directUrl;
+  } else if (assetId) {
+    const candidate = assetResolver?.(assetId)?.trim() ?? "";
+    if (candidate && isSafe(candidate)) url = candidate;
+  }
+
   if (!url) {
     return (
-      <figure data-asset={assetId}>
-        <figcaption>{alt}</figcaption>
+      <figure data-asset={assetId || directUrl}>
+        {caption && <figcaption>{caption}</figcaption>}
       </figure>
     );
   }
   return (
-    <figure>
-      <img src={url} alt={alt} loading="lazy" style={{ maxWidth: "100%" }} />
+    <figure style={{ margin: "16px 0" }}>
+      <img
+        src={url}
+        alt={alt}
+        loading="lazy"
+        style={{ maxWidth: "100%", borderRadius: 4, display: "block", ...(previewWidth ? { width: previewWidth } : {}) }}
+      />
+      {caption && <figcaption style={{ fontSize: 12, color: "#64748b", marginTop: 4, textAlign: "center" }}>{caption}</figcaption>}
     </figure>
   );
 }
+
 
 export interface UnknownBlockProps {
   block: DisNoteBlock;

@@ -41,3 +41,45 @@ button {
     padding: 12px;
   }
 }
+
+/* Premium links formatting in editor and preview */
+.bn-container a,
+.bn-editor a,
+.disnote-editor a {
+  text-decoration: underline !important;
+  color: var(--brand, #3f9aae) !important;
+  cursor: pointer !important;
+}
+
+/* Premium selection highlight color */
+::selection {
+  background-color: rgba(63, 154, 174, 0.25) !important;
+  color: inherit !important;
+}
+.bn-editor ::selection {
+  background-color: rgba(63, 154, 174, 0.35) !important;
+  color: inherit !important;
+}
+
+/* =====================================================
+   Columns support (xl-multi-column)
+   ===================================================== */
+.bn-block-column-list {
+  display: flex !important;
+  flex-direction: row !important;
+  gap: 24px !important;
+  align-items: flex-start !important;
+  width: 100% !important;
+}
+
+.bn-block-column {
+  flex: 1 !important;
+  min-width: 0 !important;
+  overflow: hidden !important;
+}
+
+/* Remove indentation left-border line inside columns */
+.bn-block-column .bn-block-outer::before {
+  display: none !important;
+  border-left: none !important;
+}

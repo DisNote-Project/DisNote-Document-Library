@@ -321,6 +321,22 @@ export const calendarCore = dbViewItem("calendar");
 export const timelineCore = dbViewItem("timeline");
 export const mapCore = dbViewItem("map");
 
+export const columnListCore = defineCoreBlock<Record<string, JsonValue>>({
+  type: "columnList",
+  version: 1,
+  capabilities: CONTAINER,
+  validateProps: (input) => (isObject(input) ? ok(input) : ok({})),
+  toPlainText: () => "",
+});
+
+export const columnCore = defineCoreBlock<Record<string, JsonValue>>({
+  type: "column",
+  version: 1,
+  capabilities: CONTAINER,
+  validateProps: (input) => (isObject(input) ? ok(input) : ok({})),
+  toPlainText: () => "",
+});
+
 /** All V1 core block definitions. */
 export const coreBlockDefinitions: CoreBlockDefinition[] = [
   paragraphCore,
@@ -354,6 +370,8 @@ export const coreBlockDefinitions: CoreBlockDefinition[] = [
   calendarCore,
   timelineCore,
   mapCore,
+  columnListCore,
+  columnCore,
 ];
 
 /** A registry seeded with every V1 core block. */

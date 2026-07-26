@@ -5,6 +5,7 @@ import {
   defaultStyleSpecs,
 } from "@blocknote/core";
 import { createReactBlockSpec, createReactInlineContentSpec } from "@blocknote/react";
+import { ColumnBlock, ColumnListBlock } from "@blocknote/xl-multi-column";
 
 type CalloutIntent = "info" | "warning" | "success" | "danger";
 
@@ -344,6 +345,8 @@ const calendarSpec = makeDbViewSpec("calendar", "📅");
 const timelineSpec = makeDbViewSpec("timeline", "⏳");
 const mapSpec = makeDbViewSpec("map", "🗺️");
 
+// Use official multi-column block specs from @blocknote/xl-multi-column
+
 /**
  * The editor schema. We hand-pick the block specs DisNote's document model can
  * round-trip, so the slash menu never offers a block we cannot persist.
@@ -382,6 +385,8 @@ export const disNoteBlockNoteSchema = BlockNoteSchema.create({
     calendar: calendarSpec(),
     timeline: timelineSpec(),
     map: mapSpec(),
+    columnList: ColumnListBlock,
+    column: ColumnBlock,
   },
   inlineContentSpecs: {
     ...defaultInlineContentSpecs,

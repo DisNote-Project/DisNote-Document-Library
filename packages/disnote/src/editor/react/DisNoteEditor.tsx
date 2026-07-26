@@ -111,6 +111,54 @@ function disNoteSlashItems(editor: {
       },
     },
     {
+      title: "2 Columns",
+      subtext: "Create a 2-column layout",
+      aliases: ["columns", "cols", "2cols", "layout"],
+      group: "Advanced",
+      icon: (
+        <span aria-hidden style={{ display: "inline-flex", alignItems: "center" }}>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <rect width="18" height="18" x="3" y="3" rx="2"/>
+            <path d="M12 3v18"/>
+          </svg>
+        </span>
+      ),
+      onItemClick: () => {
+        insertOrUpdateBlockForSlashMenu(ed, {
+          type: "columnList",
+          children: [
+            { type: "column", children: [{ type: "paragraph" }] },
+            { type: "column", children: [{ type: "paragraph" }] }
+          ]
+        } as never);
+      },
+    },
+    {
+      title: "3 Columns",
+      subtext: "Create a 3-column layout",
+      aliases: ["3cols", "3columns", "three", "triple"],
+      group: "Advanced",
+      icon: (
+        <span aria-hidden style={{ display: "inline-flex", alignItems: "center" }}>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <rect width="18" height="18" x="3" y="3" rx="2"/>
+            <path d="M9 3v18"/>
+            <path d="M15 3v18"/>
+          </svg>
+        </span>
+      ),
+      onItemClick: () => {
+        insertOrUpdateBlockForSlashMenu(ed, {
+          type: "columnList",
+          children: [
+            { type: "column", children: [{ type: "paragraph" }] },
+            { type: "column", children: [{ type: "paragraph" }] },
+            { type: "column", children: [{ type: "paragraph" }] }
+          ]
+        } as never);
+      },
+    },
+    {
       title: "Table of Contents",
       subtext: "Generate outline from headings",
       aliases: ["toc", "index", "outline"],
@@ -404,6 +452,49 @@ function DisNoteEditorImpl(props: DisNoteEditorProps, ref: Ref<DisNoteEditorHand
   const handlePaste = (event: React.ClipboardEvent<HTMLDivElement>): void => {
     const text = event.clipboardData.getData("text/plain");
     const html = event.clipboardData.getData("text/html");
+
+    // 1. If paste target is an input field or a non-contenteditable area (like the Mantine URL popover input), do not intercept.
+    const target = event.target as HTMLElement;
+    if (
+      target &&
+      (target.tagName === "INPUT" ||
+        target.tagName === "TEXTAREA" ||
+        target.isContentEditable === false)
+    ) {
+      if (target.tagName === "INPUT") {
+        const placeholder = target.getAttribute("placeholder") || "";
+        const ariaLabel = target.getAttribute("aria-label") || "";
+        const isLinkInput =
+          placeholder.toLowerCase().includes("url") ||
+          placeholder.toLowerCase().includes("link") ||
+          ariaLabel.toLowerCase().includes("url") ||
+          ariaLabel.toLowerCase().includes("link");
+
+        if (isLinkInput) {
+          // Let the paste complete first, then trigger Enter to apply the link immediately
+          setTimeout(() => {
+            const enterDown = new KeyboardEvent("keydown", {
+              key: "Enter",
+              code: "Enter",
+              keyCode: 13,
+              which: 13,
+              bubbles: true,
+              cancelable: true,
+            });
+            target.dispatchEvent(enterDown);
+          }, 50);
+        }
+      }
+      return;
+    }
+
+    // 2. If it is simple inline text (single line, no HTML block tags), let the editor handle it natively (e.g. pasting a URL to format a link).
+    const isSingleLine = !text.includes("\n") && !text.includes("\r");
+    const hasBlockHtml = html && /<(?:p|div|h[1-6]|ul|ol|li|blockquote|pre|table|hr|aside)\b/i.test(html);
+    if (isSingleLine && !hasBlockHtml) {
+      return;
+    }
+
     const { document: clipboardDocument } = importClipboard({ text, html });
 
     if (clipboardDocument.blocks.length === 0) return;
