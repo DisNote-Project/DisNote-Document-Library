@@ -20,7 +20,8 @@
     "build-storybook": "storybook build",
     "verify": "npm run typecheck && npm run lint && npm test && npm run build && npm run build:examples && npm run build-storybook",
     "changeset": "changeset",
-    "version-packages": "changeset version",
+    "release:status": "changeset status",
+    "version-packages": "changeset version && npm install --package-lock-only --ignore-scripts",
     "release": "npm run verify && changeset publish",
     "clean": "rimraf packages/*/dist packages/*/*.tsbuildinfo || true"
   },

@@ -12,6 +12,6 @@
     "next": "16.2.11",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
-    "@disnote/core": "0.3.0"
+    "@disnote/core": "*"
   }
 }

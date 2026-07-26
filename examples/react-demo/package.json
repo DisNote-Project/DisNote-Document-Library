@@ -14,7 +14,7 @@
     "@blocknote/react": "0.52.1",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
-    "@disnote/core": "0.3.0"
+    "@disnote/core": "*"
   },
   "devDependencies": {
     "vite": "^6.4.3",
