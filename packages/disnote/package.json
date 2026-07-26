@@ -109,5 +109,8 @@
     "yjs": {
       "optional": true
     }
+  },
+  "dependencies": {
+    "@blocknote/xl-multi-column": "^0.52.1"
   }
 }

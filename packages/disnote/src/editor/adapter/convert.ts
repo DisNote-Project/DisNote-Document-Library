@@ -58,6 +58,8 @@ const DIRECT_TYPES = new Set([
   "calendar",
   "timeline",
   "map",
+  "columnList",
+  "column",
 ]);
 
 /** DisNote types that carry no inline `content` (data lives in props). */
@@ -80,6 +82,8 @@ const NO_CONTENT_TYPES = new Set([
   "calendar",
   "timeline",
   "map",
+  "columnList",
+  "column",
 ]);
 
 const GENERIC_BLOCK_TYPE = "disnoteBlock";

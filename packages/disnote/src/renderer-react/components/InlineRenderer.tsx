@@ -52,8 +52,22 @@ export function InlineRenderer({ content }: { content: DisNoteInline[] | undefin
         const href = safeHref(node.href);
         const inner = node.content.map((t, j) => applyMarks(t, j));
         if (!href) return <span key={i}>{inner}</span>;
+        // If any text node inside the link has an explicit textColor mark,
+        // don't force the link color so the mark's inline style wins.
+        const hasExplicitColor = node.content.some(
+          (t) => t.marks?.some((m) => m.type === "textColor")
+        );
         return (
-          <a key={i} href={href} rel="noopener noreferrer" style={{ color: theme.colors.link }}>
+          <a
+            key={i}
+            href={href}
+            rel="noopener noreferrer"
+            style={{
+              color: hasExplicitColor ? undefined : theme.colors.link,
+              textDecoration: "underline",
+              cursor: "pointer",
+            }}
+          >
             {inner}
           </a>
         );
@@ -72,7 +86,7 @@ export function InlineRenderer({ content }: { content: DisNoteInline[] | undefin
           : null;
         if (resolvedHref) {
           return (
-            <a key={i} href={resolvedHref} className="disnote-reference" style={{ color: theme.colors.link }}>
+            <a key={i} href={resolvedHref} className="disnote-reference" style={{ color: theme.colors.link, textDecoration: "underline", cursor: "pointer" }}>
               {label}
             </a>
           );
