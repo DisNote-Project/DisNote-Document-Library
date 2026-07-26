@@ -47,6 +47,9 @@ Current build guarantees and supported versions are recorded in
 
 For package-by-package features and complete usage examples, read
 [`docs/FEATURES_AND_USAGE.md`](docs/FEATURES_AND_USAGE.md).
+For a practical Vietnamese guide for `@disnote/core`, read
+[`docs/HUONG_DAN_SU_DUNG.md`](docs/HUONG_DAN_SU_DUNG.md).
+This single guide also contains the component props and public API reference.
 
 ```bash
 npm install

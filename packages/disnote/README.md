@@ -47,6 +47,8 @@ Current build guarantees and supported versions are recorded in
 
 For package-by-package features and complete usage examples, read
 [`docs/FEATURES_AND_USAGE.md`](docs/FEATURES_AND_USAGE.md).
+For a Vietnamese guide including component props and public API reference, read
+[`docs/HUONG_DAN_SU_DUNG.md`](https://github.com/DisNote-Project/DisNote-Document-Library/blob/main/docs/HUONG_DAN_SU_DUNG.md).
 
 ```bash
 npm install
