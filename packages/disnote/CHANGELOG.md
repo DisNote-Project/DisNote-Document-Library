@@ -1,5 +1,11 @@
 # @disnote/core
 
+## 0.6.0
+
+### Minor Changes
+
+- Add split block in cols, organize page and folder structures.
+
 ## 0.5.0
 
 ### Minor Changes
