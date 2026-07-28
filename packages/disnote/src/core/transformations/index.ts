@@ -1,3 +1,4 @@
+import { LIBRARY_MESSAGES } from "../messages.js";
 import type { JsonValue } from "../model/json.js";
 import type { DisNoteInline } from "../model/inline.js";
 import type { DisNoteBlock, DisNoteDocument } from "../model/document.js";
@@ -19,11 +20,17 @@ export type TransformResult =
   | { ok: true; document: DisNoteDocument; changedBlockIds: string[] }
   | { ok: false; error: DocumentTransformError };
 
-function withBlocks(document: DisNoteDocument, blocks: DisNoteBlock[]): DisNoteDocument {
+function withBlocks(
+  document: DisNoteDocument,
+  blocks: DisNoteBlock[]
+): DisNoteDocument {
   return { ...document, blocks };
 }
 
-function ok(document: DisNoteDocument, changedBlockIds: string[]): TransformResult {
+function ok(
+  document: DisNoteDocument,
+  changedBlockIds: string[]
+): TransformResult {
   const validation = validateDocument(document);
   if (!validation.ok) {
     return {
@@ -51,30 +58,57 @@ export interface InsertBlockInput {
   index?: number;
 }
 
-function insertInto(list: DisNoteBlock[], block: DisNoteBlock, index?: number): DisNoteBlock[] {
-  const at = index === undefined ? list.length : Math.max(0, Math.min(index, list.length));
+function insertInto(
+  list: DisNoteBlock[],
+  block: DisNoteBlock,
+  index?: number
+): DisNoteBlock[] {
+  const at =
+    index === undefined
+      ? list.length
+      : Math.max(0, Math.min(index, list.length));
   return [...list.slice(0, at), block, ...list.slice(at)];
 }
 
-export function insertBlock(document: DisNoteDocument, input: InsertBlockInput): TransformResult {
+export function insertBlock(
+  document: DisNoteDocument,
+  input: InsertBlockInput
+): TransformResult {
   if (input.parentId === undefined) {
-    return ok(withBlocks(document, insertInto(document.blocks, input.block, input.index)), [input.block.id]);
+    return ok(
+      withBlocks(
+        document,
+        insertInto(document.blocks, input.block, input.index)
+      ),
+      [input.block.id]
+    );
   }
   let inserted = false;
   const recurse = (blocks: DisNoteBlock[]): DisNoteBlock[] =>
     blocks.map((b) => {
       if (b.id === input.parentId) {
         inserted = true;
-        return { ...b, children: insertInto(b.children ?? [], input.block, input.index) };
+        return {
+          ...b,
+          children: insertInto(b.children ?? [], input.block, input.index),
+        };
       }
       return b.children ? { ...b, children: recurse(b.children) } : b;
     });
   const blocks = recurse(document.blocks);
-  if (!inserted) return err({ code: "parent-not-found", message: `parent "${input.parentId}" not found`, blockId: input.parentId });
+  if (!inserted)
+    return err({
+      code: "parent-not-found",
+      message: LIBRARY_MESSAGES.parentNotFound(input.parentId),
+      blockId: input.parentId,
+    });
   return ok(withBlocks(document, blocks), [input.block.id]);
 }
 
-export function appendBlock(document: DisNoteDocument, block: DisNoteBlock): TransformResult {
+export function appendBlock(
+  document: DisNoteDocument,
+  block: DisNoteBlock
+): TransformResult {
   return insertBlock(document, { block });
 }
 
@@ -88,7 +122,11 @@ export interface BlockPatch {
   children?: DisNoteBlock[];
 }
 
-export function updateBlock(document: DisNoteDocument, blockId: string, patch: BlockPatch): TransformResult {
+export function updateBlock(
+  document: DisNoteDocument,
+  blockId: string,
+  patch: BlockPatch
+): TransformResult {
   let changed = false;
   const recurse = (blocks: DisNoteBlock[]): DisNoteBlock[] =>
     blocks.map((b) => {
@@ -99,11 +137,20 @@ export function updateBlock(document: DisNoteDocument, blockId: string, patch: B
       return b.children ? { ...b, children: recurse(b.children) } : b;
     });
   const blocks = recurse(document.blocks);
-  if (!changed) return err({ code: "block-not-found", message: `block "${blockId}" not found`, blockId });
+  if (!changed)
+    return err({
+      code: "block-not-found",
+      message: LIBRARY_MESSAGES.blockNotFound(blockId),
+      blockId,
+    });
   return ok(withBlocks(document, blocks), [blockId]);
 }
 
-export function replaceBlock(document: DisNoteDocument, blockId: string, replacement: DisNoteBlock): TransformResult {
+export function replaceBlock(
+  document: DisNoteDocument,
+  blockId: string,
+  replacement: DisNoteBlock
+): TransformResult {
   let changed = false;
   const recurse = (blocks: DisNoteBlock[]): DisNoteBlock[] =>
     blocks.map((b) => {
@@ -114,13 +161,21 @@ export function replaceBlock(document: DisNoteDocument, blockId: string, replace
       return b.children ? { ...b, children: recurse(b.children) } : b;
     });
   const blocks = recurse(document.blocks);
-  if (!changed) return err({ code: "block-not-found", message: `block "${blockId}" not found`, blockId });
+  if (!changed)
+    return err({
+      code: "block-not-found",
+      message: LIBRARY_MESSAGES.blockNotFound(blockId),
+      blockId,
+    });
   return ok(withBlocks(document, blocks), [blockId, replacement.id]);
 }
 
 /* --------------------------------- remove --------------------------------- */
 
-function removeFrom(blocks: DisNoteBlock[], id: string): { blocks: DisNoteBlock[]; removed: DisNoteBlock | null } {
+function removeFrom(
+  blocks: DisNoteBlock[],
+  id: string
+): { blocks: DisNoteBlock[]; removed: DisNoteBlock | null } {
   const out: DisNoteBlock[] = [];
   let removed: DisNoteBlock | null = null;
   for (const b of blocks) {
@@ -141,9 +196,17 @@ function removeFrom(blocks: DisNoteBlock[], id: string): { blocks: DisNoteBlock[
   return { blocks: out, removed };
 }
 
-export function removeBlock(document: DisNoteDocument, blockId: string): TransformResult {
+export function removeBlock(
+  document: DisNoteDocument,
+  blockId: string
+): TransformResult {
   const r = removeFrom(document.blocks, blockId);
-  if (!r.removed) return err({ code: "block-not-found", message: `block "${blockId}" not found`, blockId });
+  if (!r.removed)
+    return err({
+      code: "block-not-found",
+      message: LIBRARY_MESSAGES.blockNotFound(blockId),
+      blockId,
+    });
   return ok(withBlocks(document, r.blocks), [blockId]);
 }
 
@@ -154,28 +217,52 @@ export interface MoveDestination {
   index?: number;
 }
 
-export function moveBlock(document: DisNoteDocument, blockId: string, destination: MoveDestination): TransformResult {
+export function moveBlock(
+  document: DisNoteDocument,
+  blockId: string,
+  destination: MoveDestination
+): TransformResult {
   const r = removeFrom(document.blocks, blockId);
-  if (!r.removed) return err({ code: "block-not-found", message: `block "${blockId}" not found`, blockId });
+  if (!r.removed)
+    return err({
+      code: "block-not-found",
+      message: LIBRARY_MESSAGES.blockNotFound(blockId),
+      blockId,
+    });
   if (destination.parentId === blockId) {
-    return err({ code: "invalid-destination", message: "cannot move a block into itself", blockId });
+    return err({
+      code: "invalid-destination",
+      message: LIBRARY_MESSAGES.CANNOT_MOVE_BLOCK_INTO_ITSELF,
+      blockId,
+    });
   }
   const afterRemove = withBlocks(document, r.blocks);
   const insertInput: InsertBlockInput = { block: r.removed };
-  if (destination.parentId !== undefined) insertInput.parentId = destination.parentId;
+  if (destination.parentId !== undefined)
+    insertInput.parentId = destination.parentId;
   if (destination.index !== undefined) insertInput.index = destination.index;
   return insertBlock(afterRemove, insertInput);
 }
 
 /* ---------------------------------- wrap ---------------------------------- */
 
-export function wrapBlocks(document: DisNoteDocument, blockIds: string[], wrapper: DisNoteBlock): TransformResult {
-  if (blockIds.length === 0) return err({ code: "empty-selection", message: "no blocks to wrap" });
+export function wrapBlocks(
+  document: DisNoteDocument,
+  blockIds: string[],
+  wrapper: DisNoteBlock
+): TransformResult {
+  if (blockIds.length === 0)
+    return err({
+      code: "empty-selection",
+      message: LIBRARY_MESSAGES.NO_BLOCKS_TO_WRAP,
+    });
   const idSet = new Set(blockIds);
   let done = false;
 
   const recurse = (blocks: DisNoteBlock[]): DisNoteBlock[] => {
-    const indices = blocks.map((b, i) => (idSet.has(b.id) ? i : -1)).filter((i) => i >= 0);
+    const indices = blocks
+      .map((b, i) => (idSet.has(b.id) ? i : -1))
+      .filter((i) => i >= 0);
     if (indices.length === blockIds.length && !done) {
       const first = indices[0]!;
       const last = indices[indices.length - 1]!;
@@ -183,26 +270,40 @@ export function wrapBlocks(document: DisNoteDocument, blockIds: string[], wrappe
       if (contiguous) {
         done = true;
         const selected = blocks.slice(first, last + 1);
-        const wrapped: DisNoteBlock = { ...wrapper, children: [...(wrapper.children ?? []), ...selected] };
+        const wrapped: DisNoteBlock = {
+          ...wrapper,
+          children: [...(wrapper.children ?? []), ...selected],
+        };
         return [...blocks.slice(0, first), wrapped, ...blocks.slice(last + 1)];
       }
     }
-    return blocks.map((b) => (b.children ? { ...b, children: recurse(b.children) } : b));
+    return blocks.map((b) =>
+      b.children ? { ...b, children: recurse(b.children) } : b
+    );
   };
 
   const blocks = recurse(document.blocks);
-  if (!done) return err({ code: "not-siblings", message: "blocks to wrap must be contiguous siblings" });
+  if (!done)
+    return err({
+      code: "not-siblings",
+      message: LIBRARY_MESSAGES.BLOCKS_MUST_BE_CONTIGUOUS_SIBLINGS,
+    });
   return ok(withBlocks(document, blocks), [wrapper.id, ...blockIds]);
 }
 
 /* ----------------------------------- map ---------------------------------- */
 
 /** Immutably map every block. The mapper must return a block (may change props/content). */
-export function mapBlocks(document: DisNoteDocument, mapper: (block: DisNoteBlock) => DisNoteBlock): DisNoteDocument {
+export function mapBlocks(
+  document: DisNoteDocument,
+  mapper: (block: DisNoteBlock) => DisNoteBlock
+): DisNoteDocument {
   const recurse = (blocks: DisNoteBlock[]): DisNoteBlock[] =>
     blocks.map((b) => {
       const mapped = mapper(b);
-      return mapped.children ? { ...mapped, children: recurse(mapped.children) } : mapped;
+      return mapped.children
+        ? { ...mapped, children: recurse(mapped.children) }
+        : mapped;
     });
   return withBlocks(document, recurse(document.blocks));
 }

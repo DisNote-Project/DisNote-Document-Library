@@ -1,8 +1,11 @@
+import { LIBRARY_MESSAGES } from "../messages.js";
 import type { DisNoteBlock, DisNoteDocument } from "../model/document.js";
 import { CURRENT_SCHEMA_VERSION } from "../model/document.js";
 import { mapBlocks } from "../transformations/index.js";
 
-export type DocumentMigrationFn = (document: DisNoteDocument) => DisNoteDocument;
+export type DocumentMigrationFn = (
+  document: DisNoteDocument
+) => DisNoteDocument;
 export type BlockMigrationFn = (block: DisNoteBlock) => DisNoteBlock;
 
 export interface MigrationReport {
@@ -10,7 +13,12 @@ export interface MigrationReport {
   toSchema: number;
   documentSteps: Array<{ from: number; to: number }>;
   changedBlockIds: string[];
-  blockSteps: Array<{ type: string; from: number; to: number; blockId: string }>;
+  blockSteps: Array<{
+    type: string;
+    from: number;
+    to: number;
+    blockId: string;
+  }>;
 }
 
 export type MigrationResult =
@@ -18,7 +26,10 @@ export type MigrationResult =
   | {
       ok: false;
       error: {
-        code: "missing-document-migration" | "missing-block-migration" | "unsupported-future-schema";
+        code:
+          | "missing-document-migration"
+          | "missing-block-migration"
+          | "unsupported-future-schema";
         message: string;
         from: number;
         to: number;
@@ -36,8 +47,17 @@ interface DocKey {
 }
 
 export interface MigrationRegistry {
-  registerDocumentMigration(from: number, to: number, fn: DocumentMigrationFn): MigrationRegistry;
-  registerBlockMigration(type: string, from: number, to: number, fn: BlockMigrationFn): MigrationRegistry;
+  registerDocumentMigration(
+    from: number,
+    to: number,
+    fn: DocumentMigrationFn
+  ): MigrationRegistry;
+  registerBlockMigration(
+    type: string,
+    from: number,
+    to: number,
+    fn: BlockMigrationFn
+  ): MigrationRegistry;
   migrate(document: DisNoteDocument, options?: MigrateOptions): MigrationResult;
   /** Report what would change without producing the migrated document. */
   dryRun(document: DisNoteDocument, options?: MigrateOptions): MigrationResult;
@@ -47,30 +67,57 @@ class MigrationRegistryImpl implements MigrationRegistry {
   private readonly docMigrations = new Map<number, DocKey>();
   private readonly blockMigrations = new Map<string, BlockMigrationFn>();
 
-  registerDocumentMigration(from: number, to: number, fn: DocumentMigrationFn): MigrationRegistry {
-    if (to !== from + 1) throw new Error(`Document migration must step exactly one version (${from} -> ${to}).`);
-    if (this.docMigrations.has(from)) throw new Error(`Document migration from ${from} already registered.`);
+  registerDocumentMigration(
+    from: number,
+    to: number,
+    fn: DocumentMigrationFn
+  ): MigrationRegistry {
+    if (to !== from + 1)
+      throw new Error(LIBRARY_MESSAGES.documentMigrationStepInvalid(from, to));
+    if (this.docMigrations.has(from))
+      throw new Error(
+        LIBRARY_MESSAGES.documentMigrationAlreadyRegistered(from)
+      );
     this.docMigrations.set(from, { from, fn });
     return this;
   }
 
-  registerBlockMigration(type: string, from: number, to: number, fn: BlockMigrationFn): MigrationRegistry {
-    if (to !== from + 1) throw new Error(`Block migration must step exactly one version (${type} ${from} -> ${to}).`);
+  registerBlockMigration(
+    type: string,
+    from: number,
+    to: number,
+    fn: BlockMigrationFn
+  ): MigrationRegistry {
+    if (to !== from + 1)
+      throw new Error(
+        LIBRARY_MESSAGES.blockMigrationStepInvalid(type, from, to)
+      );
     const key = `${type}@${from}`;
-    if (this.blockMigrations.has(key)) throw new Error(`Block migration ${key} already registered.`);
+    if (this.blockMigrations.has(key))
+      throw new Error(LIBRARY_MESSAGES.blockMigrationAlreadyRegistered(key));
     this.blockMigrations.set(key, fn);
     return this;
   }
 
-  migrate(document: DisNoteDocument, options: MigrateOptions = {}): MigrationResult {
+  migrate(
+    document: DisNoteDocument,
+    options: MigrateOptions = {}
+  ): MigrationResult {
     return this.run(document, options, true);
   }
 
-  dryRun(document: DisNoteDocument, options: MigrateOptions = {}): MigrationResult {
+  dryRun(
+    document: DisNoteDocument,
+    options: MigrateOptions = {}
+  ): MigrationResult {
     return this.run(document, options, false);
   }
 
-  private run(document: DisNoteDocument, options: MigrateOptions, apply: boolean): MigrationResult {
+  private run(
+    document: DisNoteDocument,
+    options: MigrateOptions,
+    apply: boolean
+  ): MigrationResult {
     const target = options.targetSchemaVersion ?? CURRENT_SCHEMA_VERSION;
     const report: MigrationReport = {
       fromSchema: document.schemaVersion,
@@ -85,7 +132,10 @@ class MigrationRegistryImpl implements MigrationRegistry {
         ok: false,
         error: {
           code: "unsupported-future-schema",
-          message: `Document schema ${document.schemaVersion} is newer than supported target ${target}.`,
+          message: LIBRARY_MESSAGES.documentSchemaNewerThanTarget(
+            document.schemaVersion,
+            target
+          ),
           from: document.schemaVersion,
           to: target,
         },
@@ -102,7 +152,9 @@ class MigrationRegistryImpl implements MigrationRegistry {
           ok: false,
           error: {
             code: "missing-document-migration",
-            message: `No document migration registered from schema ${current.schemaVersion}.`,
+            message: LIBRARY_MESSAGES.documentMigrationMissing(
+              current.schemaVersion
+            ),
             from: current.schemaVersion,
             to: current.schemaVersion + 1,
           },
@@ -110,7 +162,10 @@ class MigrationRegistryImpl implements MigrationRegistry {
       }
       const next = apply ? step.fn(current) : current;
       current = { ...next, schemaVersion: current.schemaVersion + 1 };
-      report.documentSteps.push({ from: current.schemaVersion - 1, to: current.schemaVersion });
+      report.documentSteps.push({
+        from: current.schemaVersion - 1,
+        to: current.schemaVersion,
+      });
     }
 
     // Block-level migrations: apply until a block reaches a version with no migration.
@@ -121,7 +176,12 @@ class MigrationRegistryImpl implements MigrationRegistry {
       while (this.blockMigrations.has(`${b.type}@${b.version}`)) {
         if (guard++ > 100) break; // safety against a mis-registered infinite chain
         const fn = this.blockMigrations.get(`${b.type}@${b.version}`)!;
-        report.blockSteps.push({ type: b.type, from: b.version, to: b.version + 1, blockId: b.id });
+        report.blockSteps.push({
+          type: b.type,
+          from: b.version,
+          to: b.version + 1,
+          blockId: b.id,
+        });
         const nextBlock = apply ? fn(b) : b;
         b = { ...nextBlock, version: b.version + 1 };
         changed.add(b.id);

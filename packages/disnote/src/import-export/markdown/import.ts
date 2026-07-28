@@ -1,4 +1,9 @@
-import type { DisNoteBlock, DisNoteInline, TextMark } from "../../core/index.js";
+import { LIBRARY_MESSAGES } from "../../core/messages.js";
+import type {
+  DisNoteBlock,
+  DisNoteInline,
+  TextMark,
+} from "../../core/index.js";
 import {
   createDocument,
   paragraph,
@@ -21,7 +26,11 @@ export function parseInline(text: string, w: WarningSink): DisNoteInline[] {
 
   const flush = (marks?: TextMark[]): void => {
     if (plain.length > 0) {
-      nodes.push(marks && marks.length ? { type: "text", text: plain, marks } : { type: "text", text: plain });
+      nodes.push(
+        marks && marks.length
+          ? { type: "text", text: plain, marks }
+          : { type: "text", text: plain }
+      );
       plain = "";
     }
   };
@@ -33,14 +42,20 @@ export function parseInline(text: string, w: WarningSink): DisNoteInline[] {
     if (link) {
       flush();
       const href = link[2]!;
-      if (safeUrl(href, {
-        allowedSchemes: ["https:", "http:", "mailto:", "tel:"],
-        allowRelative: true,
-      }) === null) {
-        w.add("unsafe-url", `Dropped unsafe link href "${href}"`);
+      if (
+        safeUrl(href, {
+          allowedSchemes: ["https:", "http:", "mailto:", "tel:"],
+          allowRelative: true,
+        }) === null
+      ) {
+        w.add("unsafe-url", LIBRARY_MESSAGES.unsafeLinkDropped(href));
         nodes.push({ type: "text", text: link[1]! });
       } else {
-        nodes.push({ type: "link", href, content: [{ type: "text", text: link[1]! }] });
+        nodes.push({
+          type: "link",
+          href,
+          content: [{ type: "text", text: link[1]! }],
+        });
       }
       i += link[0].length;
       continue;
@@ -55,14 +70,22 @@ export function parseInline(text: string, w: WarningSink): DisNoteInline[] {
     const italic = /^\*([^*]+)\*/.exec(rest);
     if (italic) {
       flush();
-      nodes.push({ type: "text", text: italic[1]!, marks: [{ type: "italic" }] });
+      nodes.push({
+        type: "text",
+        text: italic[1]!,
+        marks: [{ type: "italic" }],
+      });
       i += italic[0].length;
       continue;
     }
     const strike = /^~~([^~]+)~~/.exec(rest);
     if (strike) {
       flush();
-      nodes.push({ type: "text", text: strike[1]!, marks: [{ type: "strike" }] });
+      nodes.push({
+        type: "text",
+        text: strike[1]!,
+        marks: [{ type: "strike" }],
+      });
       i += strike[0].length;
       continue;
     }
@@ -81,7 +104,10 @@ export function parseInline(text: string, w: WarningSink): DisNoteInline[] {
 }
 
 /** Import Markdown into a DisNoteDocument (supported subset). */
-export function importMarkdown(markdown: string, options: { now?: string } = {}): ImportResult {
+export function importMarkdown(
+  markdown: string,
+  options: { now?: string } = {}
+): ImportResult {
   const w = new WarningSink();
   const lines = markdown.replace(/\r\n/g, "\n").split("\n");
   const blocks: DisNoteBlock[] = [];
@@ -115,13 +141,20 @@ export function importMarkdown(markdown: string, options: { now?: string } = {})
     }
     const h = /^(#{1,3})\s+(.*)$/.exec(trimmed);
     if (h) {
-      blocks.push(heading(h[1]!.length as 1 | 2 | 3, parseInline(h[2]!, w) as never));
+      blocks.push(
+        heading(h[1]!.length as 1 | 2 | 3, parseInline(h[2]!, w) as never)
+      );
       i++;
       continue;
     }
     const check = /^[-*+]\s+\[([ xX])\]\s+(.*)$/.exec(trimmed);
     if (check) {
-      blocks.push(checklistItem(parseInline(check[2]!, w) as never, check[1]!.toLowerCase() === "x"));
+      blocks.push(
+        checklistItem(
+          parseInline(check[2]!, w) as never,
+          check[1]!.toLowerCase() === "x"
+        )
+      );
       i++;
       continue;
     }
@@ -147,6 +180,8 @@ export function importMarkdown(markdown: string, options: { now?: string } = {})
     i++;
   }
 
-  const document = createDocument(options.now ? { blocks, now: options.now } : { blocks });
+  const document = createDocument(
+    options.now ? { blocks, now: options.now } : { blocks }
+  );
   return { document, warnings: w.list };
 }

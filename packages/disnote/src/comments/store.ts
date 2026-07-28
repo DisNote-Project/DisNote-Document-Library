@@ -1,3 +1,4 @@
+import { LIBRARY_MESSAGES } from "../core/messages.js";
 import type { DisNoteDocument } from "../core/index.js";
 import { collectBlockIds } from "../core/index.js";
 import type { CommentAnchor, CommentEntry, CommentThread } from "./model.js";
@@ -36,7 +37,14 @@ export class InMemoryCommentStore {
       anchor: clone(input.anchor),
       status: "open",
       orphaned: false,
-      comments: [{ id: this.genId(), author: input.author, body: input.body, createdAt: ts }],
+      comments: [
+        {
+          id: this.genId(),
+          author: input.author,
+          body: input.body,
+          createdAt: ts,
+        },
+      ],
     };
     this.threads.set(thread.id, thread);
     return clone(thread);
@@ -44,7 +52,12 @@ export class InMemoryCommentStore {
 
   addComment(threadId: string, author: string, body: string): CommentEntry {
     const thread = this.require(threadId);
-    const entry: CommentEntry = { id: this.genId(), author, body, createdAt: this.now() };
+    const entry: CommentEntry = {
+      id: this.genId(),
+      author,
+      body,
+      createdAt: this.now(),
+    };
     thread.comments.push(entry);
     return clone(entry);
   }
@@ -69,7 +82,10 @@ export class InMemoryCommentStore {
     const ids = new Set(collectBlockIds(document));
     for (const thread of this.threads.values()) {
       if (thread.documentId !== document.id) continue;
-      if (thread.anchor.type === "block" || thread.anchor.type === "inline-range") {
+      if (
+        thread.anchor.type === "block" ||
+        thread.anchor.type === "inline-range"
+      ) {
         thread.orphaned = !ids.has(thread.anchor.blockId);
       }
     }
@@ -77,7 +93,7 @@ export class InMemoryCommentStore {
 
   private require(id: string): CommentThread {
     const t = this.threads.get(id);
-    if (!t) throw new Error(`Comment thread ${id} not found`);
+    if (!t) throw new Error(LIBRARY_MESSAGES.commentThreadNotFound(id));
     return t;
   }
 }

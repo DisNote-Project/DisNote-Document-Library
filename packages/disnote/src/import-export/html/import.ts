@@ -1,4 +1,9 @@
-import type { DisNoteBlock, DisNoteInline, TextMark } from "../../core/index.js";
+import { LIBRARY_MESSAGES } from "../../core/messages.js";
+import type {
+  DisNoteBlock,
+  DisNoteInline,
+  TextMark,
+} from "../../core/index.js";
 import {
   createDocument,
   paragraph,
@@ -17,14 +22,18 @@ import { WarningSink, type ImportResult } from "../warnings.js";
 function decodeEntities(s: string): string {
   const decodeCodePoint = (value: string, radix: number): string => {
     const codePoint = Number.parseInt(value, radix);
-    return Number.isInteger(codePoint) && codePoint >= 0 && codePoint <= 0x10ffff
+    return Number.isInteger(codePoint) &&
+      codePoint >= 0 &&
+      codePoint <= 0x10ffff
       ? String.fromCodePoint(codePoint)
       : "\ufffd";
   };
 
   return s
     .replace(/&#(\d+);/g, (_, value: string) => decodeCodePoint(value, 10))
-    .replace(/&#x([\da-f]+);/gi, (_, value: string) => decodeCodePoint(value, 16))
+    .replace(/&#x([\da-f]+);/gi, (_, value: string) =>
+      decodeCodePoint(value, 16)
+    )
     .replace(/&nbsp;/gi, "\u00a0")
     .replace(/&lt;/g, "<")
     .replace(/&gt;/g, ">")
@@ -50,10 +59,18 @@ export function parseInlineHtml(html: string, w: WarningSink): DisNoteInline[] {
       nodes.push({
         type: "link",
         href: linkHref,
-        content: [marks.length ? { type: "text", text: decoded, marks } : { type: "text", text: decoded }],
+        content: [
+          marks.length
+            ? { type: "text", text: decoded, marks }
+            : { type: "text", text: decoded },
+        ],
       });
     } else {
-      nodes.push(marks.length ? { type: "text", text: decoded, marks } : { type: "text", text: decoded });
+      nodes.push(
+        marks.length
+          ? { type: "text", text: decoded, marks }
+          : { type: "text", text: decoded }
+      );
     }
   };
 
@@ -72,13 +89,18 @@ export function parseInlineHtml(html: string, w: WarningSink): DisNoteInline[] {
       if (closing) {
         linkHref = null;
       } else {
-        const hrefMatch = /\bhref\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s>]+))/i.exec(attrs ?? "");
-        const href = decodeEntities(hrefMatch?.[1] ?? hrefMatch?.[2] ?? hrefMatch?.[3] ?? "");
-        if (safeUrl(href, {
-          allowedSchemes: ["https:", "http:", "mailto:", "tel:"],
-          allowRelative: true,
-        }) === null) {
-          w.add("unsafe-url", `Dropped unsafe href "${href}"`);
+        const hrefMatch =
+          /\bhref\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s>]+))/i.exec(attrs ?? "");
+        const href = decodeEntities(
+          hrefMatch?.[1] ?? hrefMatch?.[2] ?? hrefMatch?.[3] ?? ""
+        );
+        if (
+          safeUrl(href, {
+            allowedSchemes: ["https:", "http:", "mailto:", "tel:"],
+            allowRelative: true,
+          }) === null
+        ) {
+          w.add("unsafe-url", LIBRARY_MESSAGES.unsafeHrefDropped(href));
           linkHref = null;
         } else {
           linkHref = href;
@@ -129,7 +151,12 @@ interface HtmlNode {
 }
 
 function parseHtmlToTree(html: string): HtmlNode[] {
-  const root: HtmlNode = { type: "element", name: "root", attrs: "", children: [] };
+  const root: HtmlNode = {
+    type: "element",
+    name: "root",
+    attrs: "",
+    children: [],
+  };
   const stack: HtmlNode[] = [root];
   const source = html
     .replace(/<!--[\s\S]*?-->/g, "")
@@ -163,7 +190,7 @@ function parseHtmlToTree(html: string): HtmlNode[] {
         name: "",
         attrs: "",
         text: textContent,
-        children: []
+        children: [],
       });
       continue;
     }
@@ -172,7 +199,7 @@ function parseHtmlToTree(html: string): HtmlNode[] {
     const isSelfClosing = selfClosing === "/" || voidElements.has(name);
 
     if (closing) {
-      const idx = stack.map(n => n.name).lastIndexOf(name);
+      const idx = stack.map((n) => n.name).lastIndexOf(name);
       if (idx > 0) {
         stack.splice(idx);
       }
@@ -181,7 +208,7 @@ function parseHtmlToTree(html: string): HtmlNode[] {
         type: "element",
         name,
         attrs: attrs ?? "",
-        children: []
+        children: [],
       };
       stack[stack.length - 1].children.push(node);
       if (!isSelfClosing) {
@@ -237,10 +264,16 @@ const BLOCK_ELEMENT_NAMES = new Set([
 ]);
 
 function containsBlockElement(nodes: HtmlNode[]): boolean {
-  return nodes.some((node) => node.type === "element" && BLOCK_ELEMENT_NAMES.has(node.name));
+  return nodes.some(
+    (node) => node.type === "element" && BLOCK_ELEMENT_NAMES.has(node.name)
+  );
 }
 
-function listItemToBlock(node: HtmlNode, ordered: boolean, w: WarningSink): DisNoteBlock {
+function listItemToBlock(
+  node: HtmlNode,
+  ordered: boolean,
+  w: WarningSink
+): DisNoteBlock {
   const inlineNodes: HtmlNode[] = [];
   const nestedLists: HtmlNode[] = [];
   let checkbox: HtmlNode | undefined;
@@ -248,7 +281,10 @@ function listItemToBlock(node: HtmlNode, ordered: boolean, w: WarningSink): DisN
   for (const child of node.children) {
     if (child.name === "ul" || child.name === "ol") {
       nestedLists.push(child);
-    } else if (child.name === "input" && /\btype\s*=\s*(?:"checkbox"|'checkbox'|checkbox)/i.test(child.attrs)) {
+    } else if (
+      child.name === "input" &&
+      /\btype\s*=\s*(?:"checkbox"|'checkbox'|checkbox)/i.test(child.attrs)
+    ) {
       checkbox = child;
     } else {
       inlineNodes.push(child);
@@ -258,7 +294,10 @@ function listItemToBlock(node: HtmlNode, ordered: boolean, w: WarningSink): DisN
   const content = parseInlineHtml(serializeHtml(inlineNodes).trim(), w);
   const children = convertHtmlNodesToBlocks(nestedLists, w);
   if (checkbox) {
-    const block = checklistItem(content as never, /\bchecked(?:\s|=|$)/i.test(checkbox.attrs));
+    const block = checklistItem(
+      content as never,
+      /\bchecked(?:\s|=|$)/i.test(checkbox.attrs)
+    );
     if (children.length > 0) block.children = children;
     return block;
   }
@@ -267,7 +306,10 @@ function listItemToBlock(node: HtmlNode, ordered: boolean, w: WarningSink): DisN
     : bulletListItem(content as never, children);
 }
 
-function convertHtmlNodesToBlocks(nodes: HtmlNode[], w: WarningSink): DisNoteBlock[] {
+function convertHtmlNodesToBlocks(
+  nodes: HtmlNode[],
+  w: WarningSink
+): DisNoteBlock[] {
   const blocks: DisNoteBlock[] = [];
 
   for (const node of nodes) {
@@ -288,28 +330,36 @@ function convertHtmlNodesToBlocks(nodes: HtmlNode[], w: WarningSink): DisNoteBlo
         blocks.push(
           heading(
             Math.min(Number(name[1]), 3) as 1 | 2 | 3,
-            parseInlineHtml(serializeHtml(node.children), w) as never,
-          ),
+            parseInlineHtml(serializeHtml(node.children), w) as never
+          )
         );
         break;
       case "p":
-        blocks.push(paragraph(parseInlineHtml(serializeHtml(node.children), w) as never));
+        blocks.push(
+          paragraph(parseInlineHtml(serializeHtml(node.children), w) as never)
+        );
         break;
       case "div":
         if (containsBlockElement(node.children)) {
           blocks.push(...convertHtmlNodesToBlocks(node.children, w));
         } else {
-          blocks.push(paragraph(parseInlineHtml(serializeHtml(node.children), w) as never));
+          blocks.push(
+            paragraph(parseInlineHtml(serializeHtml(node.children), w) as never)
+          );
         }
         break;
       case "blockquote":
         if (containsBlockElement(node.children)) {
           const nested = convertHtmlNodesToBlocks(node.children, w);
           for (const block of nested) {
-            blocks.push(block.type === "paragraph" ? quote(block.content as never) : block);
+            blocks.push(
+              block.type === "paragraph" ? quote(block.content as never) : block
+            );
           }
         } else {
-          blocks.push(quote(parseInlineHtml(serializeHtml(node.children), w) as never));
+          blocks.push(
+            quote(parseInlineHtml(serializeHtml(node.children), w) as never)
+          );
         }
         break;
       case "hr":
@@ -330,22 +380,33 @@ function convertHtmlNodesToBlocks(nodes: HtmlNode[], w: WarningSink): DisNoteBlo
         };
         const trNodes = findTrNodes(node.children);
         for (const tr of trNodes) {
-          const cellNodes = tr.children.filter(c => c.name === "td" || c.name === "th");
-          const cells = cellNodes.map(cell => parseInlineHtml(serializeHtml(cell.children), w));
+          const cellNodes = tr.children.filter(
+            (c) => c.name === "td" || c.name === "th"
+          );
+          const cells = cellNodes.map((cell) =>
+            parseInlineHtml(serializeHtml(cell.children), w)
+          );
           if (cells.length > 0) {
             rows.push({ cells });
           }
         }
         if (rows.length > 0) {
-          blocks.push(customBlock("table", 1, {
-            props: { rows, textColor: "default" } as unknown as DisNoteBlock["props"],
-          }));
+          blocks.push(
+            customBlock("table", 1, {
+              props: {
+                rows,
+                textColor: "default",
+              } as unknown as DisNoteBlock["props"],
+            })
+          );
         }
         break;
       }
       case "pre": {
-        const codeElement = node.children.find(c => c.name === "code");
-        const codeInner = codeElement ? serializeHtml(codeElement.children) : serializeHtml(node.children);
+        const codeElement = node.children.find((c) => c.name === "code");
+        const codeInner = codeElement
+          ? serializeHtml(codeElement.children)
+          : serializeHtml(node.children);
         const langAttr = codeElement ? codeElement.attrs : node.attrs;
         const lang = /class="language-([^"]+)"/i.exec(langAttr)?.[1] ?? "text";
         blocks.push(codeBlock(decodeEntities(codeInner), lang));
@@ -389,12 +450,18 @@ function convertHtmlNodesToBlocks(nodes: HtmlNode[], w: WarningSink): DisNoteBlo
 }
 
 /** Import a subset of HTML into a DisNoteDocument. Unsupported tags are skipped with a warning. */
-export function importHtml(html: string, options: { now?: string } = {}): ImportResult {
+export function importHtml(
+  html: string,
+  options: { now?: string } = {}
+): ImportResult {
   const w = new WarningSink();
   const parsedTree = parseHtmlToTree(html);
   const blocks = convertHtmlNodesToBlocks(parsedTree, w);
 
-  if (blocks.length === 0) w.add("unsupported-html", "No supported block-level HTML was found");
-  const document = createDocument(options.now ? { blocks, now: options.now } : { blocks });
+  if (blocks.length === 0)
+    w.add("unsupported-html", LIBRARY_MESSAGES.NO_SUPPORTED_HTML);
+  const document = createDocument(
+    options.now ? { blocks, now: options.now } : { blocks }
+  );
   return { document, warnings: w.list };
 }

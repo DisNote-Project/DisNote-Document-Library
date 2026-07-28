@@ -1,3 +1,4 @@
+import { LIBRARY_MESSAGES } from "../../core/messages.js";
 import { createContext, useContext, type ReactNode } from "react";
 import type {
   BlockRegistry,
@@ -41,7 +42,11 @@ export type ReferenceResolution =
   | { status: "missing"; label: string };
 
 export interface ReferenceResolver {
-  (targetType: string, targetId: string, fallbackLabel: string): ReferenceResolution;
+  (
+    targetType: string,
+    targetId: string,
+    fallbackLabel: string
+  ): ReferenceResolution;
 }
 
 export interface AssetResolver {
@@ -71,10 +76,11 @@ export interface DocumentRenderContextValue {
   blockRenderers?: ReactBlockRenderers;
 }
 
-export const DocumentRenderContext = createContext<DocumentRenderContextValue | null>(null);
+export const DocumentRenderContext =
+  createContext<DocumentRenderContextValue | null>(null);
 
 export function useDocumentRenderContext(): DocumentRenderContextValue {
   const ctx = useContext(DocumentRenderContext);
-  if (!ctx) throw new Error("DisNote render components must be used inside <DocumentRenderer>.");
+  if (!ctx) throw new Error(LIBRARY_MESSAGES.RENDER_CONTEXT_REQUIRED);
   return ctx;
 }

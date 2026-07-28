@@ -1,3 +1,4 @@
+import { LIBRARY_MESSAGES } from "../../core/messages.js";
 import type {
   DisNoteBlock,
   DisNoteInline,
@@ -5,7 +6,12 @@ import type {
   TextMark,
 } from "../../core/index.js";
 import type { EnvelopeMeta } from "./adapter.js";
-import type { BnBlock, BnInlineContent, BnStyledText, BnStyles } from "./blocknote-shape.js";
+import type {
+  BnBlock,
+  BnInlineContent,
+  BnStyledText,
+  BnStyles,
+} from "./blocknote-shape.js";
 
 /* ------------------------------- type names ------------------------------- */
 
@@ -91,7 +97,7 @@ const GENERIC_BLOCK_TYPE = "disnoteBlock";
 const CALLOUT_INTENTS = new Set(["info", "warning", "success", "danger"]);
 
 function clampHeadingLevel(value: unknown): 1 | 2 | 3 {
-  return value === 2 ? 2 : (typeof value === "number" && value >= 3) ? 3 : 1;
+  return value === 2 ? 2 : typeof value === "number" && value >= 3 ? 3 : 1;
 }
 
 function readIntent(value: unknown): "info" | "warning" | "success" | "danger" {
@@ -141,7 +147,8 @@ function stylesToMarks(styles: BnStyles | undefined): TextMark[] {
   if (styles.underline) marks.push({ type: "underline" });
   if (styles.strikethrough) marks.push({ type: "strike" });
   if (styles.code) marks.push({ type: "code" });
-  if (styles.textColor && styles.textColor !== "default") marks.push({ type: "textColor", value: styles.textColor });
+  if (styles.textColor && styles.textColor !== "default")
+    marks.push({ type: "textColor", value: styles.textColor });
   if (styles.backgroundColor && styles.backgroundColor !== "default") {
     marks.push({ type: "backgroundColor", value: styles.backgroundColor });
   }
@@ -154,32 +161,60 @@ function textToBn(node: TextInline): BnStyledText {
 
 function bnToText(node: BnStyledText): TextInline {
   const marks = stylesToMarks(node.styles);
-  return marks.length > 0 ? { type: "text", text: node.text, marks } : { type: "text", text: node.text };
+  return marks.length > 0
+    ? { type: "text", text: node.text, marks }
+    : { type: "text", text: node.text };
 }
 
-export function inlineToBn(content: DisNoteInline[] | undefined): BnInlineContent[] {
+export function inlineToBn(
+  content: DisNoteInline[] | undefined
+): BnInlineContent[] {
   if (!content) return [];
   return content.map((node): BnInlineContent => {
     switch (node.type) {
       case "text":
         return textToBn(node);
       case "link":
-        return { type: "link", href: node.href, content: node.content.map(textToBn) };
+        return {
+          type: "link",
+          href: node.href,
+          content: node.content.map(textToBn),
+        };
       case "mention":
-        return { type: "mention", props: { entityType: node.entityType, entityId: node.entityId, label: node.label } };
+        return {
+          type: "mention",
+          props: {
+            entityType: node.entityType,
+            entityId: node.entityId,
+            label: node.label,
+          },
+        };
       case "reference":
-        return { type: "reference", props: { targetType: node.targetType, targetId: node.targetId, label: node.label } };
+        return {
+          type: "reference",
+          props: {
+            targetType: node.targetType,
+            targetId: node.targetId,
+            label: node.label,
+          },
+        };
     }
   });
 }
 
-export function inlineFromBn(content: BnInlineContent[] | undefined): DisNoteInline[] {
+export function inlineFromBn(
+  content: BnInlineContent[] | undefined
+): DisNoteInline[] {
   if (!content) return [];
   return content.map((node): DisNoteInline => {
     if (node.type === "text") return bnToText(node as BnStyledText);
     if (node.type === "link") {
       const link = node as { href: string; content: BnStyledText[] };
-      return { type: "link", href: link.href, content: link.content.map(bnToText) };
+      return {
+        type: "link",
+        href: link.href,
+        content: link.content.map(bnToText),
+      };
     }
     if (node.type === "mention") {
       const p = (node as { props: Record<string, unknown> }).props;
@@ -194,12 +229,14 @@ export function inlineFromBn(content: BnInlineContent[] | undefined): DisNoteInl
       const p = (node as { props: Record<string, unknown> }).props;
       return {
         type: "reference",
-        targetType: (p["targetType"] as "task" | "document" | "message" | "file") ?? "document",
+        targetType:
+          (p["targetType"] as "task" | "document" | "message" | "file") ??
+          "document",
         targetId: String(p["targetId"] ?? ""),
         label: String(p["label"] ?? ""),
       };
     }
-    throw new Error(`Unsupported BlockNote inline content type "${node.type}".`);
+    throw new Error(LIBRARY_MESSAGES.unsupportedInlineContent(node.type));
   });
 }
 
@@ -231,15 +268,25 @@ export function blockToBn(block: DisNoteBlock): BnBlock {
         content = inlineToBn(block.content);
         break;
       case "codeBlock":
-        props["language"] = typeof block.props["language"] === "string" ? block.props["language"] : "text";
-        content = codeText(typeof block.props["code"] === "string" ? (block.props["code"] as string) : "");
+        props["language"] =
+          typeof block.props["language"] === "string"
+            ? block.props["language"]
+            : "text";
+        content = codeText(
+          typeof block.props["code"] === "string"
+            ? (block.props["code"] as string)
+            : ""
+        );
         break;
       case "divider":
         content = [];
         break;
       case "table": {
         props["textColor"] = block.props["textColor"] ?? "default";
-        const rows = (block.props["rows"] as unknown) as Array<{ cells?: DisNoteInline[][] }> || [];
+        const rows =
+          (block.props["rows"] as unknown as Array<{
+            cells?: DisNoteInline[][];
+          }>) || [];
         content = {
           type: "tableContent",
           rows: rows.map((row) => ({
@@ -255,7 +302,8 @@ export function blockToBn(block: DisNoteBlock): BnBlock {
         props["url"] = block.props["url"] || block.props["assetId"] || "";
         props["caption"] = block.props["caption"] || block.props["alt"] || "";
         if (block.props["name"]) props["name"] = block.props["name"];
-        if (typeof block.props["width"] === "number") props["width"] = block.props["width"];
+        if (typeof block.props["width"] === "number")
+          props["width"] = block.props["width"];
         content = [];
         break;
       default:
@@ -283,15 +331,19 @@ export function blockToBn(block: DisNoteBlock): BnBlock {
 }
 
 function readVersion(value: unknown): number {
-  return typeof value === "number" && Number.isInteger(value) && value > 0 ? value : 1;
+  return typeof value === "number" && Number.isInteger(value) && value > 0
+    ? value
+    : 1;
 }
 
 function readPropsJson(value: unknown): DisNoteBlock["props"] {
   if (typeof value !== "string") return {};
   try {
     const parsed: unknown = JSON.parse(value);
-    return typeof parsed === "object" && parsed !== null && !Array.isArray(parsed)
-      ? parsed as DisNoteBlock["props"]
+    return typeof parsed === "object" &&
+      parsed !== null &&
+      !Array.isArray(parsed)
+      ? (parsed as DisNoteBlock["props"])
       : {};
   } catch {
     return {};
@@ -305,9 +357,15 @@ function joinCode(content: BnInlineContent[] | undefined): string {
     .join("");
 }
 
-export function blockFromBn(bn: BnBlock, envelope?: EnvelopeMeta): DisNoteBlock {
+export function blockFromBn(
+  bn: BnBlock,
+  envelope?: EnvelopeMeta
+): DisNoteBlock {
   if (bn.type === GENERIC_BLOCK_TYPE) {
-    const type = typeof bn.props["originalType"] === "string" ? bn.props["originalType"] : "paragraph";
+    const type =
+      typeof bn.props["originalType"] === "string"
+        ? bn.props["originalType"]
+        : "paragraph";
     const props = readPropsJson(bn.props["propsJson"]);
     const block: DisNoteBlock = {
       id: bn.id,
@@ -316,9 +374,13 @@ export function blockFromBn(bn: BnBlock, envelope?: EnvelopeMeta): DisNoteBlock 
       props,
     };
     if (!NO_CONTENT_TYPES.has(type) && type !== "image") {
-      block.content = inlineFromBn(Array.isArray(bn.content) ? bn.content : undefined);
+      block.content = inlineFromBn(
+        Array.isArray(bn.content) ? bn.content : undefined
+      );
     }
-    const children = (bn.children ?? []).map((child) => blockFromBn(child, envelope));
+    const children = (bn.children ?? []).map((child) =>
+      blockFromBn(child, envelope)
+    );
     if (children.length > 0) block.children = children;
     return block;
   }
@@ -337,11 +399,18 @@ export function blockFromBn(bn: BnBlock, envelope?: EnvelopeMeta): DisNoteBlock 
       props["intent"] = readIntent(bn.props["intent"]);
       break;
     case "codeBlock":
-      props["language"] = typeof bn.props["language"] === "string" ? bn.props["language"] : "text";
-      props["code"] = joinCode(Array.isArray(bn.content) ? bn.content : undefined);
+      props["language"] =
+        typeof bn.props["language"] === "string"
+          ? bn.props["language"]
+          : "text";
+      props["code"] = joinCode(
+        Array.isArray(bn.content) ? bn.content : undefined
+      );
       break;
     case "table": {
-      const tableContent = bn.content as unknown as { rows?: Array<{ cells?: BnInlineContent[][] }> };
+      const tableContent = bn.content as unknown as {
+        rows?: Array<{ cells?: BnInlineContent[][] }>;
+      };
       const rows = (tableContent?.rows || []).map((row) => ({
         cells: (row.cells || []).map((cell) => inlineFromBn(cell)),
       }));
@@ -375,10 +444,14 @@ export function blockFromBn(bn: BnBlock, envelope?: EnvelopeMeta): DisNoteBlock 
     props: props as DisNoteBlock["props"],
   };
   if (!NO_CONTENT_TYPES.has(type)) {
-    block.content = inlineFromBn(Array.isArray(bn.content) ? bn.content : undefined);
+    block.content = inlineFromBn(
+      Array.isArray(bn.content) ? bn.content : undefined
+    );
   }
 
-  const children = (bn.children ?? []).map((child) => blockFromBn(child, envelope));
+  const children = (bn.children ?? []).map((child) =>
+    blockFromBn(child, envelope)
+  );
   if (children.length > 0) block.children = children;
   return block;
 }

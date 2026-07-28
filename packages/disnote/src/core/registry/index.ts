@@ -1,9 +1,11 @@
+import { LIBRARY_MESSAGES } from "../messages.js";
 import type { JsonValue } from "../model/json.js";
 import type { DisNoteBlock } from "../model/document.js";
 import type { DocumentIssue } from "../errors/index.js";
 
 /** A block whose props have been validated to a known shape. */
-export interface TypedBlock<Props extends Record<string, JsonValue>> extends DisNoteBlock {
+export interface TypedBlock<Props extends Record<string, JsonValue>>
+  extends DisNoteBlock {
   props: Props;
 }
 
@@ -23,7 +25,9 @@ export interface BlockCapabilities {
  * The core (platform-neutral) part of a block definition. Renderer and editor
  * registrations are composed in their own packages so core never imports React.
  */
-export interface CoreBlockDefinition<Props extends Record<string, JsonValue> = Record<string, JsonValue>> {
+export interface CoreBlockDefinition<
+  Props extends Record<string, JsonValue> = Record<string, JsonValue>
+> {
   readonly type: string;
   readonly version: number;
   readonly capabilities: BlockCapabilities;
@@ -43,7 +47,7 @@ export interface DefineCoreBlockInput<Props extends Record<string, JsonValue>> {
 }
 
 export function defineCoreBlock<Props extends Record<string, JsonValue>>(
-  input: DefineCoreBlockInput<Props>,
+  input: DefineCoreBlockInput<Props>
 ): CoreBlockDefinition<Props> {
   return {
     type: input.type,
@@ -84,10 +88,12 @@ class BlockRegistryImpl implements BlockRegistry {
 
   register(definition: CoreBlockDefinition): BlockRegistry {
     if (this.map.has(definition.type)) {
-      throw new Error(`Block type "${definition.type}" is already registered.`);
+      throw new Error(
+        LIBRARY_MESSAGES.blockTypeAlreadyRegistered(definition.type)
+      );
     }
     if (!Number.isInteger(definition.version) || definition.version < 1) {
-      throw new Error(`Block "${definition.type}" must have a positive integer version.`);
+      throw new Error(LIBRARY_MESSAGES.blockVersionInvalid(definition.type));
     }
     const next = new Map(this.map);
     next.set(definition.type, definition);
@@ -96,7 +102,9 @@ class BlockRegistryImpl implements BlockRegistry {
 }
 
 /** Create a registry, optionally seeded with an initial set of definitions. */
-export function createBlockRegistry(definitions: CoreBlockDefinition[] = []): BlockRegistry {
+export function createBlockRegistry(
+  definitions: CoreBlockDefinition[] = []
+): BlockRegistry {
   let registry: BlockRegistry = new BlockRegistryImpl(new Map());
   for (const def of definitions) registry = registry.register(def);
   return registry;
@@ -112,6 +120,10 @@ export function fail<T>(issues: DocumentIssue[]): ValidationResult<T> {
   return { ok: false, issues };
 }
 
-export function issue(path: string, code: string, message: string): DocumentIssue {
+export function issue(
+  path: string,
+  code: string,
+  message: string
+): DocumentIssue {
   return { path, code, message };
 }

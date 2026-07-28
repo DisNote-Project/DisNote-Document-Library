@@ -1,3 +1,4 @@
+import { LIBRARY_MESSAGES } from "../core/messages.js";
 import type { BlockRegistry, DisNoteDocument } from "../core/index.js";
 import {
   checksum,
@@ -55,10 +56,18 @@ export class InMemoryDocumentRepository implements DocumentRepository {
   async create(input: CreateDocumentInput): Promise<StoredDocument> {
     this.assertValidDocument(input.document);
     if (this.stored.has(input.document.id)) {
-      throw new Error(`Document ${input.document.id} already exists.`);
+      throw new Error(
+        LIBRARY_MESSAGES.documentAlreadyExists(input.document.id)
+      );
     }
-    if ([...this.stored.values()].some((item) => item.slug === input.slug && item.locale === input.locale)) {
-      throw new Error(`Document slug "${input.slug}" already exists for locale "${input.locale}".`);
+    if (
+      [...this.stored.values()].some(
+        (item) => item.slug === input.slug && item.locale === input.locale
+      )
+    ) {
+      throw new Error(
+        LIBRARY_MESSAGES.slugAlreadyExists(input.slug, input.locale)
+      );
     }
     const ts = this.now();
     const stored: StoredDocument = {
@@ -75,7 +84,9 @@ export class InMemoryDocumentRepository implements DocumentRepository {
       updatedAt: ts,
     };
     this.stored.set(stored.id, clone(stored));
-    this.revisions.set(stored.id, [this.makeRevision(input.document, 1, input.actor, "editor", ts)]);
+    this.revisions.set(stored.id, [
+      this.makeRevision(input.document, 1, input.actor, "editor", ts),
+    ]);
     return clone(stored);
   }
 
@@ -84,7 +95,9 @@ export class InMemoryDocumentRepository implements DocumentRepository {
     return stored ? clone(stored) : null;
   }
 
-  async getPublishedBySlug(query: PublishedSlugQuery): Promise<PublishedDocument | null> {
+  async getPublishedBySlug(
+    query: PublishedSlugQuery
+  ): Promise<PublishedDocument | null> {
     for (const stored of this.stored.values()) {
       if (
         stored.slug === query.slug &&
@@ -93,7 +106,8 @@ export class InMemoryDocumentRepository implements DocumentRepository {
         stored.publishedRevision !== undefined
       ) {
         const revision = this.revisionOf(stored.id, stored.publishedRevision);
-        if (revision) return { stored: clone(stored), revision: clone(revision) };
+        if (revision)
+          return { stored: clone(stored), revision: clone(revision) };
       }
     }
     return null;
@@ -105,7 +119,13 @@ export class InMemoryDocumentRepository implements DocumentRepository {
     if (input.document.id !== input.documentId) {
       throw new InvalidDocumentError(
         `Draft document id "${input.document.id}" does not match target "${input.documentId}".`,
-        [{ path: "id", code: "document-id-mismatch", message: "document id must match documentId" }],
+        [
+          {
+            path: "id",
+            code: "document-id-mismatch",
+            message: LIBRARY_MESSAGES.DOCUMENT_ID_MISMATCH,
+          },
+        ]
       );
     }
     this.assertValidDocument(input.document);
@@ -115,13 +135,19 @@ export class InMemoryDocumentRepository implements DocumentRepository {
     if (seen !== undefined) return { ok: true, revision: seen };
 
     if (input.expectedRevision !== stored.currentRevision) {
-      return { ok: false, reason: "revision-conflict", currentRevision: stored.currentRevision };
+      return {
+        ok: false,
+        reason: "revision-conflict",
+        currentRevision: stored.currentRevision,
+      };
     }
 
     const nextRevision = stored.currentRevision + 1;
     const ts = this.now();
     const list = this.revisions.get(input.documentId)!;
-    list.push(this.makeRevision(input.document, nextRevision, input.actor, "editor", ts));
+    list.push(
+      this.makeRevision(input.document, nextRevision, input.actor, "editor", ts)
+    );
     const updated: StoredDocument = {
       ...stored,
       currentRevision: nextRevision,
@@ -136,7 +162,10 @@ export class InMemoryDocumentRepository implements DocumentRepository {
   async publish(input: PublishDocumentInput): Promise<PublishedDocument> {
     const stored = this.requireStored(input.documentId);
     const revision = this.revisionOf(stored.id, input.revision);
-    if (!revision) throw new Error(`Revision ${input.revision} not found for ${stored.id}.`);
+    if (!revision)
+      throw new Error(
+        LIBRARY_MESSAGES.revisionNotFound(input.revision, stored.id)
+      );
     const updated: StoredDocument = {
       ...stored,
       status: "published",
@@ -149,14 +178,22 @@ export class InMemoryDocumentRepository implements DocumentRepository {
 
   async unpublish(input: UnpublishDocumentInput): Promise<void> {
     const stored = this.requireStored(input.documentId);
-    const next: StoredDocument = { ...stored, status: "draft", updatedAt: this.now() };
+    const next: StoredDocument = {
+      ...stored,
+      status: "draft",
+      updatedAt: this.now(),
+    };
     delete next.publishedRevision;
     this.stored.set(stored.id, next);
   }
 
   async archive(input: ArchiveDocumentInput): Promise<void> {
     const stored = this.requireStored(input.documentId);
-    this.stored.set(stored.id, { ...stored, status: "archived", updatedAt: this.now() });
+    this.stored.set(stored.id, {
+      ...stored,
+      status: "archived",
+      updatedAt: this.now(),
+    });
   }
 
   async listRevisions(documentId: string): Promise<DocumentRevisionSummary[]> {
@@ -171,7 +208,10 @@ export class InMemoryDocumentRepository implements DocumentRepository {
     }));
   }
 
-  async getRevision(documentId: string, revision: number): Promise<DocumentRevision | null> {
+  async getRevision(
+    documentId: string,
+    revision: number
+  ): Promise<DocumentRevision | null> {
     const found = this.revisionOf(documentId, revision);
     return found ? clone(found) : null;
   }
@@ -183,7 +223,7 @@ export class InMemoryDocumentRepository implements DocumentRepository {
     revision: number,
     actor: string,
     source: DocumentRevision["source"],
-    ts: string,
+    ts: string
   ): DocumentRevision {
     return {
       documentId: document.id,
@@ -197,13 +237,20 @@ export class InMemoryDocumentRepository implements DocumentRepository {
     };
   }
 
-  private revisionOf(documentId: string, revision: number): DocumentRevision | null {
-    return (this.revisions.get(documentId) ?? []).find((r) => r.revision === revision) ?? null;
+  private revisionOf(
+    documentId: string,
+    revision: number
+  ): DocumentRevision | null {
+    return (
+      (this.revisions.get(documentId) ?? []).find(
+        (r) => r.revision === revision
+      ) ?? null
+    );
   }
 
   private requireStored(id: string): StoredDocument {
     const stored = this.stored.get(id);
-    if (!stored) throw new Error(`Document ${id} not found.`);
+    if (!stored) throw new Error(LIBRARY_MESSAGES.documentNotFound(id));
     return stored;
   }
 
@@ -212,10 +259,16 @@ export class InMemoryDocumentRepository implements DocumentRepository {
     // migration runs. Still enforce the envelope/tree contract at rest, and
     // apply current block validators once the document reaches this schema.
     const validation = validateDocument(document, {
-      registry: document.schemaVersion === CURRENT_SCHEMA_VERSION ? this.registry : undefined,
+      registry:
+        document.schemaVersion === CURRENT_SCHEMA_VERSION
+          ? this.registry
+          : undefined,
     });
     if (!validation.ok) {
-      throw new InvalidDocumentError("Document failed repository validation.", validation.issues);
+      throw new InvalidDocumentError(
+        LIBRARY_MESSAGES.DOCUMENT_REPOSITORY_VALIDATION_FAILED,
+        validation.issues
+      );
     }
   }
 }

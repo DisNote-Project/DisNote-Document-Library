@@ -1,3 +1,4 @@
+import { LIBRARY_MESSAGES } from "../core/messages.js";
 import type {
   AssetReference,
   AssetUploader,
@@ -8,8 +9,14 @@ import { detectMimeType } from "./magic-bytes.js";
 
 export class AssetValidationError extends Error {
   constructor(
-    readonly code: "mime-not-allowed" | "mime-mismatch" | "too-large" | "empty" | "size-mismatch" | "key-collision",
-    message: string,
+    readonly code:
+      | "mime-not-allowed"
+      | "mime-mismatch"
+      | "too-large"
+      | "empty"
+      | "size-mismatch"
+      | "key-collision",
+    message: string
   ) {
     super(message);
     this.name = "AssetValidationError";
@@ -37,7 +44,10 @@ const defaultKey = () => `asset_${globalThis.crypto.randomUUID()}`;
  * randomized storage key, never uses the filename as a path.
  */
 export class InMemoryAssetUploader implements AssetUploader {
-  private readonly store = new Map<string, { bytes: Uint8Array; ref: AssetReference }>();
+  private readonly store = new Map<
+    string,
+    { bytes: Uint8Array; ref: AssetReference }
+  >();
   private readonly allowed: Set<string>;
   private readonly maxSize: number;
   private readonly generateKey: () => string;
@@ -50,27 +60,42 @@ export class InMemoryAssetUploader implements AssetUploader {
     this.toUrl = options.toUrl ?? ((key) => `memory://assets/${key}`);
   }
 
-  async upload(file: UploadFile, _context: UploadContext): Promise<AssetReference> {
+  async upload(
+    file: UploadFile,
+    _context: UploadContext
+  ): Promise<AssetReference> {
     if (file.size <= 0 || file.bytes.length === 0) {
-      throw new AssetValidationError("empty", "Uploaded file is empty");
+      throw new AssetValidationError(
+        "empty",
+        LIBRARY_MESSAGES.UPLOADED_FILE_EMPTY
+      );
     }
-    if (!Number.isSafeInteger(file.size) || file.size !== file.bytes.byteLength) {
+    if (
+      !Number.isSafeInteger(file.size) ||
+      file.size !== file.bytes.byteLength
+    ) {
       throw new AssetValidationError(
         "size-mismatch",
-        `Declared size ${file.size} does not match payload size ${file.bytes.byteLength}`,
+        LIBRARY_MESSAGES.assetSizeMismatch(file.size, file.bytes.byteLength)
       );
     }
     if (!this.allowed.has(file.mimeType)) {
-      throw new AssetValidationError("mime-not-allowed", `MIME "${file.mimeType}" is not allowed`);
+      throw new AssetValidationError(
+        "mime-not-allowed",
+        LIBRARY_MESSAGES.mimeNotAllowed(file.mimeType)
+      );
     }
     if (file.size > this.maxSize) {
-      throw new AssetValidationError("too-large", `File exceeds max size ${this.maxSize} bytes`);
+      throw new AssetValidationError(
+        "too-large",
+        LIBRARY_MESSAGES.fileTooLarge(this.maxSize)
+      );
     }
     const detected = detectMimeType(file.bytes);
     if (detected !== file.mimeType) {
       throw new AssetValidationError(
         "mime-mismatch",
-        `Declared MIME "${file.mimeType}" does not match content "${detected ?? "unknown"}"`,
+        LIBRARY_MESSAGES.assetMimeMismatch(file.mimeType, detected ?? "unknown")
       );
     }
 
@@ -81,7 +106,10 @@ export class InMemoryAssetUploader implements AssetUploader {
       attempts++;
     }
     if (this.store.has(key)) {
-      throw new AssetValidationError("key-collision", "Could not allocate a unique asset key");
+      throw new AssetValidationError(
+        "key-collision",
+        LIBRARY_MESSAGES.ASSET_KEY_COLLISION
+      );
     }
     const ref: AssetReference = {
       assetId: key,

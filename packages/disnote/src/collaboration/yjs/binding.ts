@@ -1,3 +1,4 @@
+import { LIBRARY_MESSAGES } from "../../core/messages.js";
 import * as Y from "yjs";
 import type {
   DisNoteBlock,
@@ -34,23 +35,27 @@ function blockToYMap(block: DisNoteBlock): Y.Map<unknown> {
 
 function inlineToYArray(content: DisNoteInline[]): Y.Array<Y.Map<unknown>> {
   const array = new Y.Array<Y.Map<unknown>>();
-  array.insert(0, content.map((node) => {
-    const map = new Y.Map<unknown>();
-    for (const [key, value] of Object.entries(node)) {
-      if (key === "text" && typeof value === "string") {
-        map.set(key, new Y.Text(value));
-      } else {
-        map.set(key, jsonToYValue(value as JsonValue));
+  array.insert(
+    0,
+    content.map((node) => {
+      const map = new Y.Map<unknown>();
+      for (const [key, value] of Object.entries(node)) {
+        if (key === "text" && typeof value === "string") {
+          map.set(key, new Y.Text(value));
+        } else {
+          map.set(key, jsonToYValue(value as JsonValue));
+        }
       }
-    }
-    return map;
-  }));
+      return map;
+    })
+  );
   return array;
 }
 
 function jsonObjectToYMap(value: Record<string, JsonValue>): Y.Map<unknown> {
   const map = new Y.Map<unknown>();
-  for (const [key, item] of Object.entries(value)) map.set(key, jsonToYValue(item));
+  for (const [key, item] of Object.entries(value))
+    map.set(key, jsonToYValue(item));
   return map;
 }
 
@@ -60,14 +65,15 @@ function jsonToYValue(value: JsonValue): unknown {
     array.insert(0, value.map(jsonToYValue));
     return array;
   }
-  if (typeof value === "object" && value !== null) return jsonObjectToYMap(value);
+  if (typeof value === "object" && value !== null)
+    return jsonObjectToYMap(value);
   return value;
 }
 
 /** Materialize a stable DisNoteDocument snapshot from the current CRDT state. */
 export function snapshotFromYDoc(
   ydoc: Y.Doc,
-  envelope: Omit<DisNoteDocument, "blocks">,
+  envelope: Omit<DisNoteDocument, "blocks">
 ): DisNoteDocument {
   const blocks = ydoc.getArray<Y.Map<unknown>>(BLOCKS_KEY);
   return { ...envelope, blocks: blocks.toArray().map(yMapToBlock) };
@@ -82,11 +88,15 @@ function yMapToBlock(map: Y.Map<unknown>): DisNoteBlock {
   };
   const content = map.get("content");
   if (content instanceof Y.Array) {
-    block.content = content.toArray().map((item) => yMapToJsonObject(item) as unknown as DisNoteInline);
+    block.content = content
+      .toArray()
+      .map((item) => yMapToJsonObject(item) as unknown as DisNoteInline);
   }
   const children = map.get("children");
   if (children instanceof Y.Array) {
-    block.children = children.toArray().map((item) => yMapToBlock(item as Y.Map<unknown>));
+    block.children = children
+      .toArray()
+      .map((item) => yMapToBlock(item as Y.Map<unknown>));
   }
   return block;
 }
@@ -110,7 +120,7 @@ function yValueToJson(value: unknown): JsonValue {
   ) {
     return value;
   }
-  throw new Error("Yjs document contains a value outside the DisNote JSON contract.");
+  throw new Error(LIBRARY_MESSAGES.YJS_VALUE_OUTSIDE_CONTRACT);
 }
 
 export function encodeState(ydoc: Y.Doc): Uint8Array {

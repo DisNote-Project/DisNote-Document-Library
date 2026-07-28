@@ -1,6 +1,17 @@
+import { LIBRARY_MESSAGES } from "../messages.js";
 import type { JsonValue } from "../model/json.js";
-import type { CoreBlockDefinition, BlockCapabilities, ValidationResult } from "./index.js";
-import { defineCoreBlock, ok, fail, issue, createBlockRegistry } from "./index.js";
+import type {
+  CoreBlockDefinition,
+  BlockCapabilities,
+  ValidationResult,
+} from "./index.js";
+import {
+  defineCoreBlock,
+  ok,
+  fail,
+  issue,
+  createBlockRegistry,
+} from "./index.js";
 import type { BlockRegistry } from "./index.js";
 import { extractInlineText } from "../serialization/plaintext.js";
 import { safeUrl } from "../security/index.js";
@@ -68,10 +79,15 @@ export const headingCore = defineCoreBlock<HeadingProps>({
   version: 1,
   capabilities: INLINE,
   validateProps: (input) => {
-    if (!isObject(input)) return fail([issue("props", "invalid", "heading props must be an object")]);
+    if (!isObject(input))
+      return fail([
+        issue("props", "invalid", LIBRARY_MESSAGES.HEADING_PROPS_OBJECT),
+      ]);
     const level = input["level"];
     if (level !== 1 && level !== 2 && level !== 3) {
-      return fail([issue("props.level", "invalid", "heading level must be 1, 2 or 3")]);
+      return fail([
+        issue("props.level", "invalid", LIBRARY_MESSAGES.HEADING_LEVEL_INVALID),
+      ]);
     }
     return ok({ ...input, level });
   },
@@ -129,12 +145,20 @@ export const codeBlockCore = defineCoreBlock<CodeProps>({
   version: 1,
   capabilities: VOID,
   validateProps: (input) => {
-    if (!isObject(input)) return fail([issue("props", "invalid", "codeBlock props must be an object")]);
-    const code = typeof input["code"] === "string" ? (input["code"] as string) : "";
-    const language = typeof input["language"] === "string" ? (input["language"] as string) : "text";
+    if (!isObject(input))
+      return fail([
+        issue("props", "invalid", LIBRARY_MESSAGES.CODE_BLOCK_PROPS_OBJECT),
+      ]);
+    const code =
+      typeof input["code"] === "string" ? (input["code"] as string) : "";
+    const language =
+      typeof input["language"] === "string"
+        ? (input["language"] as string)
+        : "text";
     return ok({ ...input, code, language });
   },
-  toPlainText: (block) => (typeof block.props.code === "string" ? block.props.code : ""),
+  toPlainText: (block) =>
+    typeof block.props.code === "string" ? block.props.code : "",
 });
 
 interface ImageProps extends Record<string, JsonValue> {
@@ -147,14 +171,25 @@ export const imageCore = defineCoreBlock<ImageProps>({
   version: 1,
   capabilities: VOID,
   validateProps: (input) => {
-    if (!isObject(input)) return fail([issue("props", "invalid", "image props must be an object")]);
+    if (!isObject(input))
+      return fail([
+        issue("props", "invalid", LIBRARY_MESSAGES.IMAGE_PROPS_OBJECT),
+      ]);
     if (typeof input["assetId"] !== "string" || input["assetId"].length === 0) {
-      return fail([issue("props.assetId", "required", "image requires a non-empty assetId")]);
+      return fail([
+        issue(
+          "props.assetId",
+          "required",
+          LIBRARY_MESSAGES.IMAGE_ASSET_ID_REQUIRED
+        ),
+      ]);
     }
-    const alt = typeof input["alt"] === "string" ? (input["alt"] as string) : "";
+    const alt =
+      typeof input["alt"] === "string" ? (input["alt"] as string) : "";
     return ok({ ...input, assetId: input["assetId"] as string, alt });
   },
-  toPlainText: (block) => (typeof block.props.alt === "string" ? block.props.alt : ""),
+  toPlainText: (block) =>
+    typeof block.props.alt === "string" ? block.props.alt : "",
 });
 
 export const dividerCore = defineCoreBlock<Record<string, JsonValue>>({
@@ -178,7 +213,9 @@ export const calloutCore = defineCoreBlock<CalloutProps>({
   validateProps: (input) => {
     if (!isObject(input)) return ok({ intent: "info" });
     const raw = input["intent"];
-    const intent = (CALLOUT_INTENTS as readonly string[]).includes(raw as string)
+    const intent = (CALLOUT_INTENTS as readonly string[]).includes(
+      raw as string
+    )
       ? (raw as CalloutProps["intent"])
       : "info";
     return ok({ ...input, intent });
@@ -195,7 +232,9 @@ export const tableCore = defineCoreBlock<Record<string, JsonValue>>({
   validateProps: (input) => {
     if (!isObject(input)) return ok({ rows: [] });
     if (!Array.isArray(input["rows"])) {
-      return fail([issue("props.rows", "invalid", "table rows must be an array")]);
+      return fail([
+        issue("props.rows", "invalid", LIBRARY_MESSAGES.TABLE_ROWS_ARRAY),
+      ]);
     }
     return ok(input);
   },
@@ -210,7 +249,8 @@ export const mathCore = defineCoreBlock<Record<string, JsonValue>>({
     if (!isObject(input)) return ok({ code: "" });
     return ok({ code: typeof input["code"] === "string" ? input["code"] : "" });
   },
-  toPlainText: (block) => (typeof block.props.code === "string" ? block.props.code : ""),
+  toPlainText: (block) =>
+    typeof block.props.code === "string" ? block.props.code : "",
 });
 
 export const tableOfContentsCore = defineCoreBlock<Record<string, JsonValue>>({
@@ -235,7 +275,12 @@ export const syncedBlockCore = defineCoreBlock<Record<string, JsonValue>>({
   capabilities: CONTAINER,
   validateProps: (input) => {
     if (!isObject(input)) return ok({ syncedBlockId: "" });
-    return ok({ syncedBlockId: typeof input["syncedBlockId"] === "string" ? input["syncedBlockId"] : "" });
+    return ok({
+      syncedBlockId:
+        typeof input["syncedBlockId"] === "string"
+          ? input["syncedBlockId"]
+          : "",
+    });
   },
   toPlainText: () => "",
 });
@@ -248,7 +293,8 @@ export const templateButtonCore = defineCoreBlock<Record<string, JsonValue>>({
     if (!isObject(input)) return ok({ label: "Template Button" });
     return ok({
       ...input,
-      label: typeof input["label"] === "string" ? input["label"] : "Template Button",
+      label:
+        typeof input["label"] === "string" ? input["label"] : "Template Button",
     });
   },
   toPlainText: () => "",
@@ -287,17 +333,29 @@ export const bookmarkCore = defineCoreBlock<Record<string, JsonValue>>({
     const url = safeOptionalUrl(input["url"]);
     const image = safeOptionalUrl(input["image"]);
     const issues = [];
-    if (url === null) issues.push(issue("props.url", "unsafe-url", "bookmark URL is unsafe or malformed"));
-    if (image === null) issues.push(issue("props.image", "unsafe-url", "bookmark image URL is unsafe or malformed"));
+    if (url === null)
+      issues.push(
+        issue("props.url", "unsafe-url", LIBRARY_MESSAGES.BOOKMARK_URL_UNSAFE)
+      );
+    if (image === null)
+      issues.push(
+        issue(
+          "props.image",
+          "unsafe-url",
+          LIBRARY_MESSAGES.BOOKMARK_IMAGE_UNSAFE
+        )
+      );
     if (issues.length > 0) return fail(issues);
     return ok({
       url: url ?? "",
       title: typeof input["title"] === "string" ? input["title"] : "",
-      description: typeof input["description"] === "string" ? input["description"] : "",
+      description:
+        typeof input["description"] === "string" ? input["description"] : "",
       image: image ?? "",
     });
   },
-  toPlainText: (block) => (typeof block.props.url === "string" ? block.props.url : ""),
+  toPlainText: (block) =>
+    typeof block.props.url === "string" ? block.props.url : "",
 });
 
 function mediaItem(type: string): CoreBlockDefinition {
@@ -309,11 +367,26 @@ function mediaItem(type: string): CoreBlockDefinition {
       if (!isObject(input)) return ok({ url: "" });
       const url = safeOptionalUrl(input["url"]);
       if (url === null) {
-        return fail([issue("props.url", "unsafe-url", `${type} URL is unsafe or malformed`)]);
+        return fail([
+          issue(
+            "props.url",
+            "unsafe-url",
+            LIBRARY_MESSAGES.mediaUrlUnsafe(type)
+          ),
+        ]);
       }
       const width = input["width"];
-      if (width !== undefined && (typeof width !== "number" || !Number.isFinite(width) || width <= 0)) {
-        return fail([issue("props.width", "invalid", `${type} width must be a positive finite number`)]);
+      if (
+        width !== undefined &&
+        (typeof width !== "number" || !Number.isFinite(width) || width <= 0)
+      ) {
+        return fail([
+          issue(
+            "props.width",
+            "invalid",
+            LIBRARY_MESSAGES.mediaWidthInvalid(type)
+          ),
+        ]);
       }
       return ok({
         url: url ?? "",
@@ -322,7 +395,8 @@ function mediaItem(type: string): CoreBlockDefinition {
         ...(typeof width === "number" ? { width } : {}),
       });
     },
-    toPlainText: (block) => (typeof block.props.url === "string" ? block.props.url : ""),
+    toPlainText: (block) =>
+      typeof block.props.url === "string" ? block.props.url : "",
   });
 }
 
@@ -339,7 +413,8 @@ function dbViewItem(type: string): CoreBlockDefinition {
       if (!isObject(input)) return ok({ databaseId: "" });
       return ok({
         ...input,
-        databaseId: typeof input["databaseId"] === "string" ? input["databaseId"] : "",
+        databaseId:
+          typeof input["databaseId"] === "string" ? input["databaseId"] : "",
         title: typeof input["title"] === "string" ? input["title"] : "Database",
       });
     },
@@ -372,9 +447,14 @@ export const columnCore = defineCoreBlock<Record<string, JsonValue>>({
     const width = input["width"];
     if (
       width !== undefined &&
-      (typeof width !== "number" || !Number.isFinite(width) || width <= 0 || width > 1)
+      (typeof width !== "number" ||
+        !Number.isFinite(width) ||
+        width <= 0 ||
+        width > 1)
     ) {
-      return fail([issue("props.width", "invalid", "column width must be greater than 0 and at most 1")]);
+      return fail([
+        issue("props.width", "invalid", LIBRARY_MESSAGES.COLUMN_WIDTH_INVALID),
+      ]);
     }
     return ok(input);
   },

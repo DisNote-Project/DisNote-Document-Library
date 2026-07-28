@@ -1,10 +1,14 @@
+import { LIBRARY_MESSAGES } from "../../core/messages.js";
 import {
   BlockNoteSchema,
   defaultBlockSpecs,
   defaultInlineContentSpecs,
   defaultStyleSpecs,
 } from "@blocknote/core";
-import { createReactBlockSpec, createReactInlineContentSpec } from "@blocknote/react";
+import {
+  createReactBlockSpec,
+  createReactInlineContentSpec,
+} from "@blocknote/react";
 import { ColumnBlock, ColumnListBlock } from "@blocknote/xl-multi-column";
 import { safeUrl } from "../../core/index.js";
 
@@ -19,7 +23,9 @@ const CALLOUT_ICON: Record<CalloutIntent, string> = {
 };
 
 function normalizeIntent(value: unknown): CalloutIntent {
-  return value === "warning" || value === "success" || value === "danger" ? value : "info";
+  return value === "warning" || value === "success" || value === "danger"
+    ? value
+    : "info";
 }
 
 function safeEditorUrl(value: string): string | null {
@@ -29,7 +35,9 @@ function safeEditorUrl(value: string): string | null {
   });
 }
 
-function collectHeadings(blocks: readonly unknown[]): Array<{ id: string; level: number; text: string }> {
+function collectHeadings(
+  blocks: readonly unknown[]
+): Array<{ id: string; level: number; text: string }> {
   const result: Array<{ id: string; level: number; text: string }> = [];
   const walk = (items: readonly unknown[]): void => {
     for (const item of items) {
@@ -44,7 +52,12 @@ function collectHeadings(blocks: readonly unknown[]): Array<{ id: string; level:
       if (block.type === "heading") {
         result.push({
           id: typeof block.id === "string" ? block.id : "",
-          level: block.props?.["level"] === 2 ? 2 : block.props?.["level"] === 3 ? 3 : 1,
+          level:
+            block.props?.["level"] === 2
+              ? 2
+              : block.props?.["level"] === 3
+              ? 3
+              : 1,
           text: (block.content ?? [])
             .filter((node) => node.type === "text")
             .map((node) => node.text ?? "")
@@ -58,16 +71,19 @@ function collectHeadings(blocks: readonly unknown[]): Array<{ id: string; level:
   return result;
 }
 
-function cloneInsertableBlocks(blocks: readonly unknown[]): Record<string, unknown>[] {
+function cloneInsertableBlocks(
+  blocks: readonly unknown[]
+): Record<string, unknown>[] {
   return blocks.flatMap((item) => {
     if (typeof item !== "object" || item === null) return [];
     const source = item as Record<string, unknown>;
     const clone: Record<string, unknown> = {};
     for (const [key, value] of Object.entries(source)) {
       if (key === "id") continue;
-      clone[key] = key === "children" && Array.isArray(value)
-        ? cloneInsertableBlocks(value)
-        : value;
+      clone[key] =
+        key === "children" && Array.isArray(value)
+          ? cloneInsertableBlocks(value)
+          : value;
     }
     return [clone];
   });
@@ -82,7 +98,10 @@ const calloutSpec = createReactBlockSpec(
   {
     type: "callout",
     propSchema: {
-      intent: { default: "info", values: ["info", "warning", "success", "danger"] },
+      intent: {
+        default: "info",
+        values: ["info", "warning", "success", "danger"],
+      },
     },
     content: "inline",
   },
@@ -90,7 +109,10 @@ const calloutSpec = createReactBlockSpec(
     render: ({ block, editor, contentRef }) => {
       const intent = normalizeIntent(block.props.intent);
       const cycle = (): void => {
-        const next = CALLOUT_ORDER[(CALLOUT_ORDER.indexOf(intent) + 1) % CALLOUT_ORDER.length]!;
+        const next =
+          CALLOUT_ORDER[
+            (CALLOUT_ORDER.indexOf(intent) + 1) % CALLOUT_ORDER.length
+          ]!;
         editor.updateBlock(block, { props: { intent: next } });
       };
       return (
@@ -109,7 +131,7 @@ const calloutSpec = createReactBlockSpec(
         </div>
       );
     },
-  },
+  }
 );
 
 /**
@@ -129,11 +151,14 @@ const genericSpec = createReactBlockSpec(
   },
   {
     render: ({ block, contentRef }) => (
-      <div className="disnote-editor-generic" data-disnote-type={String(block.props.originalType)}>
+      <div
+        className="disnote-editor-generic"
+        data-disnote-type={String(block.props.originalType)}
+      >
         <div ref={contentRef} />
       </div>
     ),
-  },
+  }
 );
 
 const mention = createReactInlineContentSpec(
@@ -148,11 +173,14 @@ const mention = createReactInlineContentSpec(
   },
   {
     render: ({ inlineContent }) => (
-      <span className="disnote-editor-mention" data-entity-id={inlineContent.props.entityId}>
+      <span
+        className="disnote-editor-mention"
+        data-entity-id={inlineContent.props.entityId}
+      >
         @{inlineContent.props.label}
       </span>
     ),
-  },
+  }
 );
 
 const reference = createReactInlineContentSpec(
@@ -167,11 +195,14 @@ const reference = createReactInlineContentSpec(
   },
   {
     render: ({ inlineContent }) => (
-      <span className="disnote-editor-reference" data-target-id={inlineContent.props.targetId}>
+      <span
+        className="disnote-editor-reference"
+        data-target-id={inlineContent.props.targetId}
+      >
         {inlineContent.props.label}
       </span>
     ),
-  },
+  }
 );
 
 const mathSpec = createReactBlockSpec(
@@ -189,7 +220,12 @@ const mathSpec = createReactBlockSpec(
       return (
         <div className="disnote-editor-math" contentEditable={false}>
           <div className="math-preview">🧮 $${code}$$</div>
-          <input className="math-input" value={code} onChange={onChange} placeholder="Enter LaTeX formula..." />
+          <input
+            className="math-input"
+            value={code}
+            onChange={onChange}
+            placeholder="Enter LaTeX formula..."
+          />
         </div>
       );
     },
@@ -203,7 +239,7 @@ const bookmarkSpec = createReactBlockSpec(
       url: { default: "" },
       title: { default: "" },
       description: { default: "" },
-      image: { default: "" }
+      image: { default: "" },
     },
     content: "none",
   },
@@ -212,8 +248,11 @@ const bookmarkSpec = createReactBlockSpec(
       const { url, title, description, image } = block.props;
       if (!url) {
         return (
-          <div className="disnote-editor-bookmark-empty" contentEditable={false}>
-            <span>🔗 Add a Web Bookmark</span>
+          <div
+            className="disnote-editor-bookmark-empty"
+            contentEditable={false}
+          >
+            <span>{LIBRARY_MESSAGES.ADD_WEB_BOOKMARK}</span>
             <input
               type="text"
               placeholder="Paste link here..."
@@ -237,15 +276,29 @@ const bookmarkSpec = createReactBlockSpec(
         <>
           <div className="bookmark-details">
             <div className="bookmark-title">{title || "Link Preview"}</div>
-            <div className="bookmark-desc">{description || "No description available"}</div>
+            <div className="bookmark-desc">
+              {description || "No description available"}
+            </div>
             <div className="bookmark-url">🔗 {url}</div>
           </div>
           {imageUrl && <img className="bookmark-image" src={imageUrl} alt="" />}
         </>
       );
-      return href
-        ? <a href={href} target="_blank" rel="noopener noreferrer" className="disnote-editor-bookmark-card" contentEditable={false}>{body}</a>
-        : <div className="disnote-editor-bookmark-card" contentEditable={false}>{body}</div>;
+      return href ? (
+        <a
+          href={href}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="disnote-editor-bookmark-card"
+          contentEditable={false}
+        >
+          {body}
+        </a>
+      ) : (
+        <div className="disnote-editor-bookmark-card" contentEditable={false}>
+          {body}
+        </div>
+      );
     },
   }
 );
@@ -256,15 +309,24 @@ const tableOfContentsSpec = createReactBlockSpec(
     render: ({ editor }) => {
       const headings = collectHeadings(editor.document as unknown[]);
       return (
-        <nav className="disnote-editor-toc" aria-label="Table of contents" contentEditable={false}>
-          <div className="toc-title">Table of Contents</div>
-          {headings.length === 0
-            ? <div className="toc-item">No headings</div>
-            : headings.map((heading) => (
-              <div key={heading.id} className={`toc-item toc-item--${heading.level}`}>
+        <nav
+          className="disnote-editor-toc"
+          aria-label="Table of contents"
+          contentEditable={false}
+        >
+          <div className="toc-title">{LIBRARY_MESSAGES.TABLE_OF_CONTENTS}</div>
+          {headings.length === 0 ? (
+            <div className="toc-item">{LIBRARY_MESSAGES.NO_HEADINGS}</div>
+          ) : (
+            headings.map((heading) => (
+              <div
+                key={heading.id}
+                className={`toc-item toc-item--${heading.level}`}
+              >
                 {heading.text || "Untitled heading"}
               </div>
-            ))}
+            ))
+          )}
         </nav>
       );
     },
@@ -275,7 +337,11 @@ const breadcrumbSpec = createReactBlockSpec(
   { type: "breadcrumb", propSchema: {}, content: "none" },
   {
     render: () => (
-      <div className="disnote-editor-breadcrumb" data-unresolved="true" contentEditable={false}>
+      <div
+        className="disnote-editor-breadcrumb"
+        data-unresolved="true"
+        contentEditable={false}
+      >
         Breadcrumb unavailable
       </div>
     ),
@@ -291,7 +357,9 @@ const syncedBlockSpec = createReactBlockSpec(
   {
     render: ({ contentRef }) => (
       <div className="disnote-editor-synced-container">
-        <div className="synced-header" contentEditable={false}>🔄 Synced Block</div>
+        <div className="synced-header" contentEditable={false}>
+          {LIBRARY_MESSAGES.SYNCED_BLOCK}
+        </div>
         <div className="synced-body" ref={contentRef} />
       </div>
     ),
@@ -368,16 +436,22 @@ function makeDbViewSpec(type: string, emoji: string) {
       type,
       propSchema: {
         databaseId: { default: "" },
-        title: { default: "Database" }
+        title: { default: "Database" },
       },
       content: "none",
     },
     {
       render: ({ block }) => (
-        <div className="disnote-editor-db-view-widget" data-database-id={block.props.databaseId} contentEditable={false}>
+        <div
+          className="disnote-editor-db-view-widget"
+          data-database-id={block.props.databaseId}
+          contentEditable={false}
+        >
           <div className="db-widget-header">
-            <span>{emoji} {block.props.title} ({type})</span>
-            <small>Database reference</small>
+            <span>
+              {emoji} {block.props.title} ({type})
+            </span>
+            <small>{LIBRARY_MESSAGES.DATABASE_REFERENCE}</small>
           </div>
         </div>
       ),
