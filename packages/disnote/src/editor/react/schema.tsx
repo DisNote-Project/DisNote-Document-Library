@@ -6,6 +6,7 @@ import {
 } from "@blocknote/core";
 import { createReactBlockSpec, createReactInlineContentSpec } from "@blocknote/react";
 import { ColumnBlock, ColumnListBlock } from "@blocknote/xl-multi-column";
+import { safeUrl } from "../../core/index.js";
 
 type CalloutIntent = "info" | "warning" | "success" | "danger";
 
@@ -19,6 +20,57 @@ const CALLOUT_ICON: Record<CalloutIntent, string> = {
 
 function normalizeIntent(value: unknown): CalloutIntent {
   return value === "warning" || value === "success" || value === "danger" ? value : "info";
+}
+
+function safeEditorUrl(value: string): string | null {
+  return safeUrl(value, {
+    allowedSchemes: ["https:", "http:", "mailto:", "tel:"],
+    allowRelative: true,
+  });
+}
+
+function collectHeadings(blocks: readonly unknown[]): Array<{ id: string; level: number; text: string }> {
+  const result: Array<{ id: string; level: number; text: string }> = [];
+  const walk = (items: readonly unknown[]): void => {
+    for (const item of items) {
+      if (typeof item !== "object" || item === null) continue;
+      const block = item as {
+        id?: unknown;
+        type?: unknown;
+        props?: Record<string, unknown>;
+        content?: Array<{ type?: string; text?: string }>;
+        children?: unknown[];
+      };
+      if (block.type === "heading") {
+        result.push({
+          id: typeof block.id === "string" ? block.id : "",
+          level: block.props?.["level"] === 2 ? 2 : block.props?.["level"] === 3 ? 3 : 1,
+          text: (block.content ?? [])
+            .filter((node) => node.type === "text")
+            .map((node) => node.text ?? "")
+            .join(""),
+        });
+      }
+      if (Array.isArray(block.children)) walk(block.children);
+    }
+  };
+  walk(blocks);
+  return result;
+}
+
+function cloneInsertableBlocks(blocks: readonly unknown[]): Record<string, unknown>[] {
+  return blocks.flatMap((item) => {
+    if (typeof item !== "object" || item === null) return [];
+    const source = item as Record<string, unknown>;
+    const clone: Record<string, unknown> = {};
+    for (const [key, value] of Object.entries(source)) {
+      if (key === "id") continue;
+      clone[key] = key === "children" && Array.isArray(value)
+        ? cloneInsertableBlocks(value)
+        : value;
+    }
+    return [clone];
+  });
 }
 
 /**
@@ -167,30 +219,33 @@ const bookmarkSpec = createReactBlockSpec(
               placeholder="Paste link here..."
               onKeyDown={(e) => {
                 if (e.key === "Enter") {
-                  const val = e.currentTarget.value;
-                  editor.updateBlock(block, {
-                    props: {
-                      url: val,
-                      title: val.split("/")[2] || "Web Link",
-                      description: "Web bookmark preview for " + val
-                    }
-                  });
+                  const val = safeEditorUrl(e.currentTarget.value);
+                  if (val) {
+                    editor.updateBlock(block, {
+                      props: { url: val, title: val },
+                    });
+                  }
                 }
               }}
             />
           </div>
         );
       }
-      return (
-        <a href={url} target="_blank" rel="noopener noreferrer" className="disnote-editor-bookmark-card" contentEditable={false}>
+      const href = safeEditorUrl(url);
+      const imageUrl = safeEditorUrl(image);
+      const body = (
+        <>
           <div className="bookmark-details">
             <div className="bookmark-title">{title || "Link Preview"}</div>
             <div className="bookmark-desc">{description || "No description available"}</div>
             <div className="bookmark-url">🔗 {url}</div>
           </div>
-          {image && <img className="bookmark-image" src={image} alt="preview" />}
-        </a>
+          {imageUrl && <img className="bookmark-image" src={imageUrl} alt="" />}
+        </>
       );
+      return href
+        ? <a href={href} target="_blank" rel="noopener noreferrer" className="disnote-editor-bookmark-card" contentEditable={false}>{body}</a>
+        : <div className="disnote-editor-bookmark-card" contentEditable={false}>{body}</div>;
     },
   }
 );
@@ -198,14 +253,21 @@ const bookmarkSpec = createReactBlockSpec(
 const tableOfContentsSpec = createReactBlockSpec(
   { type: "tableOfContents", propSchema: {}, content: "none" },
   {
-    render: () => (
-      <div className="disnote-editor-toc" contentEditable={false}>
-        <div className="toc-title">📖 Table of Contents</div>
-        <div className="toc-item">· Heading 1</div>
-        <div className="toc-item toc-item--2">·· Heading 2</div>
-        <div className="toc-item toc-item--3">··· Heading 3</div>
-      </div>
-    ),
+    render: ({ editor }) => {
+      const headings = collectHeadings(editor.document as unknown[]);
+      return (
+        <nav className="disnote-editor-toc" aria-label="Table of contents" contentEditable={false}>
+          <div className="toc-title">Table of Contents</div>
+          {headings.length === 0
+            ? <div className="toc-item">No headings</div>
+            : headings.map((heading) => (
+              <div key={heading.id} className={`toc-item toc-item--${heading.level}`}>
+                {heading.text || "Untitled heading"}
+              </div>
+            ))}
+        </nav>
+      );
+    },
   }
 );
 
@@ -213,8 +275,8 @@ const breadcrumbSpec = createReactBlockSpec(
   { type: "breadcrumb", propSchema: {}, content: "none" },
   {
     render: () => (
-      <div className="disnote-editor-breadcrumb" contentEditable={false}>
-        Workspace / Documents / <strong>Notion Demo</strong>
+      <div className="disnote-editor-breadcrumb" data-unresolved="true" contentEditable={false}>
+        Breadcrumb unavailable
       </div>
     ),
   }
@@ -244,11 +306,20 @@ const templateButtonSpec = createReactBlockSpec(
   },
   {
     render: ({ block, editor, contentRef }) => {
+      const templateBlocks = cloneInsertableBlocks(block.children ?? []);
       return (
         <div className="disnote-editor-template-container">
-          <button className="template-btn" type="button" contentEditable={false} onClick={() => {
-            editor.insertBlocks([{ type: "paragraph", content: [{ type: "text", text: "New template item", styles: {} }] } as unknown as never], block, "after");
-          }}>
+          <button
+            className="template-btn"
+            type="button"
+            contentEditable={false}
+            disabled={templateBlocks.length === 0}
+            onClick={() => {
+              if (templateBlocks.length > 0) {
+                editor.insertBlocks(templateBlocks as never, block, "after");
+              }
+            }}
+          >
             ➕ {block.props.label}
           </button>
           <div ref={contentRef} style={{ display: "none" }} />
@@ -303,33 +374,10 @@ function makeDbViewSpec(type: string, emoji: string) {
     },
     {
       render: ({ block }) => (
-        <div className="disnote-editor-db-view-widget" contentEditable={false}>
+        <div className="disnote-editor-db-view-widget" data-database-id={block.props.databaseId} contentEditable={false}>
           <div className="db-widget-header">
             <span>{emoji} {block.props.title} ({type})</span>
-            <small>Database View</small>
-          </div>
-          <div className="db-widget-body">
-            <table>
-              <thead>
-                <tr>
-                  <th>Name</th>
-                  <th>Status</th>
-                  <th>Tags</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr>
-                  <td>Sample Item 1</td>
-                  <td><span className="badge badge--done">Done</span></td>
-                  <td><span className="tag">Demo</span></td>
-                </tr>
-                <tr>
-                  <td>Sample Item 2</td>
-                  <td><span className="badge badge--todo">To-do</span></td>
-                  <td><span className="tag">Feature</span></td>
-                </tr>
-              </tbody>
-            </table>
+            <small>Database reference</small>
           </div>
         </div>
       ),

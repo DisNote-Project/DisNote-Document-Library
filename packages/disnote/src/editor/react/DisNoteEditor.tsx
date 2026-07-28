@@ -10,7 +10,16 @@
  * stable surface. Advanced integrations can reach it through the guarded
  * `ExperimentalEditorAccess` escape hatch, which carries no stability guarantee.
  */
-import { useImperativeHandle, useMemo, useRef, forwardRef, type ReactElement, type Ref } from "react";
+import {
+  useEffect,
+  useImperativeHandle,
+  useMemo,
+  useRef,
+  useState,
+  forwardRef,
+  type ReactElement,
+  type Ref,
+} from "react";
 import { BlockNoteView } from "@blocknote/mantine";
 import "@blocknote/mantine/style.css";
 import {
@@ -38,6 +47,11 @@ export interface DisNoteEditorHandle {
   getDocument(): DisNoteDocument;
   insertBlock(block: DisNoteBlock): void;
   setEditable(editable: boolean): void;
+  /**
+   * Vendor-specific access for integrations that cannot use the stable facade.
+   * This API intentionally carries no compatibility guarantee.
+   */
+  getExperimentalAccess(): ExperimentalEditorAccess;
 }
 
 export interface ExperimentalEditorAccess {
@@ -419,6 +433,7 @@ function disNoteSlashItems(editor: {
 
 function DisNoteEditorImpl(props: DisNoteEditorProps, ref: Ref<DisNoteEditorHandle>): ReactElement {
   const adapter = useMemo(() => createBlockNoteAdapter(), []);
+  const [editable, setEditable] = useState(props.editable ?? true);
   const envelopeRef = useRef<BlockNoteEditorDocument["envelope"]>(
     adapter.toEditor(props.initialDocument).envelope,
   );
@@ -427,6 +442,10 @@ function DisNoteEditorImpl(props: DisNoteEditorProps, ref: Ref<DisNoteEditorHand
     schema: disNoteBlockNoteSchema,
     initialContent: adapter.toEditor(props.initialDocument).blocks as never,
   });
+
+  useEffect(() => {
+    setEditable(props.editable ?? true);
+  }, [props.editable]);
 
   const readCurrentDocument = (): DisNoteDocument =>
     adapter.fromEditor({
@@ -446,7 +465,12 @@ function DisNoteEditorImpl(props: DisNoteEditorProps, ref: Ref<DisNoteEditorHand
     },
     setEditable: (editable: boolean) => {
       editor.isEditable = editable;
+      setEditable(editable);
     },
+    getExperimentalAccess: () => ({
+      vendor: "blocknote",
+      getVendorEditor: () => editor,
+    }),
   }));
 
   const handlePaste = (event: React.ClipboardEvent<HTMLDivElement>): void => {
@@ -529,7 +553,7 @@ function DisNoteEditorImpl(props: DisNoteEditorProps, ref: Ref<DisNoteEditorHand
     <div className={props.className ?? "disnote-editor"} onPasteCapture={handlePaste}>
       <BlockNoteView
         editor={editor}
-        editable={props.editable ?? true}
+        editable={editable}
         theme={props.theme ?? "light"}
         slashMenu={false}
         onChange={() => props.onDocumentChange?.(readCurrentDocument())}

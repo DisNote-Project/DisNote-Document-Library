@@ -66,7 +66,8 @@ function updateBlocksInTree(
   blocks: DisNoteBlock[],
   idsToUpdate: Set<string>,
   newType: string,
-  newProps?: Record<string, JsonValue>
+  newProps: Record<string, JsonValue>,
+  newVersion: number,
 ): DisNoteBlock[] {
   return blocks.map(b => {
     let current = b;
@@ -74,13 +75,16 @@ function updateBlocksInTree(
       current = {
         ...b,
         type: newType,
-        props: newProps ? { ...b.props, ...newProps } : b.props
+        version: newVersion,
+        // Props are type-specific, so carrying values from the old type can
+        // create a block that is structurally valid but semantically invalid.
+        props: newProps,
       };
     }
     if (current.children && current.children.length > 0) {
       return {
         ...current,
-        children: updateBlocksInTree(current.children, idsToUpdate, newType, newProps)
+        children: updateBlocksInTree(current.children, idsToUpdate, newType, newProps, newVersion)
       };
     }
     return current;
@@ -92,7 +96,8 @@ export function changeBlocksTypeInRange(
   doc: DisNoteDocument,
   selection: BlockSelection,
   newType: string,
-  newProps?: Record<string, JsonValue>
+  newProps: Record<string, JsonValue> = {},
+  newVersion = 1,
 ): DisNoteDocument {
   const selected = getBlocksInRange(doc, selection);
   if (selected.length === 0) return doc;
@@ -100,7 +105,7 @@ export function changeBlocksTypeInRange(
   const idsToUpdate = new Set(selected.map(b => b.id));
   return {
     ...doc,
-    blocks: updateBlocksInTree(doc.blocks, idsToUpdate, newType, newProps),
+    blocks: updateBlocksInTree(doc.blocks, idsToUpdate, newType, newProps, newVersion),
     metadata: {
       ...doc.metadata,
       updatedAt: new Date().toISOString()

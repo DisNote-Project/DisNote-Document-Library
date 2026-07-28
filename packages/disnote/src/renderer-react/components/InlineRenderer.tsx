@@ -1,15 +1,12 @@
 import { Fragment, type ReactNode } from "react";
-import type { DisNoteInline, TextInline, TextMark } from "../../core/index.js";
+import {
+  safeColor,
+  safeUrl,
+  type DisNoteInline,
+  type TextInline,
+  type TextMark,
+} from "../../core/index.js";
 import { useDocumentRenderContext } from "../context/context.js";
-
-const SAFE_SCHEMES = new Set(["https:", "http:", "mailto:", "tel:"]);
-
-function safeHref(href: string): string | null {
-  const trimmed = href.trim();
-  const match = /^([a-z][a-z0-9+.-]*):/i.exec(trimmed);
-  if (!match) return trimmed;
-  return SAFE_SCHEMES.has(`${match[1]!.toLowerCase()}:`) ? trimmed : null;
-}
 
 function applyMarks(textNode: TextInline, key: number): ReactNode {
   let node: ReactNode = textNode.text;
@@ -31,17 +28,21 @@ function wrapMark(mark: TextMark, child: ReactNode): ReactNode {
       return <s>{child}</s>;
     case "code":
       return <code>{child}</code>;
-    case "textColor":
-      return <span style={{ color: mark.value }}>{child}</span>;
-    case "backgroundColor":
-      return <span style={{ backgroundColor: mark.value }}>{child}</span>;
+    case "textColor": {
+      const color = safeColor(mark.value);
+      return color ? <span style={{ color }}>{child}</span> : child;
+    }
+    case "backgroundColor": {
+      const color = safeColor(mark.value);
+      return color ? <span style={{ backgroundColor: color }}>{child}</span> : child;
+    }
     default:
       return child;
   }
 }
 
 export function InlineRenderer({ content }: { content: DisNoteInline[] | undefined }): ReactNode {
-  const { theme, referenceResolver } = useDocumentRenderContext();
+  const { theme, referenceResolver, urlPolicy } = useDocumentRenderContext();
   if (!content) return null;
 
   return content.map((node, i) => {
@@ -49,7 +50,7 @@ export function InlineRenderer({ content }: { content: DisNoteInline[] | undefin
       case "text":
         return applyMarks(node, i);
       case "link": {
-        const href = safeHref(node.href);
+        const href = safeUrl(node.href, urlPolicy);
         const inner = node.content.map((t, j) => applyMarks(t, j));
         if (!href) return <span key={i}>{inner}</span>;
         // If any text node inside the link has an explicit textColor mark,
@@ -82,7 +83,7 @@ export function InlineRenderer({ content }: { content: DisNoteInline[] | undefin
         const resolution = referenceResolver?.(node.targetType, node.targetId, node.label);
         const label = resolution?.label ?? node.label;
         const resolvedHref = resolution?.status === "resolved" && resolution.href
-          ? safeHref(resolution.href)
+          ? safeUrl(resolution.href, urlPolicy)
           : null;
         if (resolvedHref) {
           return (

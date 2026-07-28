@@ -5,7 +5,7 @@
 > chạy thì dữ liệu đi qua những bước nào. Đọc cùng với `ARCHITECTURE.md` và
 > `DOCUMENT_FORMAT_V1.md`.
 >
-> Phiên bản: 0.1.0 · Đã build & test 68 unit/round-trip/contract test (pass).
+> Phiên bản package: 0.6.0 · Trạng thái hiện tại được kiểm tra bằng `npm run verify`.
 
 ---
 
@@ -21,10 +21,9 @@ thuần), sở hữu bởi DisNote — không phải type của bất kỳ vendo
 
 Ba nguyên tắc chi phối toàn bộ code:
 
-1. **Hướng phụ thuộc một chiều.** Mọi package đều trỏ về `document-core`;
-   `document-core` không import gì cả (không React, không DOM, không database,
-   không BlockNote). Điều này được *ép buộc* bằng ESLint (`.eslintrc.cjs`) và
-   bằng TypeScript project references.
+1. **Hướng phụ thuộc một chiều.** Các subpath đều trỏ về core; entry gốc
+   `@disnote/core` không import React, DOM, database hoặc BlockNote. Điều này
+   được kiểm tra bằng ESLint và TypeScript project references.
 2. **Validate tại biên (boundary).** Dữ liệu từ DB, API, import, plugin, editor
    đều không tin được → luôn chạy qua `validateDocument` trước khi tin.
 3. **Bất biến (immutable).** Mọi phép biến đổi tài liệu trả về object mới, không
@@ -36,19 +35,20 @@ Ba nguyên tắc chi phối toàn bộ code:
 
 | Package | Vai trò | Phụ thuộc | Verify offline |
 |---|---|---|---|
-| `@disnote/document-core` | Model, validation, migration, transformations, serialization | (không) | ✅ build + test |
-| `@disnote/renderer-html` | Render HTML/SSR an toàn | core | ✅ |
-| `@disnote/renderer-react` | `<DocumentRenderer>` | core, React | ✅ test SSR runtime |
-| `@disnote/renderer-native` | Projection cho React Native | core | ✅ |
-| `@disnote/editor-blocknote` | Adapter BlockNote + `<DisNoteEditor>` + i18n + slash | core, (React/BlockNote peer) | ✅ adapter+i18n; facade cần deps |
-| `@disnote/storage-contracts` | Contract repository + in-memory impl | core | ✅ |
-| `@disnote/import-export` | Markdown/HTML import-export (lossy) | core | ✅ |
-| `@disnote/assets` | Kiểm tra upload (MIME + magic bytes) | storage-contracts | ✅ |
-| `@disnote/comments` | Comment threads, mention/reference providers | core | ✅ |
-| `@disnote/search-ai` | Search projection + pipeline AI operations | core | ✅ |
-| `@disnote/legal-content` | Lớp application/domain cho Legal Service | core, storage-contracts | ✅ |
-| `@disnote/collaboration-yjs` | Update log/compaction/snapshot→revision + Yjs binding | core, (Yjs peer) | ✅ core; binding cần Yjs |
-| `@disnote/document-testing` | Fixtures, factories, assertions, contract suite | core, storage-contracts | ✅ |
+| `@disnote/core` | Model, validation, migration, transformations, serialization | (không) | ✅ build + test |
+| `@disnote/core/renderer/html` | Render HTML/SSR an toàn | core | ✅ |
+| `@disnote/core/renderer/react` | `<DocumentRenderer>` | core, React | ✅ test SSR runtime |
+| `@disnote/core/renderer/native` | Projection cho React Native | core | ✅ |
+| `@disnote/core/editor` | Adapter BlockNote thuần | core, BlockNote peer | ✅ |
+| `@disnote/core/editor/react` | `<DisNoteEditor>` + i18n + slash | React/BlockNote/Mantine peer | ✅ |
+| `@disnote/core/storage` | Contract repository + in-memory impl | core | ✅ |
+| `@disnote/core/import-export` | Markdown/HTML import-export (lossy) | core | ✅ |
+| `@disnote/core/assets` | Kiểm tra upload (MIME + magic bytes) | storage-contracts | ✅ |
+| `@disnote/core/comments` | Comment threads, mention/reference providers | core | ✅ |
+| `@disnote/core/search-ai` | Search projection + pipeline AI operations | core | ✅ |
+| `@disnote/core/legal` | Lớp application/domain cho Legal Service | core, storage-contracts | ✅ |
+| `@disnote/core/collaboration` | Update log/compaction/snapshot→revision + Yjs binding | core, (Yjs peer) | ✅ core; binding cần Yjs |
+| `@disnote/core/testing` | Fixtures, factories, assertions, contract suite | core, storage-contracts | ✅ |
 | `presets/*` | `article`, `legal`, `workspace` | core | ✅ |
 
 "Verify offline" = mình đã build bằng `tsc` và chạy test thật trong môi trường
@@ -93,7 +93,7 @@ lưu ID làm nguồn sự thật, `label`/`snapshot` chỉ là fallback hiển t
 
 ---
 
-## 4. `document-core` — trái tim thuần TypeScript
+## 4. Core (`@disnote/core`) — trái tim thuần TypeScript
 
 Đây là package quan trọng nhất. Không import gì bên ngoài, nên test được hoàn
 toàn không cần browser/DB.
@@ -105,8 +105,10 @@ toàn không cần browser/DB.
 dễ đọc:
 
 ```ts
-let doc = createDocument({ metadata: { title: "Hello" } });
-doc = appendBlock(doc, heading(1, [text("Xin chào")])).document;
+const doc = createDocument({
+  metadata: { title: "Hello" },
+  blocks: [heading(1, [text("Xin chào")])],
+});
 ```
 
 `model/ids.ts` sinh ID ổn định (dùng `crypto.randomUUID` nếu có, fallback tự
@@ -190,7 +192,7 @@ lý selection/DOM/clipboard/undo — đó là việc của BlockNote/ProseMirror
 ### 4.7 migrations — ba trục version độc lập
 
 ```
-library:  @disnote/document-core@0.1.0
+library:  @disnote/core@0.1.0
 document: schemaVersion = 1
 block:    callout@1
 ```
@@ -250,7 +252,7 @@ DOM, không HTML) để màn hình RN đọc sớm; component RN đầy đủ đ
 
 ### 6.1 Adapter thuần (không lộ vendor)
 
-`editor-blocknote/src/adapter/` là **thuần TS, không import BlockNote** — nhờ đó
+`packages/disnote/src/editor/adapter/` là **thuần TS, không import BlockNote** — nhờ đó
 test round-trip không cần browser. Cơ chế:
 
 - `blocknote-shape.ts`: định nghĩa *bản sao cấu trúc* của document BlockNote
@@ -277,12 +279,13 @@ canonical JSON. Đây là "lưới an toàn" khi nâng cấp BlockNote: nâng ed
 
 ### 6.2 Facade `<DisNoteEditor>` (subpath `./react`)
 
-Component công khai *không expose* object editor của BlockNote. Handle ổn định:
+Component không expose trực tiếp object editor của BlockNote. Handle công khai:
 
 ```ts
 interface DisNoteEditorHandle {
   focus(): void; getDocument(): DisNoteDocument;
   insertBlock(block): void; setEditable(editable): void;
+  getExperimentalAccess(): ExperimentalEditorAccess;
 }
 ```
 
@@ -303,7 +306,7 @@ roving focus, `LinkEditor` từ chối URL nguy hiểm, `ImageUploadButton` ph�
 
 ## 7. Storage — hợp đồng tách theo capability (Interface Segregation)
 
-`storage-contracts` tách nhỏ: `DocumentReader`, `DraftWriter`,
+Subpath `@disnote/core/storage` tách nhỏ: `DocumentReader`, `DraftWriter`,
 `DocumentPublisher`, `RevisionReader`, `AssetUploader`. Consumer chỉ phụ thuộc
 cái nó cần.
 
@@ -372,14 +375,14 @@ rời** (`content_documents`, `content_document_revisions`) — không nhúng to
 lịch sử revision vào một document.
 
 `examples/nextjs-demo/` là landing: server component fetch published revision →
-validate → migrate → `renderer-html` → metadata → cache theo revision, kèm
+validate → migrate → HTML renderer → metadata → cache theo revision, kèm
 `sitemap.ts` và route `revalidate`. Trang đọc không tải editor.
 
 ---
 
 ## 10. Collaboration (M13) — chỉ sau khi single-user ổn định
 
-`collaboration-yjs` tách làm hai:
+Subpath `@disnote/core/collaboration` tách làm hai:
 
 - **Lõi CRDT-agnostic (test được)**: `InMemoryUpdateStore` = update log +
   **compaction** (khi số update đạt ngưỡng, gộp thành snapshot rồi xóa log — mô
@@ -388,7 +391,7 @@ validate → migrate → `renderer-html` → metadata → cache theo revision, k
   bất biến đã validate** — **presence không bao giờ vào revision**.
 - **Binding Yjs (cần peer `yjs`)**: `src/yjs/binding.ts` map DisNoteDocument ↔
   `Y.Array<Y.Map>`, `encodeStateAsUpdate` / `applyUpdate`, và materialize snapshot
-  để publish. Build riêng bằng `tsconfig.yjs.json`.
+  để publish.
 
 Publish trong chế độ collab: `Yjs state → snapshot ổn định → DisNoteDocument →
 validate → revision bất biến → publish`.
@@ -458,11 +461,11 @@ npm run storybook    # (cần @storybook/react-vite)
 Không cần Jest/Vitest. Mỗi test file là `*.test.ts(x)` cạnh code.
 
 **Build output** mỗi package: ESM, type declarations, source maps, export map
-rõ ràng, tree-shakable (`sideEffects:false`).
+rõ ràng và tree-shakable. Chỉ module editor React được đánh dấu có side effect
+vì phải import CSS của Mantine.
 
-Một số phần build riêng (vì cần peer deps): facade editor
-(`editor-blocknote/tsconfig.react.json`), Yjs binding
-(`collaboration-yjs/tsconfig.yjs.json`).
+Các entry editor React và collaboration được tách bằng export map để consumer
+core/read-only không tải dependency editor hoặc Yjs.
 
 ---
 

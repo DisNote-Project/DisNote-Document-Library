@@ -65,3 +65,54 @@ test("archived document is no longer served publicly", async () => {
   const published = await r.getPublishedBySlug({ slug: "old", locale: "en" });
   assert.equal(published, null);
 });
+
+test("idempotency keys are scoped to a document", async () => {
+  const r = repo();
+  await r.create({ slug: "a", locale: "en", kind: "ARTICLE", title: "A", actor: "u1", document: doc("idem-a", "v1") });
+  await r.create({ slug: "b", locale: "en", kind: "ARTICLE", title: "B", actor: "u1", document: doc("idem-b", "v1") });
+
+  const first = await r.saveDraft({
+    documentId: "idem-a",
+    expectedRevision: 1,
+    document: doc("idem-a", "v2"),
+    idempotencyKey: "same-client-key",
+    actor: "u1",
+  });
+  const second = await r.saveDraft({
+    documentId: "idem-b",
+    expectedRevision: 1,
+    document: doc("idem-b", "v2"),
+    idempotencyKey: "same-client-key",
+    actor: "u1",
+  });
+  assert.deepEqual(first, { ok: true, revision: 2 });
+  assert.deepEqual(second, { ok: true, revision: 2 });
+  assert.equal((await r.listRevisions("idem-b")).length, 2);
+});
+
+test("stored revisions are immutable from caller mutations", async () => {
+  const r = repo();
+  const source = doc("immutable", "original");
+  await r.create({ slug: "immutable", locale: "en", kind: "ARTICLE", title: "Immutable", actor: "u1", document: source });
+  source.blocks[0]!.content = [text("mutated source")];
+
+  const firstRead = await r.getRevision("immutable", 1);
+  assert.equal(firstRead?.plainText, "original");
+  firstRead!.document.blocks[0]!.content = [text("mutated result")];
+  const secondRead = await r.getRevision("immutable", 1);
+  assert.equal(secondRead?.document.blocks[0]?.content?.[0]?.type === "text"
+    ? secondRead.document.blocks[0].content[0].text
+    : "", "original");
+});
+
+test("saveDraft rejects a mismatched document id", async () => {
+  const r = repo();
+  await r.create({ slug: "target", locale: "en", kind: "ARTICLE", title: "Target", actor: "u1", document: doc("target", "v1") });
+  await assert.rejects(() => r.saveDraft({
+    documentId: "target",
+    expectedRevision: 1,
+    document: doc("different", "v2"),
+    idempotencyKey: "mismatch",
+    actor: "u1",
+  }), /does not match target/);
+});

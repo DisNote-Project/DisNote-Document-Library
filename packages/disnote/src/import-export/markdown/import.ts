@@ -9,10 +9,9 @@ import {
   quote,
   codeBlock,
   divider,
+  safeUrl,
 } from "../../core/index.js";
 import { WarningSink, type ImportResult } from "../warnings.js";
-
-const UNSAFE_SCHEME = /^\s*(javascript|vbscript|file|data):/i;
 
 /** Parse inline Markdown (bold, italic, code, links) into DisNote inline nodes. */
 export function parseInline(text: string, w: WarningSink): DisNoteInline[] {
@@ -34,7 +33,10 @@ export function parseInline(text: string, w: WarningSink): DisNoteInline[] {
     if (link) {
       flush();
       const href = link[2]!;
-      if (UNSAFE_SCHEME.test(href)) {
+      if (safeUrl(href, {
+        allowedSchemes: ["https:", "http:", "mailto:", "tel:"],
+        allowRelative: true,
+      }) === null) {
         w.add("unsafe-url", `Dropped unsafe link href "${href}"`);
         nodes.push({ type: "text", text: link[1]! });
       } else {

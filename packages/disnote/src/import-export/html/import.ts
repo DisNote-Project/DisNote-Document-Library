@@ -10,10 +10,9 @@ import {
   codeBlock,
   divider,
   customBlock,
+  safeUrl,
 } from "../../core/index.js";
 import { WarningSink, type ImportResult } from "../warnings.js";
-
-const UNSAFE_SCHEME = /^\s*(javascript|vbscript|file|data):/i;
 
 function decodeEntities(s: string): string {
   const decodeCodePoint = (value: string, radix: number): string => {
@@ -75,7 +74,10 @@ export function parseInlineHtml(html: string, w: WarningSink): DisNoteInline[] {
       } else {
         const hrefMatch = /\bhref\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s>]+))/i.exec(attrs ?? "");
         const href = decodeEntities(hrefMatch?.[1] ?? hrefMatch?.[2] ?? hrefMatch?.[3] ?? "");
-        if (UNSAFE_SCHEME.test(href)) {
+        if (safeUrl(href, {
+          allowedSchemes: ["https:", "http:", "mailto:", "tel:"],
+          allowRelative: true,
+        }) === null) {
           w.add("unsafe-url", `Dropped unsafe href "${href}"`);
           linkHref = null;
         } else {

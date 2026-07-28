@@ -8,7 +8,7 @@ import { detectMimeType } from "./magic-bytes.js";
 
 export class AssetValidationError extends Error {
   constructor(
-    readonly code: "mime-not-allowed" | "mime-mismatch" | "too-large" | "empty",
+    readonly code: "mime-not-allowed" | "mime-mismatch" | "too-large" | "empty" | "size-mismatch" | "key-collision",
     message: string,
   ) {
     super(message);
@@ -29,8 +29,7 @@ export interface UploaderOptions {
 
 const DEFAULT_ALLOWED = ["image/png", "image/jpeg", "image/gif", "image/webp"];
 
-let seq = 0;
-const defaultKey = () => `asset_${(seq++).toString(36)}_${Math.floor(1e6 * 0.5).toString(36)}`;
+const defaultKey = () => `asset_${globalThis.crypto.randomUUID()}`;
 
 /**
  * Reference AssetUploader. Enforces the security rules from the guideline
@@ -55,6 +54,12 @@ export class InMemoryAssetUploader implements AssetUploader {
     if (file.size <= 0 || file.bytes.length === 0) {
       throw new AssetValidationError("empty", "Uploaded file is empty");
     }
+    if (!Number.isSafeInteger(file.size) || file.size !== file.bytes.byteLength) {
+      throw new AssetValidationError(
+        "size-mismatch",
+        `Declared size ${file.size} does not match payload size ${file.bytes.byteLength}`,
+      );
+    }
     if (!this.allowed.has(file.mimeType)) {
       throw new AssetValidationError("mime-not-allowed", `MIME "${file.mimeType}" is not allowed`);
     }
@@ -69,7 +74,15 @@ export class InMemoryAssetUploader implements AssetUploader {
       );
     }
 
-    const key = this.generateKey(); // randomized storage key, not the filename
+    let key = this.generateKey(); // randomized storage key, not the filename
+    let attempts = 0;
+    while (this.store.has(key) && attempts < 3) {
+      key = this.generateKey();
+      attempts++;
+    }
+    if (this.store.has(key)) {
+      throw new AssetValidationError("key-collision", "Could not allocate a unique asset key");
+    }
     const ref: AssetReference = {
       assetId: key,
       url: this.toUrl(key),
@@ -77,8 +90,8 @@ export class InMemoryAssetUploader implements AssetUploader {
       fileName: file.fileName,
       size: file.size,
     };
-    this.store.set(key, { bytes: file.bytes, ref });
-    return ref;
+    this.store.set(key, { bytes: file.bytes.slice(), ref: { ...ref } });
+    return { ...ref };
   }
 
   async resolveUrl(assetId: string): Promise<string | null> {

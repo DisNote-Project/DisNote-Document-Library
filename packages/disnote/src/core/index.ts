@@ -62,9 +62,11 @@ export * from "./migrations/index.js";
 // Errors
 export * from "./errors/index.js";
 
+// Security policies shared by validation and every renderer.
+export * from "./security/index.js";
+
 // Presets
 export * from "./presets.js";
 
 // Selection Engine
 export * from "./selection/selection.js";
-

@@ -8,20 +8,20 @@ collaboration and product services plug into that contract.
 
 | Need | Install/use |
 |---|---|
-| Model, builders, validation, migrations | `@disnote/document-core` |
-| Static SSR HTML | `@disnote/renderer-html` |
-| Read-only React UI | `@disnote/renderer-react` |
-| Read-only React Native UI | `@disnote/renderer-native` |
-| BlockNote conversion only | `@disnote/editor-blocknote` |
-| React editor facade | `@disnote/editor-blocknote/react` |
-| Revision and publishing contracts | `@disnote/storage-contracts` |
-| Markdown/HTML interchange | `@disnote/import-export` |
-| Upload validation | `@disnote/assets` |
-| Comment threads and mentions | `@disnote/comments` |
-| Search projection and AI operations | `@disnote/search-ai` |
-| Legal/article application use cases | `@disnote/legal-content` |
-| Yjs snapshots and update persistence | `@disnote/collaboration-yjs` |
-| Reusable fixtures and repository tests | `@disnote/document-testing` |
+| Model, builders, validation, migrations | `@disnote/core` |
+| Static SSR HTML | `@disnote/core/renderer/html` |
+| Read-only React UI | `@disnote/core/renderer/react` |
+| Read-only React Native UI | `@disnote/core/renderer/native` |
+| BlockNote conversion only | `@disnote/core/editor` |
+| React editor facade | `@disnote/core/editor/react` |
+| Revision and publishing contracts | `@disnote/core/storage` |
+| Markdown/HTML interchange | `@disnote/core/import-export` |
+| Upload validation | `@disnote/core/assets` |
+| Comment threads and mentions | `@disnote/core/comments` |
+| Search projection and AI operations | `@disnote/core/search-ai` |
+| Legal/article application use cases | `@disnote/core/legal` |
+| Yjs snapshots and update persistence | `@disnote/core/collaboration` |
+| Reusable fixtures and repository tests | `@disnote/core/testing` |
 
 Packages are ESM and require Node.js 20.19 or newer for the repository toolchain.
 React packages accept React 18.3 or React 19.
@@ -35,7 +35,7 @@ import {
   paragraph,
   callout,
   text,
-} from "@disnote/document-core";
+} from "@disnote/core";
 
 const document = createDocument({
   id: "doc_launch",
@@ -63,7 +63,7 @@ collaboration snapshots:
 import {
   articleRegistry,
   validateDocument,
-} from "@disnote/document-core";
+} from "@disnote/core";
 
 const result = validateDocument(JSON.parse(requestBody), {
   registry: articleRegistry,
@@ -89,7 +89,7 @@ import {
   findBlock,
   updateBlock,
   visitBlocks,
-} from "@disnote/document-core";
+} from "@disnote/core";
 
 visitBlocks(document, ({ block, depth }) => {
   console.log(depth, block.type, block.id);
@@ -115,7 +115,7 @@ map. Handle typed errors instead of assuming a block exists.
 import {
   createMigrationRegistry,
   validateDocument,
-} from "@disnote/document-core";
+} from "@disnote/core";
 
 const migrations = createMigrationRegistry()
   .registerDocumentMigration(0, 1, migrateV0ToV1)
@@ -134,8 +134,8 @@ not complete until its migration and regression test exist.
 ## 6. Render safe static HTML
 
 ```ts
-import { articleRegistry } from "@disnote/document-core";
-import { renderDocumentToHtml } from "@disnote/renderer-html";
+import { articleRegistry } from "@disnote/core";
+import { renderDocumentToHtml } from "@disnote/core/renderer/html";
 
 const result = renderDocumentToHtml({
   document,
@@ -157,8 +157,8 @@ export without loading an editor.
 ## 7. Render in React
 
 ```tsx
-import { articleRegistry } from "@disnote/document-core";
-import { DocumentRenderer } from "@disnote/renderer-react";
+import { articleRegistry } from "@disnote/core";
+import { DocumentRenderer } from "@disnote/core/renderer/react";
 
 export function Article({ document }: { document: DisNoteDocument }) {
   return (
@@ -203,7 +203,7 @@ Fonts and design tokens belong to the application theme, not persisted JSON.
 Use the root export when you only need conversion:
 
 ```ts
-import { createBlockNoteAdapter } from "@disnote/editor-blocknote";
+import { createBlockNoteAdapter } from "@disnote/core/editor";
 
 const adapter = createBlockNoteAdapter();
 const editorDocument = adapter.toEditor(document);
@@ -221,8 +221,9 @@ mentions and references.
 Install compatible peers:
 
 ```bash
-npm install @disnote/document-core @disnote/editor-blocknote
-npm install react @blocknote/core@0.52.1 @blocknote/react@0.52.1
+npm install @disnote/core react react-dom \
+  @blocknote/core@0.52.1 @blocknote/react@0.52.1 \
+  @blocknote/mantine@0.52.1 @blocknote/xl-multi-column@0.52.1
 ```
 
 ```tsx
@@ -230,7 +231,7 @@ import { useRef } from "react";
 import {
   DisNoteEditor,
   type DisNoteEditorHandle,
-} from "@disnote/editor-blocknote/react";
+} from "@disnote/core/editor/react";
 
 export function Editor({ initialDocument }: Props) {
   const ref = useRef<DisNoteEditorHandle>(null);
@@ -246,8 +247,10 @@ export function Editor({ initialDocument }: Props) {
 ```
 
 The stable handle exposes `focus`, `getDocument`, `insertBlock` and
-`setEditable`. Toolbar, slash menu, link editor and upload button are composable
-UI building blocks; the application wires them to commands and permissions.
+`setEditable`. `getExperimentalAccess()` is an explicitly unstable escape
+hatch to the vendor editor. Toolbar, slash menu, link editor and upload button
+are composable UI building blocks; the application wires them to commands and
+permissions.
 
 Load the editor with `React.lazy` or a framework dynamic import so public/read
 routes do not download the editor vendor bundle.
@@ -255,7 +258,7 @@ routes do not download the editor vendor bundle.
 ## 11. Save revisions safely
 
 ```ts
-import { InMemoryDocumentRepository } from "@disnote/storage-contracts";
+import { InMemoryDocumentRepository } from "@disnote/core/storage";
 
 const repository = new InMemoryDocumentRepository({
   registry: articleRegistry,
@@ -296,7 +299,7 @@ import {
   importMarkdown,
   exportMarkdownLossy,
   importHtml,
-} from "@disnote/import-export";
+} from "@disnote/core/import-export";
 
 const imported = importMarkdown(markdown);
 console.log(imported.document, imported.warnings);
@@ -313,7 +316,7 @@ warnings instead of silently dropping content.
 ## 13. Validate and upload assets
 
 ```ts
-import { InMemoryAssetUploader } from "@disnote/assets";
+import { InMemoryAssetUploader } from "@disnote/core/assets";
 
 const uploader = new InMemoryAssetUploader({
   allowedMimeTypes: ["image/png", "image/jpeg", "image/webp"],
@@ -342,7 +345,7 @@ a private object-store policy.
 Comments are stored outside document revisions:
 
 ```ts
-import { InMemoryCommentStore } from "@disnote/comments";
+import { InMemoryCommentStore } from "@disnote/core/comments";
 
 const comments = new InMemoryCommentStore();
 const thread = comments.createThread({
@@ -366,7 +369,7 @@ import {
   buildSearchProjection,
   applyOperations,
   previewDiff,
-} from "@disnote/search-ai";
+} from "@disnote/core/search-ai";
 
 const projection = buildSearchProjection(document, articleRegistry, 4);
 
@@ -417,7 +420,7 @@ import {
   encodeState,
   snapshotFromYDoc,
   snapshotToRevision,
-} from "@disnote/collaboration-yjs";
+} from "@disnote/core/collaboration";
 
 const ydoc = new Y.Doc();
 seedYDoc(ydoc, document);
@@ -448,7 +451,7 @@ identity service.
 import { test } from "node:test";
 import {
   runDocumentRepositoryContract,
-} from "@disnote/document-testing";
+} from "@disnote/core/testing";
 
 runDocumentRepositoryContract(
   test,

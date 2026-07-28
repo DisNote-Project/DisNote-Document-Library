@@ -80,6 +80,28 @@ export function runDocumentRepositoryContract(
     assert.equal(list.length, 2);
   });
 
+  register("idempotency keys are scoped to one document", async () => {
+    const h = await makeHarness();
+    const firstId = await h.seed({ slug: "idem-a", locale: "en", title: "A", document: h.makeDocument("idem-a", "idem-a", "v1") });
+    const secondId = await h.seed({ slug: "idem-b", locale: "en", title: "B", document: h.makeDocument("idem-b", "idem-b", "v1") });
+    const first = await h.draftWriter.saveDraft({
+      documentId: firstId,
+      expectedRevision: 1,
+      document: h.makeDocument(firstId, "idem-a", "v2"),
+      idempotencyKey: "same",
+      actor: "u1",
+    });
+    const second = await h.draftWriter.saveDraft({
+      documentId: secondId,
+      expectedRevision: 1,
+      document: h.makeDocument(secondId, "idem-b", "v2"),
+      idempotencyKey: "same",
+      actor: "u1",
+    });
+    assert.deepEqual(first, { ok: true, revision: 2 });
+    assert.deepEqual(second, { ok: true, revision: 2 });
+  });
+
   register("published revision is immutable while a new draft is written", async () => {
     const h = await makeHarness();
     const id = await h.seed({ slug: "policy", locale: "en", title: "P", document: h.makeDocument("d", "policy", "live") });

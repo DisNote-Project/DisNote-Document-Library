@@ -67,6 +67,9 @@ test("selection engine changeBlocksTypeInRange updates blocks in range", () => {
 
   const nextDoc = changeBlocksTypeInRange(doc, { anchorBlockId: "b1", focusBlockId: "b2" }, "quote");
   assert.equal(nextDoc.blocks[0]!.type, "quote");
+  assert.equal(nextDoc.blocks[0]!.version, 1);
+  assert.deepEqual(nextDoc.blocks[0]!.props, {});
   assert.equal(nextDoc.blocks[1]!.type, "quote");
+  assert.deepEqual(nextDoc.blocks[1]!.props, {});
   assert.equal(nextDoc.blocks[2]!.type, "bulletListItem");
 });

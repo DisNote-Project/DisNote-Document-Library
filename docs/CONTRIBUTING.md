@@ -21,7 +21,7 @@ npm run build
 
 ## Rules
 
-- `document-core` must not import React, DOM, a database, or BlockNote.
+- The root `@disnote/core` entry must not import React, DOM, a database, or BlockNote.
 - Never change the persisted meaning of an existing block version — bump the
   version and add a migration instead.
 - Unknown blocks must be preserved, never converted to paragraphs.

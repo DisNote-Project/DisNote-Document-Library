@@ -1,6 +1,12 @@
 # Hướng dẫn sử dụng `@disnote/core`
 
-Tài liệu này áp dụng cho `@disnote/core@0.5.0`.
+Tài liệu này áp dụng cho `@disnote/core@0.6.0`.
+
+> **Bạn mới dùng library?** Đừng đọc tài liệu này từ đầu đến cuối. Hãy làm
+> [`Bắt đầu với DisNote Document Library`](BAT_DAU_CHO_NGUOI_MOI.md) trước.
+> Tài liệu đó giải thích sự khác nhau giữa hàm và component, ý nghĩa từng prop,
+> rồi xây một editor + preview tối thiểu từng bước. File hiện tại dùng để tra
+> cứu sau khi bạn đã chạy được ví dụ đầu tiên.
 
 Tài liệu gồm hai phần:
 
@@ -42,10 +48,11 @@ gọi API BlockNote.
 ### 2.1. Ứng dụng có editor React
 
 ```bash
-npm install @disnote/core@0.5.0 \
+npm install @disnote/core@0.6.0 \
   @blocknote/core@0.52.1 \
   @blocknote/react@0.52.1 \
   @blocknote/mantine@0.52.1 \
+  @blocknote/xl-multi-column@0.52.1 \
   react react-dom
 ```
 
@@ -55,7 +62,7 @@ code ứng dụng vẫn import hoàn toàn từ `@disnote/core`.
 ### 2.2. Ứng dụng chỉ render document
 
 ```bash
-npm install @disnote/core@0.5.0 react react-dom
+npm install @disnote/core@0.6.0 react react-dom
 ```
 
 Nếu không dùng editor, bạn không cần cài BlockNote.
@@ -1285,10 +1292,10 @@ interface DocumentCapabilities {
 không nhận type này làm prop; ứng dụng tự dùng nó để quyết định `editable` và
 ẩn/hiện các nút.
 
-`ExperimentalEditorAccess` mô tả một escape hatch vendor
-(`vendor: "blocknote"` và `getVendorEditor()`), nhưng `DisNoteEditorHandle`
-hiện chưa implement interface này. Hãy xem nó là type dự phòng, không dựa vào
-nó trong code production ở phiên bản `0.5.0`.
+`DisNoteEditorHandle.getExperimentalAccess()` trả về
+`ExperimentalEditorAccess` (`vendor: "blocknote"` và `getVendorEditor()`).
+Đây là escape hatch không có cam kết tương thích; code production nên ưu tiên
+các method ổn định của handle.
 
 #### `Toolbar`
 

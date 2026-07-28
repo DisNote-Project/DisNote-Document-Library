@@ -54,6 +54,15 @@ test("AI operations validate against existing block ids", () => {
   assert.ok(issues.some((i) => i.code === "duplicate-id"));
 });
 
+test("AI operation validation simulates earlier operations in the batch", () => {
+  const operations: AIDocumentOperation[] = [
+    { kind: "insert", block: paragraph([text("new")], { id: "new-parent" }) },
+    { kind: "update", blockId: "new-parent", patch: { content: [text("updated")] } },
+    { kind: "insert", parentId: "new-parent", block: paragraph([text("child")], { id: "new-child" }) },
+  ];
+  assert.deepEqual(validateOperations(doc(), operations), []);
+});
+
 test("apply → preview shows a block-level diff and aborts on failure", () => {
   const before = doc();
   const good: AIDocumentOperation[] = [
@@ -73,4 +82,14 @@ test("apply → preview shows a block-level diff and aborts on failure", () => {
   const bad = applyOperations(before, [{ kind: "remove", blockId: "nope" }]);
   assert.equal(bad.ok, false);
   if (!bad.ok) assert.equal(bad.failedIndex, 0);
+});
+
+test("previewDiff reports block moves", () => {
+  const before = doc();
+  const result = applyOperations(before, [{ kind: "move", blockId: "p", index: 0 }]);
+  assert.equal(result.ok, true);
+  if (result.ok) {
+    const diff = previewDiff(before, result.document);
+    assert.ok(diff.some((entry) => entry.blockId === "p" && entry.change === "moved"));
+  }
 });

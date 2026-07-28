@@ -1,5 +1,11 @@
 import type { BlockRegistry, DisNoteDocument } from "../core/index.js";
-import { checksum, extractDocumentPlainText } from "../core/index.js";
+import {
+  checksum,
+  CURRENT_SCHEMA_VERSION,
+  extractDocumentPlainText,
+  InvalidDocumentError,
+  validateDocument,
+} from "../core/index.js";
 import type {
   ArchiveDocumentInput,
   DocumentKind,
@@ -47,6 +53,13 @@ export class InMemoryDocumentRepository implements DocumentRepository {
   }
 
   async create(input: CreateDocumentInput): Promise<StoredDocument> {
+    this.assertValidDocument(input.document);
+    if (this.stored.has(input.document.id)) {
+      throw new Error(`Document ${input.document.id} already exists.`);
+    }
+    if ([...this.stored.values()].some((item) => item.slug === input.slug && item.locale === input.locale)) {
+      throw new Error(`Document slug "${input.slug}" already exists for locale "${input.locale}".`);
+    }
     const ts = this.now();
     const stored: StoredDocument = {
       id: input.document.id,
@@ -61,13 +74,14 @@ export class InMemoryDocumentRepository implements DocumentRepository {
       createdAt: ts,
       updatedAt: ts,
     };
-    this.stored.set(stored.id, stored);
+    this.stored.set(stored.id, clone(stored));
     this.revisions.set(stored.id, [this.makeRevision(input.document, 1, input.actor, "editor", ts)]);
-    return stored;
+    return clone(stored);
   }
 
   async getById(id: string): Promise<StoredDocument | null> {
-    return this.stored.get(id) ?? null;
+    const stored = this.stored.get(id);
+    return stored ? clone(stored) : null;
   }
 
   async getPublishedBySlug(query: PublishedSlugQuery): Promise<PublishedDocument | null> {
@@ -79,7 +93,7 @@ export class InMemoryDocumentRepository implements DocumentRepository {
         stored.publishedRevision !== undefined
       ) {
         const revision = this.revisionOf(stored.id, stored.publishedRevision);
-        if (revision) return { stored, revision };
+        if (revision) return { stored: clone(stored), revision: clone(revision) };
       }
     }
     return null;
@@ -88,8 +102,16 @@ export class InMemoryDocumentRepository implements DocumentRepository {
   async saveDraft(input: SaveDraftInput): Promise<SaveDraftResult> {
     const stored = this.stored.get(input.documentId);
     if (!stored) return { ok: false, reason: "not-found" };
+    if (input.document.id !== input.documentId) {
+      throw new InvalidDocumentError(
+        `Draft document id "${input.document.id}" does not match target "${input.documentId}".`,
+        [{ path: "id", code: "document-id-mismatch", message: "document id must match documentId" }],
+      );
+    }
+    this.assertValidDocument(input.document);
 
-    const seen = this.idempotency.get(input.idempotencyKey);
+    const idempotencyKey = `${input.documentId}:${input.idempotencyKey}`;
+    const seen = this.idempotency.get(idempotencyKey);
     if (seen !== undefined) return { ok: true, revision: seen };
 
     if (input.expectedRevision !== stored.currentRevision) {
@@ -107,7 +129,7 @@ export class InMemoryDocumentRepository implements DocumentRepository {
       updatedAt: ts,
     };
     this.stored.set(stored.id, updated);
-    this.idempotency.set(input.idempotencyKey, nextRevision);
+    this.idempotency.set(idempotencyKey, nextRevision);
     return { ok: true, revision: nextRevision };
   }
 
@@ -122,7 +144,7 @@ export class InMemoryDocumentRepository implements DocumentRepository {
       updatedAt: this.now(),
     };
     this.stored.set(stored.id, updated);
-    return { stored: updated, revision };
+    return { stored: clone(updated), revision: clone(revision) };
   }
 
   async unpublish(input: UnpublishDocumentInput): Promise<void> {
@@ -150,7 +172,8 @@ export class InMemoryDocumentRepository implements DocumentRepository {
   }
 
   async getRevision(documentId: string, revision: number): Promise<DocumentRevision | null> {
-    return this.revisionOf(documentId, revision);
+    const found = this.revisionOf(documentId, revision);
+    return found ? clone(found) : null;
   }
 
   /* ------------------------------- internals ------------------------------ */
@@ -165,7 +188,7 @@ export class InMemoryDocumentRepository implements DocumentRepository {
     return {
       documentId: document.id,
       revision,
-      document,
+      document: clone(document),
       plainText: extractDocumentPlainText(document, this.registry),
       checksum: checksum(document),
       createdBy: actor,
@@ -183,4 +206,20 @@ export class InMemoryDocumentRepository implements DocumentRepository {
     if (!stored) throw new Error(`Document ${id} not found.`);
     return stored;
   }
+
+  private assertValidDocument(document: DisNoteDocument): void {
+    // Legacy block props may only become valid after their registered
+    // migration runs. Still enforce the envelope/tree contract at rest, and
+    // apply current block validators once the document reaches this schema.
+    const validation = validateDocument(document, {
+      registry: document.schemaVersion === CURRENT_SCHEMA_VERSION ? this.registry : undefined,
+    });
+    if (!validation.ok) {
+      throw new InvalidDocumentError("Document failed repository validation.", validation.issues);
+    }
+  }
+}
+
+function clone<T>(value: T): T {
+  return structuredClone(value);
 }

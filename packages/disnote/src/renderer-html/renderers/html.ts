@@ -35,7 +35,7 @@ export interface AssetReference {
 
 export interface RenderWarning {
   blockId: string;
-  code: "unknown-block" | "unsafe-url";
+  code: "unknown-block" | "unsupported-version" | "unsafe-url";
   message: string;
 }
 
@@ -62,7 +62,7 @@ export interface RenderDocumentToHtmlInput {
 const LIST_TYPES = new Set(["bulletListItem", "numberedListItem"]);
 
 export function renderDocumentToHtml(input: RenderDocumentToHtmlInput): HtmlRenderResult {
-  const ctx = new RenderContext(input.registry, input.policy ?? {});
+  const ctx = new RenderContext(input.document, input.registry, input.policy ?? {});
   const html = ctx.renderBlocks(input.document.blocks);
   return {
     html,
@@ -78,6 +78,7 @@ class RenderContext {
   readonly assets: AssetReference[] = [];
 
   constructor(
+    private readonly document: DisNoteDocument,
     private readonly registry: BlockRegistry,
     private readonly policy: HtmlRenderPolicy,
   ) {}
@@ -87,7 +88,13 @@ class RenderContext {
     let i = 0;
     while (i < blocks.length) {
       const block = blocks[i]!;
-      if (LIST_TYPES.has(block.type) && !this.policy.blockRenderers?.[block.type]) {
+      const definition = this.registry.get(block.type);
+      if (
+        LIST_TYPES.has(block.type) &&
+        !this.policy.blockRenderers?.[block.type] &&
+        definition !== undefined &&
+        block.version <= definition.version
+      ) {
         const tag = block.type === "bulletListItem" ? "ul" : "ol";
         const group: DisNoteBlock[] = [];
         while (i < blocks.length && blocks[i]!.type === block.type) {
@@ -119,13 +126,18 @@ class RenderContext {
         escape: escapeHtml,
       });
     }
+    const definition = this.registry.get(block.type);
+    if (!definition) return this.renderUnknown(block, "unknown-block");
+    if (block.version > definition.version) {
+      return this.renderUnknown(block, "unsupported-version");
+    }
 
     switch (block.type) {
       case "paragraph":
         return `<p>${this.renderInline(block.content)}</p>`;
       case "heading": {
         const level = clampLevel(block.props["level"]);
-        return `<h${level}>${this.renderInline(block.content)}</h${level}>`;
+        return `<h${level} id="${escapeHtml(block.id)}">${this.renderInline(block.content)}</h${level}>`;
       }
       case "quote":
         return `<blockquote>${this.renderInline(block.content)}</blockquote>`;
@@ -156,7 +168,7 @@ class RenderContext {
         const alt = typeof block.props["alt"] === "string" ? (block.props["alt"] as string) : "";
         this.assets.push({ assetId, alt });
         const url = this.policy.resolveAssetUrl?.(assetId);
-        const src = url ? safeHref(url, this.policy.link) : null;
+        const src = url ? this.safeBlockUrl(block, url) : null;
         if (!src) return `<figure data-asset="${escapeHtml(assetId)}"><figcaption>${escapeHtml(alt)}</figcaption></figure>`;
         return `<figure><img src="${escapeHtml(src)}" alt="${escapeHtml(alt)}" loading="lazy"/></figure>`;
       }
@@ -175,17 +187,25 @@ class RenderContext {
       case "bookmark": {
         const url = typeof block.props["url"] === "string" ? block.props["url"] : "";
         const title = typeof block.props["title"] === "string" ? block.props["title"] : "Web Link";
-        return `<div class="disnote-bookmark"><a href="${escapeHtml(url)}">${escapeHtml(title)}</a></div>`;
+        const href = this.safeBlockUrl(block, url);
+        return href
+          ? `<div class="disnote-bookmark"><a href="${escapeHtml(href)}" rel="noopener noreferrer">${escapeHtml(title)}</a></div>`
+          : `<div class="disnote-bookmark">${escapeHtml(title)}</div>`;
       }
-      case "tableOfContents":
-        return `<div class="disnote-toc">[Table of Contents]</div>`;
+      case "tableOfContents": {
+        const items = extractHeadings(this.document)
+          .map((heading) =>
+            `<li data-level="${heading.level}"><a href="#${escapeHtml(encodeURIComponent(heading.blockId))}">${escapeHtml(heading.text || "Untitled heading")}</a></li>`)
+          .join("");
+        return `<nav class="disnote-toc" aria-label="Table of contents"><ol>${items}</ol></nav>`;
+      }
       case "breadcrumb":
-        return `<div class="disnote-breadcrumb">[Breadcrumbs]</div>`;
+        return `<div class="disnote-breadcrumb" data-unresolved="true">Breadcrumb unavailable</div>`;
       case "syncedBlock":
-        return `<div class="disnote-synced">${block.children ? this.renderBlocks(block.children) : ""}</div>`;
+        return `<div class="disnote-synced">${this.renderInline(block.content)}${block.children ? this.renderBlocks(block.children) : ""}</div>`;
       case "templateButton": {
         const label = typeof block.props["label"] === "string" ? block.props["label"] : "Template Button";
-        return `<button class="disnote-template">${escapeHtml(label)}</button>`;
+        return `<span class="disnote-template" data-readonly="true">${escapeHtml(label)}</span>`;
       }
       case "toggleHeading1":
       case "toggleHeading2":
@@ -196,16 +216,21 @@ class RenderContext {
       }
       case "video": {
         const url = typeof block.props["url"] === "string" ? block.props["url"] : "";
-        return `<figure><video src="${escapeHtml(url)}" controls></video></figure>`;
+        const src = this.safeBlockUrl(block, url);
+        return src ? `<figure><video src="${escapeHtml(src)}" controls></video></figure>` : "<figure></figure>";
       }
       case "audio": {
         const url = typeof block.props["url"] === "string" ? block.props["url"] : "";
-        return `<figure><audio src="${escapeHtml(url)}" controls></audio></figure>`;
+        const src = this.safeBlockUrl(block, url);
+        return src ? `<figure><audio src="${escapeHtml(src)}" controls></audio></figure>` : "<figure></figure>";
       }
       case "file": {
         const url = typeof block.props["url"] === "string" ? block.props["url"] : "";
         const name = typeof block.props["name"] === "string" ? block.props["name"] : "Attachment";
-        return `<div class="disnote-file"><a href="${escapeHtml(url)}">${escapeHtml(name)}</a></div>`;
+        const href = this.safeBlockUrl(block, url);
+        return href
+          ? `<div class="disnote-file"><a href="${escapeHtml(href)}">${escapeHtml(name)}</a></div>`
+          : `<div class="disnote-file">${escapeHtml(name)}</div>`;
       }
       case "tableDb":
       case "board":
@@ -215,21 +240,40 @@ class RenderContext {
       case "timeline":
       case "map": {
         const title = typeof block.props["title"] === "string" ? block.props["title"] : "Database";
-        return `<div class="disnote-database" data-view="${escapeHtml(block.type)}"><h3>📊 ${escapeHtml(title)}</h3></div>`;
+        const databaseId = typeof block.props["databaseId"] === "string" ? block.props["databaseId"] : "";
+        return `<div class="disnote-database" data-view="${escapeHtml(block.type)}" data-database-id="${escapeHtml(databaseId)}"><h3>${escapeHtml(title)}</h3></div>`;
       }
       default:
-        return this.renderUnknown(block);
+        return this.renderUnknown(block, "unknown-block");
     }
   }
 
-  private renderUnknown(block: DisNoteBlock): string {
+  private renderUnknown(
+    block: DisNoteBlock,
+    code: "unknown-block" | "unsupported-version",
+  ): string {
     this.warnings.push({
       blockId: block.id,
-      code: "unknown-block",
-      message: `Unknown block type "${block.type}" rendered as read-only fallback.`,
+      code,
+      message: code === "unsupported-version"
+        ? `Block "${block.type}" version ${block.version} is newer than this renderer supports.`
+        : `Unknown block type "${block.type}" rendered as read-only fallback.`,
     });
     // Preserve — never silently convert to a paragraph, never execute.
     return `<div class="disnote-unknown-block" data-type="${escapeHtml(block.type)}" data-block-id="${escapeHtml(block.id)}">${escapeHtml(block.type)}</div>`;
+  }
+
+  private safeBlockUrl(block: DisNoteBlock, value: string): string | null {
+    if (value.length === 0) return null;
+    const safe = safeHref(value, this.policy.link);
+    if (!safe) {
+      this.warnings.push({
+        blockId: block.id,
+        code: "unsafe-url",
+        message: `Dropped unsafe URL from "${block.type}" block.`,
+      });
+    }
+    return safe;
   }
 
   renderInline(content: DisNoteInline[] | undefined): string {

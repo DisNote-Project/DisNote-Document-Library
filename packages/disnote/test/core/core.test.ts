@@ -16,6 +16,7 @@ import {
   heading,
   callout,
   bulletListItem,
+  customBlock,
   text,
   validateDocument,
   canonicalJson,
@@ -158,6 +159,46 @@ test("validation rejects future schemas and content unsupported by void blocks",
   }
 });
 
+test("validation enforces the complete metadata and inline contracts", () => {
+  const invalid = createDocument({ now: "2026-01-01T00:00:00.000Z" });
+  (invalid.metadata as unknown as Record<string, unknown>)["title"] = { unsafe: true };
+  (invalid.metadata as unknown as Record<string, unknown>)["locale"] = "xx";
+  (invalid.metadata as unknown as Record<string, unknown>)["tags"] = [123];
+  invalid.blocks = [
+    paragraph([
+      {
+        type: "mention",
+        entityType: "workspace",
+        entityId: "",
+        label: "Broken",
+      } as never,
+    ]),
+  ];
+
+  const result = validateDocument(invalid, { registry });
+  assert.equal(result.ok, false);
+  if (!result.ok) {
+    const paths = new Set(result.issues.map((entry) => entry.path));
+    assert.ok(paths.has("metadata.title"));
+    assert.ok(paths.has("metadata.locale"));
+    assert.ok(paths.has("metadata.tags"));
+    assert.ok([...paths].some((path) => path.endsWith(".entityType")));
+    assert.ok([...paths].some((path) => path.endsWith(".entityId")));
+  }
+});
+
+test("validation rejects registered block versions newer than the local definition", () => {
+  const document = createDocument({
+    now: "2026-01-01T00:00:00.000Z",
+    blocks: [customBlock("paragraph", 2, { content: [text("future")] })],
+  });
+  const result = validateDocument(document, { registry });
+  assert.equal(result.ok, false);
+  if (!result.ok) {
+    assert.ok(result.issues.some((entry) => entry.code === "unsupported-block-version"));
+  }
+});
+
 test("canonical serialization is deterministic and checksum stable", () => {
   const a = createDocument({ id: "doc_c", now: "2026-01-01T00:00:00.000Z", blocks: [paragraph([text("x")], { id: "p" })] });
   // Same document with keys inserted in a different order.
@@ -215,6 +256,27 @@ test("block migration bumps a block version and reports it", () => {
 test("preset carries a registry and depth policy", () => {
   assert.equal(articlePreset.registry.has("callout"), true);
   assert.equal(articlePreset.maxDepth, 4);
+});
+
+test("validation rejects non-ISO dates and safely bounds nesting depth", () => {
+  const malformedDate = createDocument({ blocks: [] });
+  malformedDate.metadata.createdAt = "01/02/2026";
+  const dateResult = validateDocument(malformedDate);
+  assert.equal(dateResult.ok, false);
+
+  let nested = paragraph([text("leaf")]);
+  for (let index = 0; index < 101; index += 1) {
+    nested = {
+      ...paragraph(),
+      id: `nested-${index}`,
+      children: [nested],
+    };
+  }
+  const depthResult = validateDocument(createDocument({ blocks: [nested] }));
+  assert.equal(depthResult.ok, false);
+  if (!depthResult.ok) {
+    assert.ok(depthResult.issues.some((issue) => issue.code === "max-depth"));
+  }
 });
 
 test("Vietnamese content survives serialization and plain-text", () => {

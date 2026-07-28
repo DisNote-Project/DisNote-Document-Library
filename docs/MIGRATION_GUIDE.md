@@ -3,7 +3,7 @@
 Three independent version axes:
 
 ```
-library:  @disnote/document-core@0.1.0
+library:  @disnote/core@0.1.0
 document: schemaVersion = 1
 block:    callout@1
 ```

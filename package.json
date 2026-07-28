@@ -21,9 +21,11 @@
     "verify": "npm run typecheck && npm run lint && npm test && npm run build && npm run build:examples && npm run build-storybook",
     "changeset": "changeset",
     "release:status": "changeset status",
+    "release:preflight": "node scripts/release-preflight.mjs",
+    "release:dry-run": "npm run verify && npm pack --workspace @disnote/core --dry-run",
     "version-packages": "changeset version && npm install --package-lock-only --ignore-scripts",
-    "release": "npm run verify && changeset publish",
-    "clean": "rimraf packages/*/dist packages/*/*.tsbuildinfo || true"
+    "release": "npm run release:preflight && npm run verify && changeset publish",
+    "clean": "rimraf --glob \"packages/*/dist\" \"packages/*/*.tsbuildinfo\""
   },
   "devDependencies": {
     "@changesets/cli": "^2.31.1",
@@ -33,12 +35,14 @@
     "@storybook/addon-essentials": "^8.6.14",
     "@storybook/react": "^8.6.14",
     "@storybook/react-vite": "^8.6.14",
+    "@blocknote/xl-multi-column": "^0.52.1",
     "@types/node": "^20.11.0",
     "@types/react": "^19.2.2",
     "eslint": "^10.7.0",
     "postcss": "^8.5.22",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
+    "rimraf": "^6.1.3",
     "sharp": "^0.35.0",
     "storybook": "^8.6.14",
     "tsx": "^4.16.0",
@@ -53,8 +57,5 @@
     "vite": "6.4.3",
     "postcss": "^8.5.22",
     "sharp": "^0.35.0"
-  },
-  "dependencies": {
-    "@blocknote/xl-multi-column": "^0.52.1"
   }
 }

@@ -1,4 +1,5 @@
 import type { CollabSnapshot, CollabUpdate, UpdatePersistence } from "../contracts.js";
+import { encodeStateVectorFromUpdate, mergeUpdates } from "yjs";
 
 export interface UpdateStoreOptions {
   now?: () => string;
@@ -9,20 +10,14 @@ export interface UpdateStoreOptions {
 }
 
 function defaultMerge(updates: Uint8Array[]): Uint8Array {
-  const total = updates.reduce((n, u) => n + u.length, 0);
-  const out = new Uint8Array(total);
-  let offset = 0;
-  for (const u of updates) {
-    out.set(u, offset);
-    offset += u.length;
-  }
-  return out;
+  return mergeUpdates(updates);
 }
 
 /**
- * CRDT-agnostic update log with compaction. Mirrors the guideline's
+ * Yjs update log with compaction. Mirrors the guideline's
  * `document_collab_updates` / `document_collab_snapshots` design (section 23.4)
- * without binding to Yjs, so the persistence + compaction logic is testable.
+ * and uses Yjs' structural merge format so a compacted payload remains a valid
+ * update. Concatenating update byte arrays silently discards later updates.
  */
 export class InMemoryUpdateStore implements UpdatePersistence {
   private readonly updates = new Map<string, CollabUpdate[]>();
@@ -42,24 +37,25 @@ export class InMemoryUpdateStore implements UpdatePersistence {
     const list = this.updates.get(documentId) ?? [];
     const sequence = (this.seq.get(documentId) ?? 0) + 1;
     this.seq.set(documentId, sequence);
-    list.push({ documentId, sequence, update, createdAt: this.now() });
+    list.push({ documentId, sequence, update: update.slice(), createdAt: this.now() });
     this.updates.set(documentId, list);
     if (list.length >= this.threshold) await this.compact(documentId);
   }
 
   async loadUpdates(documentId: string): Promise<Uint8Array[]> {
     const snapshot = this.snapshots.get(documentId);
-    const updates = (this.updates.get(documentId) ?? []).map((u) => u.update);
-    return snapshot ? [snapshot.snapshot, ...updates] : updates;
+    const updates = (this.updates.get(documentId) ?? []).map((u) => u.update.slice());
+    return snapshot ? [snapshot.snapshot.slice(), ...updates] : updates;
   }
 
   async compact(documentId: string): Promise<void> {
     const payloads = await this.loadUpdates(documentId);
     if (payloads.length === 0) return;
+    const merged = this.merge(payloads).slice();
     this.snapshots.set(documentId, {
       documentId,
-      stateVector: new Uint8Array([payloads.length]),
-      snapshot: this.merge(payloads),
+      stateVector: encodeStateVectorFromUpdate(merged),
+      snapshot: merged,
       createdAt: this.now(),
     });
     this.updates.set(documentId, []); // updates folded into the snapshot

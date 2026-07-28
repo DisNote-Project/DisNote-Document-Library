@@ -33,30 +33,32 @@ export class InMemoryCommentStore {
       id: this.genId(),
       documentId: input.documentId,
       revisionBase: input.revisionBase,
-      anchor: input.anchor,
+      anchor: clone(input.anchor),
       status: "open",
       orphaned: false,
       comments: [{ id: this.genId(), author: input.author, body: input.body, createdAt: ts }],
     };
     this.threads.set(thread.id, thread);
-    return thread;
+    return clone(thread);
   }
 
   addComment(threadId: string, author: string, body: string): CommentEntry {
     const thread = this.require(threadId);
     const entry: CommentEntry = { id: this.genId(), author, body, createdAt: this.now() };
     thread.comments.push(entry);
-    return entry;
+    return clone(entry);
   }
 
   setStatus(threadId: string, status: "open" | "resolved"): CommentThread {
     const thread = this.require(threadId);
     thread.status = status;
-    return thread;
+    return clone(thread);
   }
 
   listForDocument(documentId: string): CommentThread[] {
-    return [...this.threads.values()].filter((t) => t.documentId === documentId);
+    return [...this.threads.values()]
+      .filter((t) => t.documentId === documentId)
+      .map(clone);
   }
 
   /**
@@ -78,4 +80,8 @@ export class InMemoryCommentStore {
     if (!t) throw new Error(`Comment thread ${id} not found`);
     return t;
   }
+}
+
+function clone<T>(value: T): T {
+  return structuredClone(value);
 }

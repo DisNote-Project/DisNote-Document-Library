@@ -9,16 +9,32 @@ const NOW = "2026-01-01T00:00:00.000Z";
 
 test("update store appends and compacts at the threshold", async () => {
   const store = new InMemoryUpdateStore({ now: () => NOW, compactThreshold: 3 });
-  await store.appendUpdate("d1", new Uint8Array([1]));
-  await store.appendUpdate("d1", new Uint8Array([2]));
+  const source = new Y.Doc();
+  const updates: Uint8Array[] = [];
+  source.on("update", (update: Uint8Array) => updates.push(update));
+  source.getText("content").insert(0, "A");
+  source.getText("content").insert(1, "B");
+  source.getText("content").insert(2, "C");
+
+  await store.appendUpdate("d1", updates[0]!);
+  await store.appendUpdate("d1", updates[1]!);
   assert.equal(store.updateCount("d1"), 2);
   assert.equal(store.hasSnapshot("d1"), false);
-  await store.appendUpdate("d1", new Uint8Array([3])); // triggers compaction
+  await store.appendUpdate("d1", updates[2]!); // triggers compaction
   assert.equal(store.hasSnapshot("d1"), true);
   assert.equal(store.updateCount("d1"), 0);
   const loaded = await store.loadUpdates("d1");
   assert.equal(loaded.length, 1); // just the compacted snapshot
-  assert.deepEqual([...loaded[0]!], [1, 2, 3]);
+  assert.deepEqual(
+    [...Y.encodeStateVectorFromUpdate(loaded[0]!)],
+    [...Y.encodeStateVector(source)],
+  );
+
+  // Returned bytes are copies; a caller cannot corrupt the stored snapshot.
+  loaded[0]![0] = loaded[0]![0]! ^ 0xff;
+  const restored = new Y.Doc();
+  Y.applyUpdate(restored, (await store.loadUpdates("d1"))[0]!);
+  assert.equal(restored.getText("content").toString(), "ABC");
 });
 
 test("snapshot converts to an immutable, validated revision (no presence)", () => {

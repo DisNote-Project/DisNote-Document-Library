@@ -1,19 +1,29 @@
 import type { ReactNode } from "react";
-import type { DisNoteBlock, DisNoteInline } from "../../core/index.js";
+import {
+  safeUrl,
+  type DisNoteBlock,
+  type DisNoteInline,
+} from "../../core/index.js";
 import { InlineRenderer } from "./InlineRenderer.js";
 import { useDocumentRenderContext } from "../context/context.js";
 
 const LIST_TYPES = new Set(["bulletListItem", "numberedListItem"]);
-const SAFE_ASSET_SCHEME = /^(https?):/i;
+const SAFE_INLINE_IMAGE = /^data:image\/(?:png|jpe?g|gif|webp|avif);base64,/i;
 
 /** Render a list of blocks, grouping consecutive list items into <ul>/<ol>. */
 export function BlockList({ blocks }: { blocks: DisNoteBlock[] }): ReactNode {
-  const { blockRenderers } = useDocumentRenderContext();
+  const { blockRenderers, registry } = useDocumentRenderContext();
   const out: ReactNode[] = [];
   let i = 0;
   while (i < blocks.length) {
     const block = blocks[i]!;
-    if (LIST_TYPES.has(block.type) && !blockRenderers?.[block.type]) {
+    const definition = registry.get(block.type);
+    if (
+      LIST_TYPES.has(block.type) &&
+      !blockRenderers?.[block.type] &&
+      definition !== undefined &&
+      block.version <= definition.version
+    ) {
       const type = block.type;
       const group: DisNoteBlock[] = [];
       while (i < blocks.length && blocks[i]!.type === type) {
@@ -40,7 +50,7 @@ export function BlockList({ blocks }: { blocks: DisNoteBlock[] }): ReactNode {
 }
 
 export function BlockRenderer({ block }: { block: DisNoteBlock }): ReactNode {
-  const { theme, blockRenderers } = useDocumentRenderContext();
+  const { theme, blockRenderers, registry } = useDocumentRenderContext();
   const customRenderer = blockRenderers?.[block.type];
   if (customRenderer) {
     return customRenderer({
@@ -49,6 +59,11 @@ export function BlockRenderer({ block }: { block: DisNoteBlock }): ReactNode {
       renderChildren: (blocks) => blocks && blocks.length > 0 ? <BlockList blocks={blocks} /> : null,
     });
   }
+  const definition = registry.get(block.type);
+  if (!definition) return <UnknownBlock block={block} reason="unregistered" />;
+  if (block.version > definition.version) {
+    return <UnknownBlock block={block} reason="unsupported-version" />;
+  }
 
   switch (block.type) {
     case "paragraph":
@@ -56,7 +71,7 @@ export function BlockRenderer({ block }: { block: DisNoteBlock }): ReactNode {
     case "heading": {
       const level = block.props["level"] === 2 ? 2 : block.props["level"] === 3 ? 3 : 1;
       const Tag = (`h${level}` as "h1" | "h2" | "h3");
-      return <Tag><InlineRenderer content={block.content} /></Tag>;
+      return <Tag id={block.id}><InlineRenderer content={block.content} /></Tag>;
     }
     case "quote":
       return (
@@ -186,12 +201,18 @@ function MathBlock({ block }: { block: DisNoteBlock }): ReactNode {
 }
 
 function BookmarkBlock({ block }: { block: DisNoteBlock }): ReactNode {
+  const { urlPolicy } = useDocumentRenderContext();
   const url = typeof block.props["url"] === "string" ? block.props["url"] : "";
   const title = typeof block.props["title"] === "string" ? block.props["title"] : "Web Link";
   const description = typeof block.props["description"] === "string" ? block.props["description"] : "";
   const image = typeof block.props["image"] === "string" ? block.props["image"] : "";
-  return (
-    <a href={url} target="_blank" rel="noopener noreferrer" className="disnote-bookmark-card" style={{ display: "flex", textDecoration: "none", color: "inherit", border: "1px solid var(--disnote-border, #e2e8f0)", borderRadius: 6, overflow: "hidden", margin: "16px 0", background: "var(--disnote-card, #ffffff)" }}>
+  const href = safeUrl(url, urlPolicy);
+  const imageUrl = safeUrl(image, {
+    allowedSchemes: ["https:", "http:"],
+    allowRelative: true,
+  });
+  const body = (
+    <>
       <div className="bookmark-details" style={{ padding: 12, flex: 1, display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
         <div>
           <div className="bookmark-title" style={{ fontWeight: 600, fontSize: 14, marginBottom: 4 }}>{title}</div>
@@ -199,26 +220,44 @@ function BookmarkBlock({ block }: { block: DisNoteBlock }): ReactNode {
         </div>
         <div className="bookmark-url" style={{ fontSize: 11, color: "#94a3b8", marginTop: 8 }}>🔗 {url}</div>
       </div>
-      {image && <img className="bookmark-image" src={image} alt="preview" style={{ width: 120, objectFit: "cover" }} />}
-    </a>
+      {imageUrl && <img className="bookmark-image" src={imageUrl} alt="" style={{ width: 120, objectFit: "cover" }} />}
+    </>
   );
+  const style = {
+    display: "flex",
+    textDecoration: "none",
+    color: "inherit",
+    border: "1px solid var(--disnote-border, #e2e8f0)",
+    borderRadius: 6,
+    overflow: "hidden",
+    margin: "16px 0",
+    background: "var(--disnote-card, #ffffff)",
+  };
+  return href
+    ? <a href={href} target="_blank" rel="noopener noreferrer" className="disnote-bookmark-card" style={style}>{body}</a>
+    : <div className="disnote-bookmark-card" style={style}>{body}</div>;
 }
 
 function TableOfContentsBlock(): ReactNode {
+  const { headings, theme } = useDocumentRenderContext();
   return (
-    <div className="disnote-toc-block" style={{ padding: 12, border: "1px solid var(--disnote-border, #e2e8f0)", borderRadius: 6, background: "var(--disnote-surface, #f8fafc)", margin: "16px 0" }}>
-      <div style={{ fontWeight: 600, fontSize: 13, color: "#64748b", textTransform: "uppercase", marginBottom: 8 }}>📖 Table of Contents</div>
-      <div style={{ fontSize: 13, color: "#2563eb", cursor: "pointer", padding: "2px 0" }}>· Product Overview</div>
-      <div style={{ fontSize: 13, color: "#2563eb", cursor: "pointer", padding: "2px 0", marginLeft: 16 }}>·· Key Deliverables</div>
-      <div style={{ fontSize: 13, color: "#2563eb", cursor: "pointer", padding: "2px 0", marginLeft: 16 }}>·· Implementation Milestones</div>
-    </div>
+    <nav aria-label="Table of contents" className="disnote-toc-block" style={{ padding: 12, border: `1px solid ${theme.colors.border}`, borderRadius: 6, background: theme.colors.surface, margin: "16px 0" }}>
+      <div style={{ fontWeight: 600, fontSize: 13, color: theme.colors.textMuted, textTransform: "uppercase", marginBottom: 8 }}>Table of Contents</div>
+      {headings.length === 0
+        ? <span style={{ color: theme.colors.textMuted }}>No headings</span>
+        : headings.map((heading) => (
+          <a key={heading.blockId} href={`#${encodeURIComponent(heading.blockId)}`} style={{ display: "block", fontSize: 13, color: theme.colors.link, padding: "2px 0", marginLeft: Math.max(0, heading.level - 1) * 16 }}>
+            {heading.text || "Untitled heading"}
+          </a>
+        ))}
+    </nav>
   );
 }
 
 function BreadcrumbBlock(): ReactNode {
   return (
-    <div className="disnote-breadcrumb-block" style={{ fontSize: 12, color: "#64748b", margin: "12px 0" }}>
-      Workspace / Projects / <strong>Launch Roadmap</strong>
+    <div className="disnote-breadcrumb-block" data-unresolved="true" style={{ fontSize: 12, color: "#64748b", margin: "12px 0" }}>
+      Breadcrumb unavailable
     </div>
   );
 }
@@ -227,6 +266,7 @@ function SyncedBlock({ block }: { block: DisNoteBlock }): ReactNode {
   return (
     <div className="disnote-synced-block" style={{ borderLeft: "2px solid #ef4444", paddingLeft: 12, margin: "16px 0" }}>
       <div style={{ fontSize: 11, color: "#ef4444", fontWeight: 600, marginBottom: 4 }}>🔄 Synced Content</div>
+      <InlineRenderer content={block.content} />
       {block.children && block.children.length > 0 ? <BlockList blocks={block.children} /> : null}
     </div>
   );
@@ -235,9 +275,9 @@ function SyncedBlock({ block }: { block: DisNoteBlock }): ReactNode {
 function TemplateButton({ block }: { block: DisNoteBlock }): ReactNode {
   const label = typeof block.props["label"] === "string" ? block.props["label"] : "Template Button";
   return (
-    <button className="disnote-template-button" type="button" style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "6px 12px", border: "1px solid var(--disnote-border, #e2e8f0)", borderRadius: 6, background: "#f1f5f9", cursor: "pointer", margin: "12px 0" }}>
+    <span className="disnote-template-button" data-readonly="true" style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "6px 12px", border: "1px solid var(--disnote-border, #e2e8f0)", borderRadius: 6, background: "#f1f5f9", margin: "12px 0" }}>
       ➕ {label}
-    </button>
+    </span>
   );
 }
 
@@ -256,36 +296,42 @@ function ToggleHeading({ level, block }: { level: 1 | 2 | 3; block: DisNoteBlock
 }
 
 function VideoBlock({ block }: { block: DisNoteBlock }): ReactNode {
+  const { urlPolicy } = useDocumentRenderContext();
   const url = typeof block.props["url"] === "string" ? block.props["url"] : "";
+  const src = safeUrl(url, urlPolicy);
   const caption = typeof block.props["caption"] === "string" ? block.props["caption"] : "";
   return (
     <figure style={{ margin: "16px 0", width: "100%" }}>
-      <video src={url} controls style={{ width: "100%", maxHeight: 400, borderRadius: 6, background: "#000000" }} />
+      {src ? <video src={src} controls style={{ width: "100%", maxHeight: 400, borderRadius: 6, background: "#000000" }} /> : null}
       {caption && <figcaption style={{ fontSize: 12, color: "#64748b", marginTop: 4, textAlign: "center" }}>{caption}</figcaption>}
     </figure>
   );
 }
 
 function AudioBlock({ block }: { block: DisNoteBlock }): ReactNode {
+  const { urlPolicy } = useDocumentRenderContext();
   const url = typeof block.props["url"] === "string" ? block.props["url"] : "";
+  const src = safeUrl(url, urlPolicy);
   const caption = typeof block.props["caption"] === "string" ? block.props["caption"] : "";
   return (
     <figure style={{ margin: "16px 0", width: "100%" }}>
-      <audio src={url} controls style={{ width: "100%" }} />
+      {src ? <audio src={src} controls style={{ width: "100%" }} /> : null}
       {caption && <figcaption style={{ fontSize: 12, color: "#64748b", marginTop: 4, textAlign: "center" }}>{caption}</figcaption>}
     </figure>
   );
 }
 
 function FileBlock({ block }: { block: DisNoteBlock }): ReactNode {
+  const { urlPolicy } = useDocumentRenderContext();
   const url = typeof block.props["url"] === "string" ? block.props["url"] : "";
+  const href = safeUrl(url, urlPolicy);
   const name = typeof block.props["name"] === "string" ? block.props["name"] : "Attachment";
   const caption = typeof block.props["caption"] === "string" ? block.props["caption"] : "";
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 4, padding: 12, border: "1px solid var(--disnote-border, #e2e8f0)", borderRadius: 6, margin: "12px 0", background: "var(--disnote-surface, #f8fafc)" }}>
-      <a href={url} download style={{ display: "inline-flex", alignItems: "center", gap: 6, color: "#2563eb", textDecoration: "none", fontWeight: 500 }}>
-        📎 {name} (Download)
-      </a>
+      {href
+        ? <a href={href} download style={{ display: "inline-flex", alignItems: "center", gap: 6, color: "#2563eb", textDecoration: "none", fontWeight: 500 }}>📎 {name} (Download)</a>
+        : <span>{name}</span>}
       {caption && <div style={{ fontSize: 12, color: "#64748b" }}>{caption}</div>}
     </div>
   );
@@ -293,34 +339,12 @@ function FileBlock({ block }: { block: DisNoteBlock }): ReactNode {
 
 function DatabaseViewBlock({ block }: { block: DisNoteBlock }): ReactNode {
   const title = typeof block.props["title"] === "string" ? block.props["title"] : "Database";
+  const databaseId = typeof block.props["databaseId"] === "string" ? block.props["databaseId"] : "";
   return (
-    <div className="disnote-database-widget" style={{ border: "1px solid var(--disnote-border, #e2e8f0)", borderRadius: 6, overflow: "hidden", margin: "20px 0", background: "var(--disnote-card, #ffffff)" }}>
+    <div className="disnote-database-widget" data-database-id={databaseId} style={{ border: "1px solid var(--disnote-border, #e2e8f0)", borderRadius: 6, overflow: "hidden", margin: "20px 0", background: "var(--disnote-card, #ffffff)" }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 14px", borderBottom: "1px solid var(--disnote-border, #e2e8f0)", background: "#f8fafc" }}>
         <span style={{ fontWeight: 600 }}>📊 {title} ({block.type})</span>
-        <small style={{ color: "#94a3b8", fontSize: 11 }}>Connected Database</small>
-      </div>
-      <div style={{ padding: 14 }}>
-        <table style={{ width: "100%", borderCollapse: "collapse" }}>
-          <thead>
-            <tr style={{ borderBottom: "2px solid #e2e8f0", textAlign: "left", fontSize: 12, color: "#64748b" }}>
-              <th style={{ padding: 6 }}>Title</th>
-              <th style={{ padding: 6 }}>Status</th>
-              <th style={{ padding: 6 }}>Tags</th>
-            </tr>
-          </thead>
-          <tbody style={{ fontSize: 13 }}>
-            <tr style={{ borderBottom: "1px solid #f1f5f9" }}>
-              <td style={{ padding: 6 }}>Sample Item 1</td>
-              <td style={{ padding: 6 }}><span style={{ padding: "2px 6px", fontSize: 11, background: "#dcfce7", color: "#15803d", borderRadius: 4 }}>Done</span></td>
-              <td style={{ padding: 6 }}><span style={{ padding: "2px 6px", fontSize: 11, background: "#f1f5f9", color: "#64748b", borderRadius: 4 }}>Demo</span></td>
-            </tr>
-            <tr style={{ borderBottom: "1px solid #f1f5f9" }}>
-              <td style={{ padding: 6 }}>Sample Item 2</td>
-              <td style={{ padding: 6 }}><span style={{ padding: "2px 6px", fontSize: 11, background: "#fef9c3", color: "#a16207", borderRadius: 4 }}>To-do</span></td>
-              <td style={{ padding: 6 }}><span style={{ padding: "2px 6px", fontSize: 11, background: "#f1f5f9", color: "#64748b", borderRadius: 4 }}>Feature</span></td>
-            </tr>
-          </tbody>
-        </table>
+        <small style={{ color: "#94a3b8", fontSize: 11 }}>Database reference</small>
       </div>
     </div>
   );
@@ -337,15 +361,17 @@ function ImageBlock({ block }: { block: DisNoteBlock }): ReactNode {
   const caption   = typeof block.props["caption"] === "string" ? (block.props["caption"] as string) : "";
   const previewWidth = typeof block.props["previewWidth"] === "number" ? (block.props["previewWidth"] as number) : undefined;
 
-  const isSafe = (u: string) =>
-    u.startsWith("data:image/") || SAFE_ASSET_SCHEME.test(u) || u.startsWith("/");
+  const safeImageUrl = (value: string): string | null =>
+    SAFE_INLINE_IMAGE.test(value)
+      ? value
+      : safeUrl(value, { allowedSchemes: ["https:", "http:"], allowRelative: true });
 
   let url: string | undefined;
-  if (directUrl && isSafe(directUrl)) {
-    url = directUrl;
+  if (directUrl && safeImageUrl(directUrl)) {
+    url = safeImageUrl(directUrl)!;
   } else if (assetId) {
     const candidate = assetResolver?.(assetId)?.trim() ?? "";
-    if (candidate && isSafe(candidate)) url = candidate;
+    if (candidate && safeImageUrl(candidate)) url = safeImageUrl(candidate)!;
   }
 
   if (!url) {

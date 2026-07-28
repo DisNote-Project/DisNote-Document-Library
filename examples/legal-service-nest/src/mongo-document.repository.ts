@@ -4,7 +4,15 @@
  * Required indexes are created by initialize(). Revision history remains in a
  * separate collection so a document record never grows without a bound.
  */
-import { checksum, extractDocumentPlainText, type BlockRegistry, type DisNoteDocument } from "@disnote/core";
+import {
+  checksum,
+  CURRENT_SCHEMA_VERSION,
+  extractDocumentPlainText,
+  InvalidDocumentError,
+  validateDocument,
+  type BlockRegistry,
+  type DisNoteDocument,
+} from "@disnote/core";
 import type { ContentStore } from "@disnote/core/legal";
 import type {
   ArchiveDocumentInput,
@@ -45,7 +53,7 @@ export class MongoDocumentRepository implements ContentStore {
       this.collections.documents.createIndex({ id: 1 }, { unique: true }),
       this.collections.documents.createIndex({ slug: 1, locale: 1 }, { unique: true }),
       this.collections.revisions.createIndex({ documentId: 1, revision: 1 }, { unique: true }),
-      this.collections.idempotency.createIndex({ key: 1 }, { unique: true }),
+      this.collections.idempotency.createIndex({ documentId: 1, key: 1 }, { unique: true }),
     ]);
   }
 
@@ -57,6 +65,7 @@ export class MongoDocumentRepository implements ContentStore {
     actor: string;
     document: DisNoteDocument;
   }): Promise<StoredDocument> {
+    this.assertValidDocument(input.document);
     const ts = this.now();
     const stored: StoredDocument = {
       id: input.document.id,
@@ -105,7 +114,18 @@ export class MongoDocumentRepository implements ContentStore {
   }
 
   async saveDraft(input: SaveDraftInput): Promise<SaveDraftResult> {
-    const previouslySaved = await this.collections.idempotency.findOne({ key: input.idempotencyKey });
+    if (input.document.id !== input.documentId) {
+      throw new InvalidDocumentError(
+        `Draft document id "${input.document.id}" does not match target "${input.documentId}".`,
+        [{ path: "id", code: "document-id-mismatch", message: "document id must match documentId" }],
+      );
+    }
+    this.assertValidDocument(input.document);
+    const idempotencyFilter = {
+      documentId: input.documentId,
+      key: input.idempotencyKey,
+    };
+    const previouslySaved = await this.collections.idempotency.findOne(idempotencyFilter);
     if (previouslySaved) return { ok: true, revision: previouslySaved.revision };
 
     const session = this.client.startSession();
@@ -113,7 +133,7 @@ export class MongoDocumentRepository implements ContentStore {
       let result: SaveDraftResult = { ok: false, reason: "not-found" };
       await session.withTransaction(async () => {
         const duplicate = await this.collections.idempotency.findOne(
-          { key: input.idempotencyKey },
+          idempotencyFilter,
           { session },
         );
         if (duplicate) {
@@ -253,5 +273,14 @@ export class MongoDocumentRepository implements ContentStore {
       createdAt: ts,
       source: "editor",
     };
+  }
+
+  private assertValidDocument(document: DisNoteDocument): void {
+    const validation = validateDocument(document, {
+      registry: document.schemaVersion === CURRENT_SCHEMA_VERSION ? this.registry : undefined,
+    });
+    if (!validation.ok) {
+      throw new InvalidDocumentError("Document failed repository validation.", validation.issues);
+    }
   }
 }

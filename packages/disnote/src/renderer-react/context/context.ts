@@ -1,5 +1,11 @@
 import { createContext, useContext, type ReactNode } from "react";
-import type { BlockRegistry, DisNoteBlock, DisNoteInline } from "../../core/index.js";
+import type {
+  BlockRegistry,
+  DisNoteBlock,
+  DisNoteInline,
+  HeadingEntry,
+  UrlPolicy,
+} from "../../core/index.js";
 
 export interface DocumentTheme {
   colors: {
@@ -58,6 +64,8 @@ export interface DocumentRenderContextValue {
   registry: BlockRegistry;
   theme: DocumentTheme;
   mode: "published" | "preview";
+  headings: HeadingEntry[];
+  urlPolicy: UrlPolicy;
   referenceResolver?: ReferenceResolver;
   assetResolver?: AssetResolver;
   blockRenderers?: ReactBlockRenderers;

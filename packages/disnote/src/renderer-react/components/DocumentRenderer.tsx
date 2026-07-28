@@ -1,5 +1,10 @@
 import type { ReactNode } from "react";
-import type { DisNoteDocument, BlockRegistry } from "../../core/index.js";
+import {
+  extractHeadings,
+  type DisNoteDocument,
+  type BlockRegistry,
+  type UrlPolicy,
+} from "../../core/index.js";
 import {
   DocumentRenderContext,
   defaultTheme,
@@ -18,6 +23,7 @@ export interface DocumentRendererProps {
   referenceResolver?: ReferenceResolver;
   assetResolver?: AssetResolver;
   blockRenderers?: ReactBlockRenderers;
+  urlPolicy?: UrlPolicy;
   className?: string;
 }
 
@@ -31,6 +37,11 @@ export function DocumentRenderer(props: DocumentRendererProps): ReactNode {
     registry: props.registry,
     theme,
     mode: props.mode ?? "published",
+    headings: extractHeadings(props.document),
+    urlPolicy: props.urlPolicy ?? {
+      allowedSchemes: ["https:", "http:", "mailto:", "tel:"],
+      allowRelative: true,
+    },
     ...(props.referenceResolver ? { referenceResolver: props.referenceResolver } : {}),
     ...(props.assetResolver ? { assetResolver: props.assetResolver } : {}),
     ...(props.blockRenderers ? { blockRenderers: props.blockRenderers } : {}),

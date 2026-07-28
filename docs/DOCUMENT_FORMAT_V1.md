@@ -39,8 +39,19 @@ interface DisNoteBlock {
 
 ## V1 block types
 
-`paragraph`, `heading`, `bulletListItem`, `numberedListItem`, `checklistItem`,
-`quote`, `codeBlock`, `image`, `divider`, `callout`.
+Text/layout: `paragraph`, `heading`, `bulletListItem`, `numberedListItem`,
+`checklistItem`, `quote`, `codeBlock`, `divider`, `callout`, `toggle`,
+`columnList`, `column`.
+
+Media/reference: `image`, `video`, `audio`, `file`, `bookmark`, `breadcrumb`,
+`syncedBlock`.
+
+Structured/product blocks: `table`, `mathEquation`, `tableOfContents`,
+`templateButton`, `databaseView`, `map`.
+
+Some reference blocks require application resolvers or external data. The
+library renders an inert fallback when that data is unavailable; it never
+fabricates rows, breadcrumbs, metadata, or synced content.
 
 ## Inline content
 

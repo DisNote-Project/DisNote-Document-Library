@@ -28,7 +28,7 @@ test("DocumentRenderer produces server HTML without an editor", () => {
   const html = renderToStaticMarkup(
     <DocumentRenderer document={doc} registry={registry} mode="published" />,
   );
-  assert.match(html, /<h1>Heading<\/h1>/);
+  assert.match(html, /<h1 id="h">Heading<\/h1>/);
   assert.match(html, /<strong>bold<\/strong>/);
   assert.match(html, /<ul><li>item<\/li><\/ul>/);
 });
@@ -81,4 +81,32 @@ test("DocumentRenderer drops unsafe resolver URLs", () => {
   );
   assert.doesNotMatch(html, /href="javascript:/);
   assert.doesNotMatch(html, /src="javascript:/);
+});
+
+test("DocumentRenderer drops unsafe bookmark and media URLs", () => {
+  const document = createDocument({
+    now: "2026-01-01T00:00:00.000Z",
+    blocks: [
+      customBlock("bookmark", 1, { id: "bookmark", props: { url: "javascript:alert(1)", title: "Unsafe" } }),
+      customBlock("video", 1, { id: "video", props: { url: "javascript:alert(1)" } }),
+      customBlock("audio", 1, { id: "audio", props: { url: "javascript:alert(1)" } }),
+      customBlock("file", 1, { id: "file", props: { url: "javascript:alert(1)", name: "Unsafe" } }),
+    ],
+  });
+  const html = renderToStaticMarkup(
+    <DocumentRenderer document={document} registry={registry} />,
+  );
+  assert.doesNotMatch(html, /(href|src)="javascript:/i);
+});
+
+test("DocumentRenderer respects registry membership and block versions", () => {
+  const document = createDocument({
+    now: "2026-01-01T00:00:00.000Z",
+    blocks: [customBlock("paragraph", 2, { id: "future", content: [text("Future")] })],
+  });
+  const html = renderToStaticMarkup(
+    <DocumentRenderer document={document} registry={registry} />,
+  );
+  assert.match(html, /data-reason="unsupported-version"/);
+  assert.doesNotMatch(html, /<p>Future<\/p>/);
 });

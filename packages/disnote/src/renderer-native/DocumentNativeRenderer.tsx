@@ -1,5 +1,13 @@
 import { Fragment, type ComponentType, type ReactNode } from "react";
-import type { DisNoteBlock, DisNoteDocument, DisNoteInline, TextInline } from "../core/index.js";
+import {
+  safeColor,
+  safeUrl,
+  type BlockRegistry,
+  type DisNoteBlock,
+  type DisNoteDocument,
+  type DisNoteInline,
+  type TextInline,
+} from "../core/index.js";
 
 interface NativePrimitiveProps {
   children?: ReactNode;
@@ -25,6 +33,7 @@ export type NativeBlockRenderers = Readonly<
 
 export interface DocumentNativeRendererProps {
   document: DisNoteDocument;
+  registry?: BlockRegistry;
   primitives: NativeRendererPrimitives;
   assetResolver?: (assetId: string) => string | undefined;
   blockRenderers?: NativeBlockRenderers;
@@ -43,8 +52,14 @@ export function DocumentNativeRenderer(props: DocumentNativeRendererProps): Reac
       if (mark.type === "underline") style["textDecorationLine"] = "underline";
       if (mark.type === "strike") style["textDecorationLine"] = "line-through";
       if (mark.type === "code") style["fontFamily"] = "monospace";
-      if (mark.type === "textColor") style["color"] = mark.value;
-      if (mark.type === "backgroundColor") style["backgroundColor"] = mark.value;
+      if (mark.type === "textColor") {
+        const color = safeColor(mark.value);
+        if (color) style["color"] = color;
+      }
+      if (mark.type === "backgroundColor") {
+        const color = safeColor(mark.value);
+        if (color) style["backgroundColor"] = color;
+      }
     }
     return <Text key={key} style={style}>{node.text}</Text>;
   };
@@ -72,6 +87,10 @@ export function DocumentNativeRenderer(props: DocumentNativeRendererProps): Reac
 
       const { Text, Image } = props.primitives;
       const children = renderBlocks(block.children);
+      const definition = props.registry?.get(block.type);
+      if (props.registry && (!definition || block.version > definition.version)) {
+        return <Text key={block.id} accessibilityLabel={`Unsupported block ${block.type}`}>[{block.type}]</Text>;
+      }
       switch (block.type) {
         case "heading": {
           const level = block.props["level"] === 2 ? 2 : block.props["level"] === 3 ? 3 : 1;
@@ -93,7 +112,11 @@ export function DocumentNativeRenderer(props: DocumentNativeRendererProps): Reac
           return <View key={block.id} accessibilityRole="summary"><Text>{renderInline(block.content)}</Text>{children}</View>;
         case "image": {
           const assetId = String(block.props["assetId"] ?? "");
-          const uri = props.assetResolver?.(assetId);
+          const candidate = props.assetResolver?.(assetId) ?? "";
+          const uri = safeUrl(candidate, {
+            allowedSchemes: ["https:", "http:"],
+            allowRelative: true,
+          });
           return uri
             ? <Image key={block.id} source={{ uri }} accessibilityLabel={String(block.props["alt"] ?? "")} />
             : <Text key={block.id}>{String(block.props["alt"] ?? "")}</Text>;

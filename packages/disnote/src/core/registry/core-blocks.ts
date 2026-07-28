@@ -3,6 +3,7 @@ import type { CoreBlockDefinition, BlockCapabilities, ValidationResult } from ".
 import { defineCoreBlock, ok, fail, issue, createBlockRegistry } from "./index.js";
 import type { BlockRegistry } from "./index.js";
 import { extractInlineText } from "../serialization/plaintext.js";
+import { safeUrl } from "../security/index.js";
 
 const INLINE: BlockCapabilities = {
   inlineContent: true,
@@ -28,8 +29,24 @@ const VOID: BlockCapabilities = {
   commentable: true,
 };
 
+const CHILDREN_ONLY: BlockCapabilities = {
+  inlineContent: false,
+  children: true,
+  selectable: true,
+  draggable: true,
+  commentable: true,
+};
+
 function isObject(v: unknown): v is Record<string, JsonValue> {
   return typeof v === "object" && v !== null && !Array.isArray(v);
+}
+
+function safeOptionalUrl(value: JsonValue | undefined): string | null {
+  if (value === undefined || value === "") return "";
+  if (typeof value !== "string") return null;
+  return safeUrl(value, {
+    allowedSchemes: ["https:", "http:", "mailto:", "tel:"],
+  });
 }
 
 /* -------------------------------- text blocks ----------------------------- */
@@ -177,6 +194,9 @@ export const tableCore = defineCoreBlock<Record<string, JsonValue>>({
   capabilities: VOID, // Grid data is stored in props, so no native inline content/children at block root
   validateProps: (input) => {
     if (!isObject(input)) return ok({ rows: [] });
+    if (!Array.isArray(input["rows"])) {
+      return fail([issue("props.rows", "invalid", "table rows must be an array")]);
+    }
     return ok(input);
   },
   toPlainText: () => "[Table]",
@@ -227,8 +247,8 @@ export const templateButtonCore = defineCoreBlock<Record<string, JsonValue>>({
   validateProps: (input) => {
     if (!isObject(input)) return ok({ label: "Template Button" });
     return ok({
-      label: typeof input["label"] === "string" ? input["label"] : "Template Button",
       ...input,
+      label: typeof input["label"] === "string" ? input["label"] : "Template Button",
     });
   },
   toPlainText: () => "",
@@ -264,11 +284,17 @@ export const bookmarkCore = defineCoreBlock<Record<string, JsonValue>>({
   capabilities: VOID,
   validateProps: (input) => {
     if (!isObject(input)) return ok({ url: "" });
+    const url = safeOptionalUrl(input["url"]);
+    const image = safeOptionalUrl(input["image"]);
+    const issues = [];
+    if (url === null) issues.push(issue("props.url", "unsafe-url", "bookmark URL is unsafe or malformed"));
+    if (image === null) issues.push(issue("props.image", "unsafe-url", "bookmark image URL is unsafe or malformed"));
+    if (issues.length > 0) return fail(issues);
     return ok({
-      url: typeof input["url"] === "string" ? input["url"] : "",
+      url: url ?? "",
       title: typeof input["title"] === "string" ? input["title"] : "",
       description: typeof input["description"] === "string" ? input["description"] : "",
-      image: typeof input["image"] === "string" ? input["image"] : "",
+      image: image ?? "",
     });
   },
   toPlainText: (block) => (typeof block.props.url === "string" ? block.props.url : ""),
@@ -281,11 +307,19 @@ function mediaItem(type: string): CoreBlockDefinition {
     capabilities: VOID,
     validateProps: (input) => {
       if (!isObject(input)) return ok({ url: "" });
+      const url = safeOptionalUrl(input["url"]);
+      if (url === null) {
+        return fail([issue("props.url", "unsafe-url", `${type} URL is unsafe or malformed`)]);
+      }
+      const width = input["width"];
+      if (width !== undefined && (typeof width !== "number" || !Number.isFinite(width) || width <= 0)) {
+        return fail([issue("props.width", "invalid", `${type} width must be a positive finite number`)]);
+      }
       return ok({
-        url: typeof input["url"] === "string" ? input["url"] : "",
+        url: url ?? "",
         caption: typeof input["caption"] === "string" ? input["caption"] : "",
         name: typeof input["name"] === "string" ? input["name"] : "",
-        width: typeof input["width"] === "number" ? input["width"] : undefined,
+        ...(typeof width === "number" ? { width } : {}),
       });
     },
     toPlainText: (block) => (typeof block.props.url === "string" ? block.props.url : ""),
@@ -304,9 +338,9 @@ function dbViewItem(type: string): CoreBlockDefinition {
     validateProps: (input) => {
       if (!isObject(input)) return ok({ databaseId: "" });
       return ok({
+        ...input,
         databaseId: typeof input["databaseId"] === "string" ? input["databaseId"] : "",
         title: typeof input["title"] === "string" ? input["title"] : "Database",
-        ...input,
       });
     },
     toPlainText: () => `[Database ${type}]`,
@@ -324,7 +358,7 @@ export const mapCore = dbViewItem("map");
 export const columnListCore = defineCoreBlock<Record<string, JsonValue>>({
   type: "columnList",
   version: 1,
-  capabilities: CONTAINER,
+  capabilities: CHILDREN_ONLY,
   validateProps: (input) => (isObject(input) ? ok(input) : ok({})),
   toPlainText: () => "",
 });
@@ -332,8 +366,18 @@ export const columnListCore = defineCoreBlock<Record<string, JsonValue>>({
 export const columnCore = defineCoreBlock<Record<string, JsonValue>>({
   type: "column",
   version: 1,
-  capabilities: CONTAINER,
-  validateProps: (input) => (isObject(input) ? ok(input) : ok({})),
+  capabilities: CHILDREN_ONLY,
+  validateProps: (input) => {
+    if (!isObject(input)) return ok({});
+    const width = input["width"];
+    if (
+      width !== undefined &&
+      (typeof width !== "number" || !Number.isFinite(width) || width <= 0 || width > 1)
+    ) {
+      return fail([issue("props.width", "invalid", "column width must be greater than 0 and at most 1")]);
+    }
+    return ok(input);
+  },
   toPlainText: () => "",
 });
 

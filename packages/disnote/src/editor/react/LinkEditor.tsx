@@ -1,7 +1,6 @@
 import { useState, type ReactElement } from "react";
 import type { I18n } from "../i18n/dictionary.js";
-
-const UNSAFE_SCHEME = /^\s*(javascript|vbscript|file|data):/i;
+import { safeUrl } from "../../core/index.js";
 
 export interface LinkEditorProps {
   i18n: I18n;
@@ -13,7 +12,10 @@ export interface LinkEditorProps {
 /** A tiny link editor that refuses unsafe URL schemes. */
 export function LinkEditor({ i18n, initialHref = "", onApply, onCancel }: LinkEditorProps): ReactElement {
   const [href, setHref] = useState(initialHref);
-  const invalid = href.length > 0 && UNSAFE_SCHEME.test(href);
+  const invalid = href.length > 0 && safeUrl(href, {
+    allowedSchemes: ["https:", "http:", "mailto:", "tel:"],
+    allowRelative: true,
+  }) === null;
 
   return (
     <form

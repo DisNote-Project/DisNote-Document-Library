@@ -32,6 +32,28 @@ test("thread becomes orphaned (not deleted) when its block is removed", () => {
   assert.ok(thread, "still present, not lost");
 });
 
+test("comment store does not expose mutable internal thread state", () => {
+  const store = new InMemoryCommentStore({ now: () => NOW });
+  const created = store.createThread({
+    documentId: "d1",
+    revisionBase: 1,
+    anchor: { type: "document" },
+    author: "u1",
+    body: "original",
+  });
+  created.comments[0]!.body = "mutated outside";
+  created.comments.push({
+    id: "external",
+    author: "u2",
+    body: "external",
+    createdAt: NOW,
+  });
+
+  const stored = store.listForDocument("d1")[0]!;
+  assert.equal(stored.comments.length, 1);
+  assert.equal(stored.comments[0]!.body, "original");
+});
+
 test("mention provider searches and resolves without a user service", async () => {
   const provider = new InMemoryMentionProvider([
     { entityType: "user", entityId: "u_1", label: "Mink", href: "/u/1" },

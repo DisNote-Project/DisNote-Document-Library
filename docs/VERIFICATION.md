@@ -7,8 +7,8 @@ when older roadmap documents describe a package as a scaffold.
 
 - Node.js 20.19 or newer
 - React 18.3 or React 19
-- BlockNote 0.52.1 for `@disnote/editor-blocknote`
-- Yjs 13.6 for `@disnote/collaboration-yjs`
+- BlockNote 0.52.1 for `@disnote/core/editor` and `/editor/react`
+- Yjs 13.6 for `@disnote/core/collaboration`
 
 ## What `npm run verify` checks
 
@@ -29,7 +29,7 @@ CI additionally:
   integration tests;
 - verifies every public package tarball contains its README and license;
 - checks production dependencies with `npm audit --omit=dev`;
-- requires `packages/editor-blocknote/dist/react/index.js` to exist.
+- requires `packages/disnote/dist/editor/react/index.js` to exist.
 
 ## Implemented extension points
 

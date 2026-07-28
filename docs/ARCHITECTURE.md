@@ -5,11 +5,13 @@ system's final limit.
 
 ```
 Consumer app
-  ├─ @disnote/editor-blocknote  ──► BlockNote / ProseMirror
-  │        └─────────────► @disnote/document-core (validation + migrations + registry)
-  ├─ @disnote/renderer-react ───► document-core
-  ├─ @disnote/renderer-html  ───► document-core
-  └─ @disnote/storage-contracts ► document-core (types)
+  └─ @disnote/core
+       ├─ /editor/react ─────────► BlockNote / ProseMirror
+       ├─ /renderer/react ───────► React
+       ├─ /renderer/html
+       ├─ /renderer/native ──────► React
+       ├─ /collaboration ────────► Yjs
+       └─ /storage
 ```
 
 ## Layer responsibilities
@@ -39,7 +41,7 @@ Published document → validate → migrate → resolve block definitions
 
 ## Rules
 
-- `document-core` imports no React, DOM, database, or BlockNote.
+- The root `@disnote/core` entry imports no React, DOM, database, or BlockNote.
 - The persisted format is a `DisNoteDocument`, never a vendor type.
 - Everything is versioned: library (SemVer), document (`schemaVersion`), block (`version`).
 - Validate at every boundary; trust typed documents internally.

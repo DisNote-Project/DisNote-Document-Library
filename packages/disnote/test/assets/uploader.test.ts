@@ -46,3 +46,20 @@ test("rejects disallowed MIME and oversized files", async () => {
     (e) => e instanceof AssetValidationError && e.code === "too-large",
   );
 });
+
+test("rejects a forged declared size", async () => {
+  const uploader = new InMemoryAssetUploader();
+  await assert.rejects(
+    uploader.upload(
+      {
+        fileName: "forged.png",
+        mimeType: "image/png",
+        size: 1,
+        bytes: PNG,
+      },
+      { actor: "u1" },
+    ),
+    (error: unknown) =>
+      error instanceof AssetValidationError && error.code === "size-mismatch",
+  );
+});

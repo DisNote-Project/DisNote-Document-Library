@@ -28,7 +28,7 @@ test("renders core blocks to semantic HTML", () => {
     ],
   });
   const { html, headings } = renderDocumentToHtml({ document: doc, registry });
-  assert.match(html, /<h2>Title<\/h2>/);
+  assert.match(html, /<h2 id="h">Title<\/h2>/);
   assert.match(html, /<strong>world<\/strong>/);
   assert.match(html, /<ul><li>one<\/li><li>two<\/li><\/ul>/);
   assert.match(html, /<pre><code class="language-ts">const x = 1;<\/code><\/pre>/);

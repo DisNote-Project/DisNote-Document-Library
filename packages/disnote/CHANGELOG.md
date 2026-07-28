@@ -1,10 +1,18 @@
 # @disnote/core
 
+## 0.6.1
+
+### Patch Changes
+
+- Harden document validation and URL handling, preserve Yjs updates during
+  compaction, enforce immutable storage boundaries, correct renderer fallbacks,
+  and keep editor-only dependencies optional for core consumers.
+
 ## 0.6.0
 
 ### Minor Changes
 
-- Add split block in cols, organize page and folder structures.
+- Add multi-column document blocks and editor layout support.
 
 ## 0.5.0
 

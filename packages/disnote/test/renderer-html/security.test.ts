@@ -6,6 +6,7 @@ import {
   image,
   text,
   link,
+  customBlock,
   createDefaultRegistry,
   validateDocument,
 } from "../../src/core/index.js";
@@ -49,4 +50,21 @@ test("image alt text is escaped", () => {
   const doc = createDocument({ now: NOW, blocks: [image("a1", '"><script>alert(1)</script>')] });
   const { html } = renderDocumentToHtml({ document: doc, registry });
   assert.doesNotMatch(html, /<script>/i);
+});
+
+test("unsafe block URLs are rejected by validation and never rendered", () => {
+  for (const type of ["bookmark", "video", "audio", "file"]) {
+    const doc = createDocument({
+      now: NOW,
+      blocks: [customBlock(type, 1, {
+        id: type,
+        props: { url: "javascript:alert(1)", title: type, name: type },
+      })],
+    });
+    const validation = validateDocument(doc, { registry });
+    assert.equal(validation.ok, false, `${type} validation must reject an unsafe URL`);
+    const { html, warnings } = renderDocumentToHtml({ document: doc, registry });
+    assert.doesNotMatch(html, /(href|src)="javascript:/i);
+    assert.ok(warnings.some((warning) => warning.code === "unsafe-url"));
+  }
 });

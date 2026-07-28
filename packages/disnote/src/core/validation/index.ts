@@ -5,11 +5,12 @@ import { CURRENT_SCHEMA_VERSION, DOCUMENT_FORMAT } from "../model/document.js";
 import type { BlockRegistry, ValidationResult } from "../registry/index.js";
 import type { DocumentIssue } from "../errors/index.js";
 import { isJsonValue } from "../model/json.js";
+import { safeColor, safeUrl } from "../security/index.js";
 
 export interface ValidateOptions {
   /** When set, known block types have their props validated. */
   registry?: BlockRegistry;
-  /** Maximum nesting depth allowed (from a preset policy). */
+  /** Maximum nesting depth allowed. Defaults to 100 to bound untrusted input. */
   maxDepth?: number;
   /**
    * When true, an unknown block type (not in the registry) is an error.
@@ -28,10 +29,22 @@ const MARK_TYPES = new Set([
   "backgroundColor",
 ]);
 
-const UNSAFE_SCHEME = /^\s*(javascript|vbscript|file|data):/i;
+const MENTION_ENTITY_TYPES = new Set(["user", "channel"]);
+const REFERENCE_TARGET_TYPES = new Set(["task", "document", "message", "file"]);
+const DEFAULT_MAX_DEPTH = 100;
+const ISO_DATE_PATTERN =
+  /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,3})?(?:Z|[+-]\d{2}:\d{2})$/;
 
 function isPlainObject(v: unknown): v is Record<string, unknown> {
   return typeof v === "object" && v !== null && !Array.isArray(v);
+}
+
+function isIsoDateString(value: unknown): value is string {
+  return (
+    typeof value === "string" &&
+    ISO_DATE_PATTERN.test(value) &&
+    !Number.isNaN(Date.parse(value))
+  );
 }
 
 class Issues {
@@ -60,8 +73,22 @@ function validateMarks(marks: unknown, path: string, issues: Issues): void {
       typeof (mark as { value?: unknown }).value !== "string"
     ) {
       issues.add(`${path}[${i}].value`, "invalid", `${type} requires a string value`);
+    } else if (
+      (type === "textColor" || type === "backgroundColor") &&
+      safeColor((mark as { value: string }).value) === null
+    ) {
+      issues.add(`${path}[${i}].value`, "unsafe-color", `${type} contains an invalid color value`);
     }
   });
+}
+
+function validateTextInline(node: unknown, path: string, issues: Issues): void {
+  if (!isPlainObject(node) || node.type !== "text") {
+    issues.add(path, "invalid", "link content must contain text nodes only");
+    return;
+  }
+  if (typeof node.text !== "string") issues.add(`${path}.text`, "invalid", "text must be a string");
+  validateMarks(node.marks, `${path}.marks`, issues);
 }
 
 function validateInline(content: unknown, path: string, issues: Issues): void {
@@ -84,18 +111,33 @@ function validateInline(content: unknown, path: string, issues: Issues): void {
         break;
       case "link":
         if (typeof inline.href !== "string") issues.add(`${p}.href`, "invalid", "link href must be a string");
-        else if (UNSAFE_SCHEME.test(inline.href)) issues.add(`${p}.href`, "unsafe-url", "unsafe URL scheme");
-        validateInline(inline.content, `${p}.content`, issues);
+        else if (safeUrl(inline.href, { allowedSchemes: ["https:", "http:", "mailto:", "tel:"] }) === null) {
+          issues.add(`${p}.href`, "unsafe-url", "unsafe or malformed URL");
+        }
+        if (!Array.isArray(inline.content)) {
+          issues.add(`${p}.content`, "invalid", "link content must be an array of text nodes");
+        } else {
+          inline.content.forEach((child, childIndex) =>
+            validateTextInline(child, `${p}.content[${childIndex}]`, issues));
+        }
         break;
       case "mention":
-        if (typeof inline.entityId !== "string" || typeof inline.label !== "string") {
-          issues.add(p, "invalid", "mention requires entityId and label strings");
+        if (!MENTION_ENTITY_TYPES.has(inline.entityType)) {
+          issues.add(`${p}.entityType`, "invalid", "mention entityType must be user or channel");
         }
+        if (typeof inline.entityId !== "string" || inline.entityId.length === 0) {
+          issues.add(`${p}.entityId`, "invalid", "mention requires a non-empty entityId");
+        }
+        if (typeof inline.label !== "string") issues.add(`${p}.label`, "invalid", "mention label must be a string");
         break;
       case "reference":
-        if (typeof inline.targetId !== "string" || typeof inline.label !== "string") {
-          issues.add(p, "invalid", "reference requires targetId and label strings");
+        if (!REFERENCE_TARGET_TYPES.has(inline.targetType)) {
+          issues.add(`${p}.targetType`, "invalid", "reference targetType is unsupported");
         }
+        if (typeof inline.targetId !== "string" || inline.targetId.length === 0) {
+          issues.add(`${p}.targetId`, "invalid", "reference requires a non-empty targetId");
+        }
+        if (typeof inline.label !== "string") issues.add(`${p}.label`, "invalid", "reference label must be a string");
         break;
       default:
         issues.add(p, "unknown-inline", `unknown inline type "${(inline as { type: string }).type}"`);
@@ -116,8 +158,9 @@ function validateBlockTree(
     issues.add(path, "invalid", "blocks must be an array");
     return;
   }
-  if (options.maxDepth !== undefined && depth > options.maxDepth) {
-    issues.add(path, "max-depth", `nesting depth ${depth} exceeds preset max ${options.maxDepth}`);
+  const maxDepth = options.maxDepth ?? DEFAULT_MAX_DEPTH;
+  if (depth > maxDepth) {
+    issues.add(path, "max-depth", `nesting depth ${depth} exceeds max ${maxDepth}`);
     return;
   }
   blocks.forEach((raw: unknown, i) => {
@@ -163,6 +206,13 @@ function validateBlockTree(
         }
         // otherwise: unknown block is preserved, not an error.
       } else {
+        if (typeof block.version === "number" && block.version > def.version) {
+          issues.add(
+            `${p}.version`,
+            "unsupported-block-version",
+            `block "${block.type}" version ${block.version} is newer than supported version ${def.version}`,
+          );
+        }
         if (!def.capabilities.inlineContent && (block.content?.length ?? 0) > 0) {
           issues.add(`${p}.content`, "unsupported-content", `block "${block.type}" does not support inline content`);
         }
@@ -211,11 +261,35 @@ export function validateDocument(input: unknown, options: ValidateOptions = {}):
   if (!isPlainObject(doc.metadata)) {
     issues.add("metadata", "invalid", "metadata must be an object");
   } else {
-    if (typeof doc.metadata.createdAt !== "string" || Number.isNaN(Date.parse(doc.metadata.createdAt))) {
+    if (doc.metadata.title !== undefined && typeof doc.metadata.title !== "string") {
+      issues.add("metadata.title", "invalid", "title must be a string");
+    }
+    if (doc.metadata.description !== undefined && typeof doc.metadata.description !== "string") {
+      issues.add("metadata.description", "invalid", "description must be a string");
+    }
+    if (doc.metadata.locale !== undefined && doc.metadata.locale !== "en" && doc.metadata.locale !== "vi") {
+      issues.add("metadata.locale", "invalid", "locale must be en or vi");
+    }
+    if (!isIsoDateString(doc.metadata.createdAt)) {
       issues.add("metadata.createdAt", "invalid", "createdAt must be an ISO date string");
     }
-    if (typeof doc.metadata.updatedAt !== "string" || Number.isNaN(Date.parse(doc.metadata.updatedAt))) {
+    if (!isIsoDateString(doc.metadata.updatedAt)) {
       issues.add("metadata.updatedAt", "invalid", "updatedAt must be an ISO date string");
+    }
+    if (doc.metadata.createdBy !== undefined && typeof doc.metadata.createdBy !== "string") {
+      issues.add("metadata.createdBy", "invalid", "createdBy must be a string");
+    }
+    if (
+      doc.metadata.tags !== undefined &&
+      (!Array.isArray(doc.metadata.tags) || doc.metadata.tags.some((tag) => typeof tag !== "string"))
+    ) {
+      issues.add("metadata.tags", "invalid", "tags must be an array of strings");
+    }
+    if (
+      doc.metadata.attributes !== undefined &&
+      (!isPlainObject(doc.metadata.attributes) || !isJsonValue(doc.metadata.attributes as JsonValue))
+    ) {
+      issues.add("metadata.attributes", "not-json", "attributes must be a JSON-safe object");
     }
   }
 
