@@ -30,6 +30,7 @@ the application:
 | `@disnote/core/renderer/html` | Safe HTML / SSR | none |
 | `@disnote/core/renderer/react` | Read-only React renderer | React |
 | `@disnote/core/renderer/native` | React Native projection/renderer | React |
+| `@disnote/core/math` | Equation palette and semantic MathML rendering | none |
 | `@disnote/core/editor` | Vendor-neutral BlockNote adapter | BlockNote |
 | `@disnote/core/editor/react` | `<DisNoteEditor>` UI | React, BlockNote, Mantine |
 | `@disnote/core/storage` | Revision/publishing contracts and reference store | none |
@@ -53,6 +54,10 @@ If you are new to React document editors, start with
 [`BAT_DAU_CHO_NGUOI_MOI.md`](https://github.com/DisNote-Project/DisNote-Document-Library/blob/main/docs/BAT_DAU_CHO_NGUOI_MOI.md).
 For a Vietnamese guide including component props and public API reference, read
 [`docs/HUONG_DAN_SU_DUNG.md`](https://github.com/DisNote-Project/DisNote-Document-Library/blob/main/docs/HUONG_DAN_SU_DUNG.md).
+For the Word-like equation composer and superscript/subscript controls, read
+[`docs/MATH_EDITOR.md`](https://github.com/DisNote-Project/DisNote-Document-Library/blob/main/docs/MATH_EDITOR.md).
+For the typed English message catalog and application-level overrides, read
+[`docs/I18N.md`](https://github.com/DisNote-Project/DisNote-Document-Library/blob/main/docs/I18N.md).
 
 ```bash
 npm install @disnote/core

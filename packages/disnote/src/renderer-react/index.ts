@@ -2,6 +2,10 @@ export { DocumentRenderer, type DocumentRendererProps } from "./components/Docum
 export { BlockRenderer, BlockList, UnknownBlock, type UnknownBlockProps } from "./components/blocks.js";
 export { InlineRenderer } from "./components/InlineRenderer.js";
 export {
+  MathRenderer,
+  type MathRendererProps,
+} from "./components/MathRenderer.js";
+export {
   DocumentRenderContext,
   useDocumentRenderContext,
   defaultTheme,

@@ -8,11 +8,15 @@ import {
   bulletListItem,
   customBlock,
   image,
+  mathEquation,
   reference,
   text,
   createDefaultRegistry,
 } from "../../src/core/index.js";
 import { DocumentRenderer } from "../../src/renderer-react/index.js";
+import {
+  MathEquationEditor,
+} from "../../src/editor/react/MathEquationEditor.js";
 
 const registry = createDefaultRegistry();
 
@@ -109,4 +113,32 @@ test("DocumentRenderer respects registry membership and block versions", () => {
   );
   assert.match(html, /data-reason="unsupported-version"/);
   assert.doesNotMatch(html, /<p>Future<\/p>/);
+});
+
+test("math blocks render semantic MathML instead of raw LaTeX delimiters", () => {
+  const document = createDocument({
+    now: "2026-01-01T00:00:00.000Z",
+    blocks: [mathEquation("\\frac{x^2}{y_1}")],
+  });
+  const html = renderToStaticMarkup(
+    <DocumentRenderer document={document} registry={registry} />
+  );
+  assert.match(html, /<math/);
+  assert.match(html, /<mfrac>/);
+  assert.doesNotMatch(html, /\$\$/);
+});
+
+test("visual equation editor renders its palette without exposing raw LaTeX", () => {
+  const html = renderToStaticMarkup(
+    <MathEquationEditor
+      code="x^2"
+      onChange={() => undefined}
+    />
+  );
+  assert.match(html, /Structures/);
+  assert.match(html, /aria-label="Fraction"/);
+  assert.match(html, /<math/);
+  assert.match(html, /<math-field/);
+  assert.match(html, /Type directly in the equation/);
+  assert.doesNotMatch(html, /<textarea/);
 });

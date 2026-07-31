@@ -30,6 +30,7 @@ the subpath needed by the application:
 | `@disnote/core/renderer/html` | Safe HTML / SSR | none |
 | `@disnote/core/renderer/react` | Read-only React renderer | React |
 | `@disnote/core/renderer/native` | React Native projection/renderer | React |
+| `@disnote/core/math` | Equation palette and semantic MathML rendering | none |
 | `@disnote/core/editor` | Vendor-neutral BlockNote adapter | BlockNote |
 | `@disnote/core/editor/react` | `<DisNoteEditor>` UI | React, BlockNote, Mantine |
 | `@disnote/core/storage` | Revision/publishing contracts and reference store | none |
@@ -54,6 +55,10 @@ If you are new to React document editors, start with the Vietnamese
 For a practical Vietnamese guide for `@disnote/core`, read
 [`docs/HUONG_DAN_SU_DUNG.md`](docs/HUONG_DAN_SU_DUNG.md).
 This single guide also contains the component props and public API reference.
+For the Word-like equation composer, superscript/subscript controls and math
+rendering, read [`docs/MATH_EDITOR.md`](docs/MATH_EDITOR.md).
+For the typed English message catalog and application-level overrides, read
+[`docs/I18N.md`](docs/I18N.md).
 
 ```bash
 npm install @disnote/core

@@ -20,7 +20,11 @@ export interface ToolbarProps {
  */
 export function Toolbar({ i18n, actions }: ToolbarProps): ReactElement {
   return (
-    <div role="toolbar" aria-label="Formatting" style={{ display: "flex", gap: 4, overflowX: "auto" }}>
+    <div
+      role="toolbar"
+      aria-label={i18n.t("toolbar.formatting")}
+      style={{ display: "flex", gap: 4, overflowX: "auto" }}
+    >
       {actions.map((action) => {
         const label = i18n.t(action.key);
         return (

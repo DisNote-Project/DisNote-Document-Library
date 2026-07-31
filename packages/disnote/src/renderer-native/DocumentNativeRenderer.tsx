@@ -106,6 +106,16 @@ export function DocumentNativeRenderer(props: DocumentNativeRendererProps): Reac
           return <View key={block.id} style={{ flexDirection: "row" }}><Text>{block.props["checked"] === true ? "[x] " : "[ ] "}</Text><Text>{renderInline(block.content)}</Text>{children}</View>;
         case "codeBlock":
           return <Text key={block.id} style={{ fontFamily: "monospace" }}>{String(block.props["code"] ?? "")}</Text>;
+        case "math":
+          return (
+            <Text
+              key={block.id}
+              accessibilityLabel={`Math expression: ${String(block.props["code"] ?? "")}`}
+              style={{ fontFamily: "monospace", textAlign: "center" }}
+            >
+              {String(block.props["code"] ?? "")}
+            </Text>
+          );
         case "divider":
           return <View key={block.id} accessibilityRole="separator" style={{ height: 1 }} />;
         case "callout":

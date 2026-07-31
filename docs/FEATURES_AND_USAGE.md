@@ -14,6 +14,7 @@ collaboration and product services plug into that contract.
 | Read-only React Native UI | `@disnote/core/renderer/native` |
 | BlockNote conversion only | `@disnote/core/editor` |
 | React editor facade | `@disnote/core/editor/react` |
+| Word-like equation palette and MathML | `@disnote/core/math` |
 | Revision and publishing contracts | `@disnote/core/storage` |
 | Markdown/HTML interchange | `@disnote/core/import-export` |
 | Upload validation | `@disnote/core/assets` |
@@ -254,6 +255,39 @@ permissions.
 
 Load the editor with `React.lazy` or a framework dynamic import so public/read
 routes do not download the editor vendor bundle.
+
+### English UI and message overrides
+
+DisNote ships English UI messages from a single typed `EN_EDITOR_MESSAGES`
+catalog. `DisNoteEditor` uses English by default and accepts partial `messages`
+overrides when an application needs custom wording or another locale:
+
+```tsx
+<DisNoteEditor
+  initialDocument={initialDocument}
+  locale="en-custom"
+  messages={{
+    "toolbar.bold": "Strong",
+    "math.hint": "Choose a slot, type, then press Tab.",
+  }}
+/>
+```
+
+Missing keys fall back to English. See [`I18N.md`](I18N.md) for the complete
+typed API and maintenance rules.
+
+### Word-like equation composer
+
+Type `/math` to insert a mathematical expression. The editor provides a visual
+math field and buttons for fractions, superscript (`x²`), subscript (`x₂`),
+roots, sums, integrals, limits, matrices, relations and Greek symbols. Every
+structure inserts editable visual slots. Writers click a slot and type, then
+use Tab or the arrow keys to move between slots; raw LaTeX is never shown in
+the writing UI.
+
+Valid expressions render as semantic MathML in the read-only React/HTML
+renderers. Markdown display-math blocks round-trip without a lossy warning. See
+[`MATH_EDITOR.md`](MATH_EDITOR.md) for the complete palette and extension API.
 
 ## 11. Save revisions safely
 

@@ -46,7 +46,7 @@ Text/layout: `paragraph`, `heading`, `bulletListItem`, `numberedListItem`,
 Media/reference: `image`, `video`, `audio`, `file`, `bookmark`, `breadcrumb`,
 `syncedBlock`.
 
-Structured/product blocks: `table`, `mathEquation`, `tableOfContents`,
+Structured/product blocks: `table`, `math`, `tableOfContents`,
 `templateButton`, `databaseView`, `map`.
 
 Some reference blocks require application resolvers or external data. The

@@ -241,13 +241,31 @@ export const tableCore = defineCoreBlock<Record<string, JsonValue>>({
   toPlainText: () => "[Table]",
 });
 
-export const mathCore = defineCoreBlock<Record<string, JsonValue>>({
+interface MathProps extends Record<string, JsonValue> {
+  code: string;
+}
+
+export const mathCore = defineCoreBlock<MathProps>({
   type: "math",
   version: 1,
   capabilities: VOID,
   validateProps: (input) => {
-    if (!isObject(input)) return ok({ code: "" });
-    return ok({ code: typeof input["code"] === "string" ? input["code"] : "" });
+    if (!isObject(input)) {
+      return fail([
+        issue("props", "invalid", LIBRARY_MESSAGES.MATH_PROPS_OBJECT),
+      ]);
+    }
+    if (typeof input["code"] !== "string") {
+      return fail([
+        issue("props.code", "invalid", LIBRARY_MESSAGES.MATH_CODE_STRING),
+      ]);
+    }
+    if (input["code"].length > 20_000) {
+      return fail([
+        issue("props.code", "too-long", LIBRARY_MESSAGES.MATH_CODE_TOO_LONG),
+      ]);
+    }
+    return ok({ code: input["code"] });
   },
   toPlainText: (block) =>
     typeof block.props.code === "string" ? block.props.code : "",

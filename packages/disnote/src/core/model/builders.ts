@@ -87,6 +87,14 @@ export function codeBlock(code: string, language = "text"): DisNoteBlock {
   return block("codeBlock", 1, { props: { language, code } });
 }
 
+/** A block-level mathematical expression stored as portable LaTeX source. */
+export function mathEquation(code = "", init: BlockInit = {}): DisNoteBlock {
+  return block("math", 1, {
+    ...init,
+    props: { ...(init.props ?? {}), code },
+  });
+}
+
 export function image(assetId: string, alt = "", extra: Record<string, JsonValue> = {}): DisNoteBlock {
   return block("image", 1, { props: { assetId, alt, ...extra } });
 }

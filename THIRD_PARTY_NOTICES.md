@@ -21,4 +21,17 @@ reproduced or referenced below.
 - License: MIT
 - Homepage: https://yjs.dev
 
+## KaTeX
+
+- License: MIT
+- Homepage: https://katex.org
+- Usage: parses mathematical source into semantic MathML for the DisNote math
+  editor and read-only renderers.
+
+## MathLive and CortexJS Compute Engine
+
+- License: MIT
+- Homepages: https://mathlive.io and https://cortexjs.io/compute-engine/
+- Usage: provides the visual, slot-based equation input in the React editor.
+
 This file is informational and does not constitute legal advice.

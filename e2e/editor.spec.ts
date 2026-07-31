@@ -83,6 +83,40 @@ test("pastes VS Code Markdown Preview HTML as structured document blocks", async
   await expect(rendered.locator("ul li")).toHaveCount(3);
 });
 
+test("builds and renders a math equation from the Word-like palette", async ({ page }) => {
+  await page.goto("/");
+  const editable = editor(page);
+  await editable.click();
+  await page.keyboard.press("Control+End");
+  await page.keyboard.press("Enter");
+  await page.keyboard.type("/math");
+  await page.getByText("Math Equation", { exact: true }).click();
+
+  const equationInput = page.locator(
+    ".disnote-math-equation-editor math-field"
+  );
+  await expect(equationInput).toBeVisible();
+  await page.getByRole("button", { name: "Fraction" }).click();
+  await page.keyboard.type("x");
+  await page.keyboard.press("Tab");
+  await page.keyboard.type("y");
+  await expect
+    .poll(() =>
+      equationInput.evaluate((field) =>
+        (field as HTMLElement & {
+          getValue(format?: string): string;
+        }).getValue("latex-without-placeholders")
+      )
+    )
+    .toBe("\\frac{x}{y}");
+
+  await expect(page.locator(".disnote-math-equation-editor textarea")).toHaveCount(0);
+  const rendered = page.getByTestId("rendered-panel");
+  await expect(rendered.locator("math")).toBeVisible();
+  await expect(rendered.locator("mfrac")).toHaveCount(1);
+  await expect(rendered).not.toContainText("$$");
+});
+
 test("mobile layout does not overflow the viewport", async ({ page }, testInfo) => {
   test.skip(!testInfo.project.name.startsWith("mobile"), "Mobile-only assertion.");
   await page.goto("/");

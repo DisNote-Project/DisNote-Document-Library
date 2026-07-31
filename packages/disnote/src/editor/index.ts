@@ -30,10 +30,15 @@ export type {
 // Editor UI building blocks that are framework-neutral (i18n + slash registry).
 export {
   createI18n,
+  defineEditorMessages,
+  DEFAULT_EDITOR_LOCALE,
+  EN_EDITOR_MESSAGES,
   type I18n,
+  type CreateI18nOptions,
   type EditorLocale,
   type EditorDictionary,
   type EditorMessageKey,
+  type EditorMessageOverrides,
 } from "./i18n/dictionary.js";
 export {
   defaultSlashCommands,

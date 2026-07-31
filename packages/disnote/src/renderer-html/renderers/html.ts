@@ -9,6 +9,7 @@ import type {
 import { extractDocumentPlainText, extractHeadings } from "../../core/index.js";
 import { escapeHtml } from "../sanitization/escape.js";
 import { safeHref, safeColor, type LinkPolicy } from "../sanitization/url.js";
+import { renderMathToMarkup } from "../../math/index.js";
 
 export interface HtmlRenderPolicy {
   link?: LinkPolicy;
@@ -36,7 +37,11 @@ export interface AssetReference {
 
 export interface RenderWarning {
   blockId: string;
-  code: "unknown-block" | "unsupported-version" | "unsafe-url";
+  code:
+    | "unknown-block"
+    | "unsupported-version"
+    | "unsafe-url"
+    | "invalid-math";
   message: string;
 }
 
@@ -234,7 +239,16 @@ class RenderContext {
       case "math": {
         const code =
           typeof block.props["code"] === "string" ? block.props["code"] : "";
-        return `<div class="disnote-math">$$${escapeHtml(code)}$$</div>`;
+        const rendered = renderMathToMarkup(code);
+        if (!rendered.ok) {
+          this.warnings.push({
+            blockId: block.id,
+            code: "invalid-math",
+            message: rendered.error ?? LIBRARY_MESSAGES.MATH_EXPRESSION_INVALID,
+          });
+          return `<div class="disnote-math disnote-math--invalid" data-latex="${escapeHtml(code)}"><code>${escapeHtml(code)}</code></div>`;
+        }
+        return `<div class="disnote-math" data-latex="${escapeHtml(code)}">${rendered.markup}</div>`;
       }
       case "bookmark": {
         const url =
@@ -259,7 +273,7 @@ class RenderContext {
               )}">${escapeHtml(heading.text || "Untitled heading")}</a></li>`
           )
           .join("");
-        return `<nav class="disnote-toc" aria-label="Table of contents"><ol>${items}</ol></nav>`;
+        return `<nav class="disnote-toc" aria-label="${LIBRARY_MESSAGES.TABLE_OF_CONTENTS}"><ol>${items}</ol></nav>`;
       }
       case "breadcrumb":
         return `<div class="disnote-breadcrumb" data-unresolved="true">${LIBRARY_MESSAGES.BREADCRUMB_UNAVAILABLE}</div>`;

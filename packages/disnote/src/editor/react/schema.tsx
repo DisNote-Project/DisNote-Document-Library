@@ -1,4 +1,3 @@
-import { LIBRARY_MESSAGES } from "../../core/messages.js";
 import {
   BlockNoteSchema,
   defaultBlockSpecs,
@@ -11,6 +10,9 @@ import {
 } from "@blocknote/react";
 import { ColumnBlock, ColumnListBlock } from "@blocknote/xl-multi-column";
 import { safeUrl } from "../../core/index.js";
+import { EN_EDITOR_MESSAGES } from "../i18n/dictionary.js";
+import { useEditorI18n } from "./EditorI18nContext.js";
+import { MathEquationEditor } from "./MathEquationEditor.js";
 
 type CalloutIntent = "info" | "warning" | "success" | "danger";
 
@@ -106,7 +108,8 @@ const calloutSpec = createReactBlockSpec(
     content: "inline",
   },
   {
-    render: ({ block, editor, contentRef }) => {
+    render: function CalloutRender({ block, editor, contentRef }) {
+      const i18n = useEditorI18n();
       const intent = normalizeIntent(block.props.intent);
       const cycle = (): void => {
         const next =
@@ -121,8 +124,8 @@ const calloutSpec = createReactBlockSpec(
             type="button"
             className="disnote-editor-callout__icon"
             contentEditable={false}
-            title="Change callout style"
-            aria-label="Change callout style"
+            title={i18n.t("callout.changeStyle")}
+            aria-label={i18n.t("callout.changeStyle")}
             onClick={cycle}
           >
             {CALLOUT_ICON[intent]}
@@ -213,20 +216,11 @@ const mathSpec = createReactBlockSpec(
   },
   {
     render: ({ block, editor }) => {
-      const code = block.props.code || "E = mc^2";
-      const onChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        editor.updateBlock(block, { props: { code: e.target.value } });
-      };
       return (
-        <div className="disnote-editor-math" contentEditable={false}>
-          <div className="math-preview">🧮 $${code}$$</div>
-          <input
-            className="math-input"
-            value={code}
-            onChange={onChange}
-            placeholder="Enter LaTeX formula..."
-          />
-        </div>
+        <MathEquationEditor
+          code={block.props.code}
+          onChange={(code) => editor.updateBlock(block, { props: { code } })}
+        />
       );
     },
   }
@@ -244,7 +238,8 @@ const bookmarkSpec = createReactBlockSpec(
     content: "none",
   },
   {
-    render: ({ block, editor }) => {
+    render: function BookmarkRender({ block, editor }) {
+      const i18n = useEditorI18n();
       const { url, title, description, image } = block.props;
       if (!url) {
         return (
@@ -252,10 +247,10 @@ const bookmarkSpec = createReactBlockSpec(
             className="disnote-editor-bookmark-empty"
             contentEditable={false}
           >
-            <span>{LIBRARY_MESSAGES.ADD_WEB_BOOKMARK}</span>
+            <span>{i18n.t("bookmark.add")}</span>
             <input
               type="text"
-              placeholder="Paste link here..."
+              placeholder={i18n.t("bookmark.pasteLink")}
               onKeyDown={(e) => {
                 if (e.key === "Enter") {
                   const val = safeEditorUrl(e.currentTarget.value);
@@ -275,9 +270,11 @@ const bookmarkSpec = createReactBlockSpec(
       const body = (
         <>
           <div className="bookmark-details">
-            <div className="bookmark-title">{title || "Link Preview"}</div>
+            <div className="bookmark-title">
+              {title || i18n.t("bookmark.linkPreview")}
+            </div>
             <div className="bookmark-desc">
-              {description || "No description available"}
+              {description || i18n.t("bookmark.noDescription")}
             </div>
             <div className="bookmark-url">🔗 {url}</div>
           </div>
@@ -306,24 +303,25 @@ const bookmarkSpec = createReactBlockSpec(
 const tableOfContentsSpec = createReactBlockSpec(
   { type: "tableOfContents", propSchema: {}, content: "none" },
   {
-    render: ({ editor }) => {
+    render: function TableOfContentsRender({ editor }) {
+      const i18n = useEditorI18n();
       const headings = collectHeadings(editor.document as unknown[]);
       return (
         <nav
           className="disnote-editor-toc"
-          aria-label="Table of contents"
+          aria-label={i18n.t("toc.a11y")}
           contentEditable={false}
         >
-          <div className="toc-title">{LIBRARY_MESSAGES.TABLE_OF_CONTENTS}</div>
+          <div className="toc-title">{i18n.t("toc.title")}</div>
           {headings.length === 0 ? (
-            <div className="toc-item">{LIBRARY_MESSAGES.NO_HEADINGS}</div>
+            <div className="toc-item">{i18n.t("toc.noHeadings")}</div>
           ) : (
             headings.map((heading) => (
               <div
                 key={heading.id}
                 className={`toc-item toc-item--${heading.level}`}
               >
-                {heading.text || "Untitled heading"}
+                {heading.text || i18n.t("toc.untitledHeading")}
               </div>
             ))
           )}
@@ -336,15 +334,18 @@ const tableOfContentsSpec = createReactBlockSpec(
 const breadcrumbSpec = createReactBlockSpec(
   { type: "breadcrumb", propSchema: {}, content: "none" },
   {
-    render: () => (
-      <div
-        className="disnote-editor-breadcrumb"
-        data-unresolved="true"
-        contentEditable={false}
-      >
-        Breadcrumb unavailable
-      </div>
-    ),
+    render: function BreadcrumbRender() {
+      const i18n = useEditorI18n();
+      return (
+        <div
+          className="disnote-editor-breadcrumb"
+          data-unresolved="true"
+          contentEditable={false}
+        >
+          {i18n.t("breadcrumb.unavailable")}
+        </div>
+      );
+    },
   }
 );
 
@@ -355,21 +356,26 @@ const syncedBlockSpec = createReactBlockSpec(
     content: "inline",
   },
   {
-    render: ({ contentRef }) => (
-      <div className="disnote-editor-synced-container">
-        <div className="synced-header" contentEditable={false}>
-          {LIBRARY_MESSAGES.SYNCED_BLOCK}
+    render: function SyncedBlockRender({ contentRef }) {
+      const i18n = useEditorI18n();
+      return (
+        <div className="disnote-editor-synced-container">
+          <div className="synced-header" contentEditable={false}>
+            {i18n.t("syncedBlock.title")}
+          </div>
+          <div className="synced-body" ref={contentRef} />
         </div>
-        <div className="synced-body" ref={contentRef} />
-      </div>
-    ),
+      );
+    },
   }
 );
 
 const templateButtonSpec = createReactBlockSpec(
   {
     type: "templateButton",
-    propSchema: { label: { default: "Template Button" } },
+    propSchema: {
+      label: { default: EN_EDITOR_MESSAGES["templateButton.defaultLabel"] },
+    },
     content: "inline",
   },
   {
@@ -436,25 +442,28 @@ function makeDbViewSpec(type: string, emoji: string) {
       type,
       propSchema: {
         databaseId: { default: "" },
-        title: { default: "Database" },
+        title: { default: EN_EDITOR_MESSAGES["database.defaultTitle"] },
       },
       content: "none",
     },
     {
-      render: ({ block }) => (
-        <div
-          className="disnote-editor-db-view-widget"
-          data-database-id={block.props.databaseId}
-          contentEditable={false}
-        >
-          <div className="db-widget-header">
-            <span>
-              {emoji} {block.props.title} ({type})
-            </span>
-            <small>{LIBRARY_MESSAGES.DATABASE_REFERENCE}</small>
+      render: function DatabaseViewRender({ block }) {
+        const i18n = useEditorI18n();
+        return (
+          <div
+            className="disnote-editor-db-view-widget"
+            data-database-id={block.props.databaseId}
+            contentEditable={false}
+          >
+            <div className="db-widget-header">
+              <span>
+                {emoji} {block.props.title} ({type})
+              </span>
+              <small>{i18n.t("database.reference")}</small>
+            </div>
           </div>
-        </div>
-      ),
+        );
+      },
     }
   );
 }

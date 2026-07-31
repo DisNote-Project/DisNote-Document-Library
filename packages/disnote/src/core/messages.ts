@@ -153,4 +153,8 @@ export const LIBRARY_MESSAGES = {
   SYNCED_CONTENT: "🔄 Synced Content",
   ADD_WEB_BOOKMARK: "🔗 Add a Web Bookmark",
   SYNCED_BLOCK: "🔄 Synced Block",
+  MATH_PROPS_OBJECT: "math props must be an object",
+  MATH_CODE_STRING: "math code must be a string",
+  MATH_CODE_TOO_LONG: "math code must not exceed 20000 characters",
+  MATH_EXPRESSION_INVALID: "Math expression is invalid",
 } as const;

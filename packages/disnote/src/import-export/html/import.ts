@@ -13,6 +13,7 @@ import {
   checklistItem,
   quote,
   codeBlock,
+  mathEquation,
   divider,
   customBlock,
   safeUrl,
@@ -41,6 +42,16 @@ function decodeEntities(s: string): string {
     .replace(/&apos;/g, "'")
     .replace(/&#39;/g, "'")
     .replace(/&amp;/g, "&");
+}
+
+function readHtmlAttribute(attrs: string, name: string): string | null {
+  const escapedName = name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const match = new RegExp(
+    `\\b${escapedName}\\s*=\\s*(?:"([^"]*)"|'([^']*)'|([^\\s>]+))`,
+    "i"
+  ).exec(attrs);
+  const value = match?.[1] ?? match?.[2] ?? match?.[3];
+  return value === undefined ? null : decodeEntities(value);
 }
 
 /** Parse a fragment of inline HTML into DisNote inline nodes (supported subset). */
@@ -340,7 +351,14 @@ function convertHtmlNodesToBlocks(
         );
         break;
       case "div":
-        if (containsBlockElement(node.children)) {
+        if (
+          /\bclass\s*=\s*(?:"[^"]*\bdisnote-math\b[^"]*"|'[^']*\bdisnote-math\b[^']*')/i.test(
+            node.attrs
+          )
+        ) {
+          const code = readHtmlAttribute(node.attrs, "data-latex");
+          if (code !== null) blocks.push(mathEquation(code));
+        } else if (containsBlockElement(node.children)) {
           blocks.push(...convertHtmlNodesToBlocks(node.children, w));
         } else {
           blocks.push(
@@ -348,6 +366,11 @@ function convertHtmlNodesToBlocks(
           );
         }
         break;
+      case "math": {
+        const code = readHtmlAttribute(node.attrs, "data-latex");
+        if (code !== null) blocks.push(mathEquation(code));
+        break;
+      }
       case "blockquote":
         if (containsBlockElement(node.children)) {
           const nested = convertHtmlNodesToBlocks(node.children, w);

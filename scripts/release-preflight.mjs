@@ -34,6 +34,30 @@ if (gitStatus.length > 0) {
   );
 }
 
+const branch = execFileSync("git", ["branch", "--show-current"], {
+  encoding: "utf8",
+}).trim();
+if (branch !== "main") {
+  errors.push(`Release must run from the main branch, not "${branch}".`);
+}
+
+const fetchResult = run("git", ["fetch", "origin", "main", "--quiet"]);
+if (fetchResult.status !== 0) {
+  errors.push(`Could not refresh origin/main: ${commandError(fetchResult)}`);
+} else {
+  const head = execFileSync("git", ["rev-parse", "HEAD"], {
+    encoding: "utf8",
+  }).trim();
+  const remoteHead = execFileSync("git", ["rev-parse", "origin/main"], {
+    encoding: "utf8",
+  }).trim();
+  if (head !== remoteHead) {
+    errors.push(
+      "Local main must exactly match origin/main. Pull or push your commits first.",
+    );
+  }
+}
+
 const whoami = run(npmCommand, ["whoami", "--registry", manifest.publishConfig.registry]);
 if (whoami.status !== 0) {
   errors.push("npm is not authenticated. Run `npm login` and try again.");
@@ -55,7 +79,7 @@ if (versionsResult.status !== 0) {
   const publishedVersions = JSON.parse(versionsResult.stdout);
   if (publishedVersions.includes(manifest.version)) {
     errors.push(
-      `${manifest.name}@${manifest.version} already exists on npm. Run \`npm run version-packages\` first.`,
+      `${manifest.name}@${manifest.version} already exists on npm. Prepare and commit the next version first.`,
     );
   }
 }

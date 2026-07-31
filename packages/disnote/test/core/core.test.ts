@@ -27,6 +27,7 @@ import {
   createMigrationRegistry,
   articlePreset,
   setIdGenerator,
+  mathEquation,
 } from "../../src/core/index.js";
 import type { DisNoteDocument } from "../../src/core/index.js";
 
@@ -46,6 +47,21 @@ test("createDocument produces a valid V1 envelope", () => {
   assert.equal(doc.schemaVersion, 1);
   const result = validateDocument(doc, { registry });
   assert.equal(result.ok, true);
+});
+
+test("mathEquation builds a valid math block and validation bounds its source", () => {
+  const document = createDocument({
+    now: "2026-01-01T00:00:00.000Z",
+    blocks: [mathEquation("x^2 + y_1")],
+  });
+  assert.equal(validateDocument(document, { registry }).ok, true);
+
+  document.blocks[0]!.props["code"] = "x".repeat(20_001);
+  const invalid = validateDocument(document, { registry });
+  assert.equal(invalid.ok, false);
+  if (!invalid.ok) {
+    assert.ok(invalid.issues.some((entry) => entry.code === "too-long"));
+  }
 });
 
 test("validation rejects malformed documents with issues", () => {

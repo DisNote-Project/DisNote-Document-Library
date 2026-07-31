@@ -10,6 +10,7 @@ import {
   link,
   text,
   customBlock,
+  mathEquation,
   createDefaultRegistry,
 } from "../../src/core/index.js";
 import { renderDocumentToHtml } from "../../src/renderer-html/index.js";
@@ -87,4 +88,32 @@ test("custom HTML renderers extend the document without changing core", () => {
   });
   assert.equal(html, '<article data-card="u">Card</article>');
   assert.equal(warnings.length, 0);
+});
+
+test("renders valid math as MathML and reports invalid expressions", () => {
+  const valid = createDocument({
+    now: "2026-01-01T00:00:00.000Z",
+    blocks: [mathEquation("\\sum_{i=1}^{n} i")],
+  });
+  const validResult = renderDocumentToHtml({
+    document: valid,
+    registry,
+  });
+  assert.match(validResult.html, /class="disnote-math"/);
+  assert.match(validResult.html, /<math/);
+  assert.match(validResult.html, /data-latex=/);
+  assert.equal(validResult.warnings.length, 0);
+
+  const invalid = createDocument({
+    now: "2026-01-01T00:00:00.000Z",
+    blocks: [mathEquation("\\frac{")],
+  });
+  const invalidResult = renderDocumentToHtml({
+    document: invalid,
+    registry,
+  });
+  assert.match(invalidResult.html, /disnote-math--invalid/);
+  assert.ok(
+    invalidResult.warnings.some((warning) => warning.code === "invalid-math")
+  );
 });

@@ -115,6 +115,17 @@ function blockToMd(
         `${indent}\`\`\``,
       ];
     }
+    case "math": {
+      const code =
+        typeof block.props["code"] === "string"
+          ? block.props["code"]
+          : "";
+      return [
+        `${indent}$$`,
+        ...code.split("\n").map((line) => `${indent}${line}`),
+        `${indent}$$`,
+      ];
+    }
     case "divider":
       return [`${indent}---`];
     case "callout":

@@ -7,6 +7,7 @@ import {
   bulletListItem,
   checklistItem,
   codeBlock,
+  mathEquation,
   quote,
   divider,
   callout,
@@ -161,4 +162,30 @@ test("clipboard import falls back to Markdown or plain text when semantic HTML i
 
   const plainText = importClipboard({ text: "first line\nsecond line" }, { now: NOW });
   assert.deepEqual(plainText.document.blocks.map((block) => block.type), ["paragraph", "paragraph"]);
+});
+
+test("math equations round-trip through Markdown without a lossy warning", () => {
+  const source = createDocument({
+    now: NOW,
+    blocks: [mathEquation("\\frac{x^2}{y_1}")],
+  });
+  const exported = exportMarkdownLossy(source);
+  assert.equal(exported.warnings.length, 0);
+  assert.match(exported.output, /\$\$\n\\frac\{x\^2\}\{y_1\}\n\$\$/);
+
+  const imported = importMarkdown(exported.output, { now: NOW });
+  assert.equal(imported.document.blocks[0]?.type, "math");
+  assert.equal(
+    imported.document.blocks[0]?.props["code"],
+    "\\frac{x^2}{y_1}"
+  );
+});
+
+test("math equations round-trip through rendered DisNote HTML", () => {
+  const html =
+    '<div class="disnote-math" data-latex="x^2 + y_1"><math></math></div>';
+  const imported = importHtml(html, { now: NOW });
+  assert.equal(imported.document.blocks.length, 1);
+  assert.equal(imported.document.blocks[0]?.type, "math");
+  assert.equal(imported.document.blocks[0]?.props["code"], "x^2 + y_1");
 });

@@ -24,7 +24,9 @@
     "release:preflight": "node scripts/release-preflight.mjs",
     "release:dry-run": "npm run verify && npm pack --workspace @disnote/core --dry-run",
     "version-packages": "changeset version && npm install --package-lock-only --ignore-scripts",
-    "release": "npm run release:preflight && npm run verify && changeset publish",
+    "release:publish": "changeset publish",
+    "release:push-tags": "git push origin main --follow-tags",
+    "release": "npm run release:preflight && npm run verify && npm run release:publish && npm run release:push-tags",
     "clean": "rimraf --glob \"packages/*/dist\" \"packages/*/*.tsbuildinfo\""
   },
   "devDependencies": {

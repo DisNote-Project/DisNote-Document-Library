@@ -1,5 +1,14 @@
 # @disnote/core
 
+## 0.7.0
+
+### Minor Changes
+
+- Add a Word-like equation composer with reusable structures and symbols, semantic
+  MathML rendering, math validation, Markdown/HTML round-tripping, Native fallback,
+  and public math palette utilities. Standardize DisNote-owned editor UI on a
+  single typed English message catalog with partial application-level overrides.
+
 ## 0.6.1
 
 ### Patch Changes

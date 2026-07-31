@@ -1,7 +1,14 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { renderToStaticMarkup } from "react-dom/server";
-import { createDocument, heading, image, paragraph, text } from "../../src/core/index.js";
+import {
+  createDocument,
+  heading,
+  image,
+  mathEquation,
+  paragraph,
+  text,
+} from "../../src/core/index.js";
 import {
   DocumentNativeRenderer,
   type NativeRendererPrimitives,
@@ -20,6 +27,7 @@ test("native renderer maps core blocks through injected primitives", () => {
       heading(1, [text("Title")], { id: "h" }),
       paragraph([text("Body")], { id: "p" }),
       image("asset-1", "Preview", { id: "image" }),
+      mathEquation("x^2 + y_1"),
     ],
   });
   const html = renderToStaticMarkup(
@@ -32,4 +40,6 @@ test("native renderer maps core blocks through injected primitives", () => {
   assert.match(html, /Title/);
   assert.match(html, /Body/);
   assert.match(html, /alt="Preview"/);
+  assert.match(html, /x\^2 \+ y_1/);
+  assert.doesNotMatch(html, /\[math\]/);
 });

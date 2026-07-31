@@ -6,6 +6,7 @@ import {
   type DisNoteInline,
 } from "../../core/index.js";
 import { InlineRenderer } from "./InlineRenderer.js";
+import { MathRenderer } from "./MathRenderer.js";
 import { useDocumentRenderContext } from "../context/context.js";
 
 const LIST_TYPES = new Set(["bulletListItem", "numberedListItem"]);
@@ -300,10 +301,16 @@ function MathBlock({ block }: { block: DisNoteBlock }): ReactNode {
         borderRadius: 6,
         margin: "12px 0",
         textAlign: "center",
-        fontStyle: "italic",
       }}
     >
-      🧮 $${code || "E = mc^2"}$$
+      <MathRenderer
+        code={code}
+        fallback={
+          <code style={{ color: "#b91c1c" }}>
+            {code || "Invalid math expression"}
+          </code>
+        }
+      />
     </div>
   );
 }
@@ -400,7 +407,7 @@ function TableOfContentsBlock(): ReactNode {
   const { headings, theme } = useDocumentRenderContext();
   return (
     <nav
-      aria-label="Table of contents"
+      aria-label={LIBRARY_MESSAGES.TABLE_OF_CONTENTS}
       className="disnote-toc-block"
       style={{
         padding: 12,

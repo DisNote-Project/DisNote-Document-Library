@@ -42,8 +42,10 @@ import { importClipboard } from "../../import-export/index.js";
 import {
   createI18n,
   type EditorLocale,
+  type EditorMessageOverrides,
   type I18n,
 } from "../i18n/dictionary.js";
+import { EditorI18nProvider } from "./EditorI18nContext.js";
 
 export interface DocumentCapabilities {
   canRead: boolean;
@@ -77,8 +79,10 @@ export interface DisNoteEditorProps {
   theme?: "light" | "dark";
   onDocumentChange?: (document: DisNoteDocument) => void;
   className?: string;
-  /** Locale for DisNote-owned editor controls and custom block labels. */
+  /** Locale metadata for application-supplied messages. English is bundled. */
   locale?: EditorLocale;
+  /** Partial UI message overrides. English messages are used as fallback. */
+  messages?: EditorMessageOverrides;
 }
 
 /** Default slash menu items plus DisNote's custom blocks. */
@@ -731,7 +735,10 @@ function DisNoteEditorImpl(
   ref: Ref<DisNoteEditorHandle>
 ): ReactElement {
   const adapter = useMemo(() => createBlockNoteAdapter(), []);
-  const i18n = useMemo(() => createI18n(props.locale), [props.locale]);
+  const i18n = useMemo(
+    () => createI18n({ locale: props.locale, messages: props.messages }),
+    [props.locale, props.messages]
+  );
   const [editable, setEditable] = useState(props.editable ?? true);
   const envelopeRef = useRef<BlockNoteEditorDocument["envelope"]>(
     adapter.toEditor(props.initialDocument).envelope
@@ -865,20 +872,22 @@ function DisNoteEditorImpl(
       className={props.className ?? "disnote-editor"}
       onPasteCapture={handlePaste}
     >
-      <BlockNoteView
-        editor={editor}
-        editable={editable}
-        theme={props.theme ?? "light"}
-        slashMenu={false}
-        onChange={() => props.onDocumentChange?.(readCurrentDocument())}
-      >
-        <SuggestionMenuController
-          triggerCharacter="/"
-          getItems={async (query) =>
-            filterSuggestionItems(disNoteSlashItems(editor, i18n), query)
-          }
-        />
-      </BlockNoteView>
+      <EditorI18nProvider i18n={i18n}>
+        <BlockNoteView
+          editor={editor}
+          editable={editable}
+          theme={props.theme ?? "light"}
+          slashMenu={false}
+          onChange={() => props.onDocumentChange?.(readCurrentDocument())}
+        >
+          <SuggestionMenuController
+            triggerCharacter="/"
+            getItems={async (query) =>
+              filterSuggestionItems(disNoteSlashItems(editor, i18n), query)
+            }
+          />
+        </BlockNoteView>
+      </EditorI18nProvider>
     </div>
   );
 }

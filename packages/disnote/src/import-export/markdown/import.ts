@@ -13,6 +13,7 @@ import {
   checklistItem,
   quote,
   codeBlock,
+  mathEquation,
   divider,
   safeUrl,
 } from "../../core/index.js";
@@ -119,6 +120,23 @@ export function importMarkdown(
 
     if (trimmed === "") {
       i++;
+      continue;
+    }
+    const singleLineMath = /^\$\$(.*)\$\$$/.exec(trimmed);
+    if (singleLineMath) {
+      blocks.push(mathEquation(singleLineMath[1]!.trim()));
+      i++;
+      continue;
+    }
+    if (trimmed === "$$") {
+      const body: string[] = [];
+      i++;
+      while (i < lines.length && lines[i]!.trim() !== "$$") {
+        body.push(lines[i]!);
+        i++;
+      }
+      if (i < lines.length) i++;
+      blocks.push(mathEquation(body.join("\n").trim()));
       continue;
     }
     if (/^(-{3,}|\*{3,}|_{3,})$/.test(trimmed)) {
