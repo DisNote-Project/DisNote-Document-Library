@@ -1,5 +1,11 @@
 # DisNote Document
 
+React integration now has a ready-to-use `@disnote/react` workspace package,
+optional scoped CSS and shared design tokens. See
+[React integration and CSS](docs/REACT_INTEGRATION_AND_CSS.md) for minimal setup,
+read-only imports and per-instance customization. The new package is unreleased;
+use the documented packed workflow until npm publication.
+
 > A vendor-neutral, block-based document framework for the DisNote ecosystem.
 > Stable JSON schema, multi-platform renderers, a replaceable editor adapter,
 > versioning + migrations, and connected-context references.
@@ -106,6 +112,9 @@ const { html, plainText, headings } = renderDocumentToHtml({
 ```
 
 ## Architecture
+
+For npm release/versioning instructions, read
+[`docs/PUBLISH_NPM_VI.md`](docs/PUBLISH_NPM_VI.md).
 
 See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) and
 [`docs/DOCUMENT_FORMAT_V1.md`](docs/DOCUMENT_FORMAT_V1.md). Implementation

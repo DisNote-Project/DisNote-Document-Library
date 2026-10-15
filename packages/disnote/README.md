@@ -29,6 +29,9 @@ the application:
 | `@disnote/core` | Model, builders, validation, migrations, transforms | none |
 | `@disnote/core/renderer/html` | Safe HTML / SSR | none |
 | `@disnote/core/renderer/react` | Read-only React renderer | React |
+| `@disnote/core/react/view` | Quick view with optional registry | React |
+| `@disnote/core/react` | Quick editor/view facade | React, editor peers |
+| `@disnote/core/styles.css` | Optional scoped CSS and design tokens | none |
 | `@disnote/core/renderer/native` | React Native projection/renderer | React |
 | `@disnote/core/math` | Equation palette and semantic MathML rendering | none |
 | `@disnote/core/editor` | Vendor-neutral BlockNote adapter | BlockNote |
@@ -47,6 +50,14 @@ Current build guarantees and supported versions are recorded in
 [`VERIFICATION.md`](https://github.com/DisNote-Project/DisNote-Document-Library/blob/main/docs/VERIFICATION.md).
 
 ## Quick start
+
+For a ready-to-use React editor with runtime dependencies, the new (unreleased)
+`@disnote/react` workspace package provides `DocumentEditor`/`DocumentView` and
+`@disnote/react/styles.css`. Basic editing needs no registry or initial document.
+Read-only apps can use `@disnote/core/react/view` without editor peers. Both
+surfaces accept `className`, typed `style` and shared `--disnote-*` CSS variables.
+See [React integration and CSS](https://github.com/DisNote-Project/DisNote-Document-Library/blob/main/docs/REACT_INTEGRATION_AND_CSS.md)
+for the three-step setup, local packed workflow and supported styling contract.
 
 For workspace/database APIs, durable browser adapters, offline/collaboration,
 action buttons, Notion interchange and the native bridge, see

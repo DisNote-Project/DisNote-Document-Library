@@ -1,0 +1,62 @@
+/* Optional, scoped defaults. Import once; override tokens on any instance/ancestor. */
+:where(.disnote-editor, .disnote-document) {
+  box-sizing: border-box;
+  font-family: var(--disnote-font-family, system-ui, sans-serif);
+  font-size: var(--disnote-font-size, 16px);
+  line-height: var(--disnote-line-height, 1.65);
+  color: var(--disnote-text, #1a1c1c);
+  background: var(--disnote-background, #ffffff);
+  border-radius: var(--disnote-radius, 6px);
+  overflow-wrap: anywhere;
+}
+:where(.disnote-document p, .disnote-document blockquote, .disnote-document pre, .disnote-document aside) {
+  margin-block: var(--disnote-block-gap, 0.75em);
+}
+:where(.disnote-document h1, .disnote-document h2, .disnote-document h3) {
+  color: inherit;
+  font-family: inherit;
+  line-height: 1.25;
+  margin-block: var(--disnote-block-gap, 0.75em);
+}
+:where(.disnote-document a) { color: var(--disnote-link, #0d9488); }
+:where(.disnote-document img, .disnote-document video, .disnote-document svg) { max-width: 100%; }
+:where(.disnote-document, .disnote-editor)::selection,
+:where(.disnote-document, .disnote-editor) ::selection { background: var(--disnote-selection, #b8efe6); }
+:where(.disnote-document :focus-visible, .disnote-editor :focus-visible) { outline-color: var(--disnote-focus, #0ea5a5); }
+:where([data-disnote-theme="dark"]) {
+  --disnote-background: #191b1c;
+  --disnote-surface: #272a2c;
+  --disnote-text: #eceeef;
+  --disnote-text-muted: #abb1b4;
+  --disnote-border: #454b4f;
+  --disnote-link: #70d6ce;
+}
+/* Vendor mapping belongs here; consumers only need the --disnote-* contract. */
+.disnote-editor .bn-container,
+.disnote-editor .bn-container[data-color-scheme] {
+  --bn-font-family: var(--disnote-font-family, system-ui, sans-serif);
+  --bn-colors-editor-background: var(--disnote-background, #ffffff);
+  --bn-colors-editor-text: var(--disnote-text, #1a1c1c);
+  --bn-colors-menu-background: var(--disnote-surface, #f5f7f7);
+  --bn-colors-menu-text: var(--disnote-text, #1a1c1c);
+  --bn-colors-border: var(--disnote-border, #e0e4e4);
+  --bn-colors-selected-background: var(--disnote-selection, #b8efe6);
+  --bn-border-radius: var(--disnote-radius, 6px);
+}
+.disnote-editor .bn-editor {
+  font-family: inherit;
+  font-size: inherit;
+  line-height: inherit;
+  padding: var(--disnote-editor-padding, 24px);
+  background: var(--disnote-background, #ffffff);
+  color: var(--disnote-text, #1a1c1c);
+}
+:where(.disnote-editor-callout) {
+  display: flex;
+  gap: 12px;
+  padding: var(--disnote-card-padding, 12px);
+  border-radius: var(--disnote-radius, 6px);
+  background: var(--disnote-surface, #f5f7f7);
+}
+:where(.disnote-editor-callout__body) { flex: 1; min-width: 0; }
+:where(.disnote-editor-callout__icon) { border: 0; background: transparent; font: inherit; cursor: pointer; }

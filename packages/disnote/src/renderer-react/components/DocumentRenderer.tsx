@@ -15,6 +15,7 @@ import {
 } from "../context/context.js";
 import { BlockList } from "./blocks.js";
 import { uiMessages } from "../../ui/messages.js";
+import { DISNOTE_CSS_VARIABLES, DISNOTE_SURFACES, joinClassNames, type DisNoteStyle } from "../../styles/index.js";
 
 export interface DocumentRendererProps {
   locale?: string;
@@ -28,6 +29,8 @@ export interface DocumentRendererProps {
   blockRenderers?: ReactBlockRenderers;
   urlPolicy?: UrlPolicy;
   className?: string;
+  style?: DisNoteStyle;
+  appearance?: "light" | "dark";
 }
 
 /**
@@ -36,12 +39,19 @@ export interface DocumentRendererProps {
  */
 export function DocumentRenderer(props: DocumentRendererProps): ReactNode {
   const theme = props.theme ?? defaultTheme;
+  const variables: DisNoteStyle = {};
+  const colors = { ...theme.colors };
+  for (const key of Object.keys(theme.colors) as (keyof typeof theme.colors)[]) {
+    const variable = DISNOTE_CSS_VARIABLES[key];
+    if (props.theme) variables[variable] = theme.colors[key];
+    colors[key] = `var(${variable}, ${theme.colors[key]})`;
+  }
   const value = {
     locale: props.locale ?? props.document.metadata.locale ?? "en",
     messages: uiMessages(props.locale ?? props.document.metadata.locale),
     ...(props.breadcrumbs ? { breadcrumbs: props.breadcrumbs } : {}),
     registry: props.registry,
-    theme,
+    theme: { ...theme, colors },
     mode: props.mode ?? "published",
     headings: extractHeadings(props.document),
     urlPolicy: props.urlPolicy ?? {
@@ -55,8 +65,10 @@ export function DocumentRenderer(props: DocumentRendererProps): ReactNode {
   return (
     <DocumentRenderContext.Provider value={value}>
       <div
-        className={props.className ?? "disnote-document"}
-        style={{ color: theme.colors.text, background: theme.colors.background }}
+        className={joinClassNames("disnote-document", props.className)}
+        style={{ ...(props.theme ? { color: "var(--disnote-text)", background: "var(--disnote-background)" } : {}), ...variables, ...props.style }}
+        data-disnote-surface={DISNOTE_SURFACES.RENDERER}
+        data-disnote-theme={props.appearance ?? "light"}
       >
         <BlockList blocks={props.document.blocks} />
       </div>

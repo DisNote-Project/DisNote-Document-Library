@@ -136,8 +136,8 @@ export function BlockRenderer({ block }: { block: DisNoteBlock }): ReactNode {
         <pre
           style={{
             background: theme.colors.surface,
-            padding: 12,
-            borderRadius: 6,
+            padding: "var(--disnote-card-padding, 12px)",
+            borderRadius: "var(--disnote-radius, 6px)",
             overflowX: "auto",
           }}
         >
@@ -165,8 +165,8 @@ export function BlockRenderer({ block }: { block: DisNoteBlock }): ReactNode {
           data-intent={intent}
           style={{
             background: theme.colors.surface,
-            padding: 12,
-            borderRadius: 6,
+            padding: "var(--disnote-card-padding, 12px)",
+            borderRadius: "var(--disnote-radius, 6px)",
           }}
         >
           <InlineRenderer content={block.content} />
@@ -301,7 +301,7 @@ function MathBlock({ block }: { block: DisNoteBlock }): ReactNode {
       style={{
         padding: "12px 16px",
         background: "var(--disnote-surface, #f8fafc)",
-        borderRadius: 6,
+        borderRadius: "var(--disnote-radius, 6px)",
         margin: "12px 0",
         textAlign: "center",
       }}
@@ -309,7 +309,7 @@ function MathBlock({ block }: { block: DisNoteBlock }): ReactNode {
       <MathRenderer
         code={code}
         fallback={
-          <code style={{ color: "#b91c1c" }}>
+          <code style={{ color: "var(--disnote-danger, #b91c1c)" }}>
             {code || messages.unavailable}
           </code>
         }
@@ -341,7 +341,7 @@ function BookmarkBlock({ block }: { block: DisNoteBlock }): ReactNode {
       <div
         className="bookmark-details"
         style={{
-          padding: 12,
+          padding: "var(--disnote-card-padding, 12px)",
           flex: 1,
           display: "flex",
           flexDirection: "column",
@@ -357,14 +357,14 @@ function BookmarkBlock({ block }: { block: DisNoteBlock }): ReactNode {
           </div>
           <div
             className="bookmark-desc"
-            style={{ fontSize: 12, color: "#64748b" }}
+            style={{ fontSize: "var(--disnote-caption-size, 12px)", color: "var(--disnote-text-muted, #64748b)" }}
           >
             {description}
           </div>
         </div>
         <div
           className="bookmark-url"
-          style={{ fontSize: 11, color: "#94a3b8", marginTop: 8 }}
+          style={{ fontSize: 11, color: "var(--disnote-text-muted, #94a3b8)", marginTop: 8 }}
         >
           🔗 {url}
         </div>
@@ -384,7 +384,7 @@ function BookmarkBlock({ block }: { block: DisNoteBlock }): ReactNode {
     textDecoration: "none",
     color: "inherit",
     border: "1px solid var(--disnote-border, #e2e8f0)",
-    borderRadius: 6,
+    borderRadius: "var(--disnote-radius, 6px)",
     overflow: "hidden",
     margin: "16px 0",
     background: "var(--disnote-card, #ffffff)",
@@ -413,9 +413,9 @@ function TableOfContentsBlock(): ReactNode {
       aria-label={messages.toc}
       className="disnote-toc-block"
       style={{
-        padding: 12,
+        padding: "var(--disnote-card-padding, 12px)",
         border: `1px solid ${theme.colors.border}`,
-        borderRadius: 6,
+        borderRadius: "var(--disnote-radius, 6px)",
         background: theme.colors.surface,
         margin: "16px 0",
       }}
@@ -466,7 +466,7 @@ function BreadcrumbBlock(): ReactNode {
     <div
       className="disnote-breadcrumb-block"
       data-unresolved="true"
-      style={{ fontSize: 12, color: "#64748b", margin: "12px 0" }}
+      style={{ fontSize: "var(--disnote-caption-size, 12px)", color: "var(--disnote-text-muted, #64748b)", margin: "12px 0" }}
     >
       {messages.unavailable}
     </div>
@@ -520,7 +520,7 @@ function TemplateButton({ block }: { block: DisNoteBlock }): ReactNode {
         gap: 6,
         padding: "6px 12px",
         border: "1px solid var(--disnote-border, #e2e8f0)",
-        borderRadius: 6,
+        borderRadius: "var(--disnote-radius, 6px)",
         background: "#f1f5f9",
         margin: "12px 0",
       }}
@@ -573,7 +573,7 @@ function VideoBlock({ block }: { block: DisNoteBlock }): ReactNode {
           style={{
             width: "100%",
             maxHeight: 400,
-            borderRadius: 6,
+            borderRadius: "var(--disnote-radius, 6px)",
             background: "#000000",
           }}
         />
@@ -581,8 +581,8 @@ function VideoBlock({ block }: { block: DisNoteBlock }): ReactNode {
       {caption && (
         <figcaption
           style={{
-            fontSize: 12,
-            color: "#64748b",
+            fontSize: "var(--disnote-caption-size, 12px)",
+            color: "var(--disnote-text-muted, #64748b)",
             marginTop: 4,
             textAlign: "center",
           }}
@@ -606,8 +606,8 @@ function AudioBlock({ block }: { block: DisNoteBlock }): ReactNode {
       {caption && (
         <figcaption
           style={{
-            fontSize: 12,
-            color: "#64748b",
+            fontSize: "var(--disnote-caption-size, 12px)",
+            color: "var(--disnote-text-muted, #64748b)",
             marginTop: 4,
             textAlign: "center",
           }}
@@ -635,9 +635,9 @@ function FileBlock({ block }: { block: DisNoteBlock }): ReactNode {
         display: "flex",
         flexDirection: "column",
         gap: 4,
-        padding: 12,
+        padding: "var(--disnote-card-padding, 12px)",
         border: "1px solid var(--disnote-border, #e2e8f0)",
-        borderRadius: 6,
+        borderRadius: "var(--disnote-radius, 6px)",
         margin: "12px 0",
         background: "var(--disnote-surface, #f8fafc)",
       }}
@@ -661,7 +661,7 @@ function FileBlock({ block }: { block: DisNoteBlock }): ReactNode {
         <span>{name}</span>
       )}
       {caption && (
-        <div style={{ fontSize: 12, color: "#64748b" }}>{caption}</div>
+        <div style={{ fontSize: "var(--disnote-caption-size, 12px)", color: "var(--disnote-text-muted, #64748b)" }}>{caption}</div>
       )}
     </div>
   );
@@ -687,7 +687,7 @@ function DatabaseViewBlock({ block }: { block: DisNoteBlock }): ReactNode {
       data-database-id={databaseId}
       style={{
         border: "1px solid var(--disnote-border, #e2e8f0)",
-        borderRadius: 6,
+        borderRadius: "var(--disnote-radius, 6px)",
         overflow: "hidden",
         margin: "20px 0",
         background: "var(--disnote-card, #ffffff)",
@@ -706,7 +706,7 @@ function DatabaseViewBlock({ block }: { block: DisNoteBlock }): ReactNode {
         <span style={{ fontWeight: 600 }}>
           📊 {title} ({block.type})
         </span>
-        <small style={{ color: "#94a3b8", fontSize: 11 }}>
+        <small style={{ color: "var(--disnote-text-muted, #94a3b8)", fontSize: 11 }}>
           {messages.database}
         </small>
       </div>
@@ -782,8 +782,8 @@ function ImageBlock({ block }: { block: DisNoteBlock }): ReactNode {
       {caption && (
         <figcaption
           style={{
-            fontSize: 12,
-            color: "#64748b",
+            fontSize: "var(--disnote-caption-size, 12px)",
+            color: "var(--disnote-text-muted, #64748b)",
             marginTop: 4,
             textAlign: "center",
           }}
@@ -811,7 +811,7 @@ export function UnknownBlock({ block, reason }: UnknownBlockProps): ReactNode {
       style={{
         border: `1px dashed ${theme.colors.border}`,
         padding: 8,
-        borderRadius: 6,
+        borderRadius: "var(--disnote-radius, 6px)",
         color: theme.colors.textMuted,
       }}
     >

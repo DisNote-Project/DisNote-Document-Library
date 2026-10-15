@@ -204,6 +204,22 @@
       "import": "./dist/editor/react/collaboration-seed.js",
       "types": "./dist/editor/react/collaboration-seed.d.ts",
       "default": "./dist/editor/react/collaboration-seed.js"
+    },
+    "./react": {
+      "types": "./dist/react/index.d.ts",
+      "import": "./dist/react/index.js",
+      "default": "./dist/react/index.js"
+    },
+    "./styles": {
+      "types": "./dist/styles/index.d.ts",
+      "import": "./dist/styles/index.js",
+      "default": "./dist/styles/index.js"
+    },
+    "./styles.css": "./styles/document.css",
+    "./react/view": {
+      "types": "./dist/react/view.d.ts",
+      "import": "./dist/react/view.js",
+      "default": "./dist/react/view.js"
     }
   },
   "files": [
@@ -211,10 +227,12 @@
     "CHANGELOG.md",
     "README.md",
     "LICENSE",
-    "THIRD_PARTY_NOTICES.md"
+    "THIRD_PARTY_NOTICES.md",
+    "styles"
   ],
   "sideEffects": [
-    "./dist/editor/react/DisNoteEditor.js"
+    "./dist/editor/react/DisNoteEditor.js",
+    "./styles/document.css"
   ],
   "scripts": {
     "build": "tsc -b",
@@ -369,6 +387,15 @@
       ],
       "editor/react/collaboration": [
         "dist/editor/react/collaboration-seed.d.ts"
+      ],
+      "react": [
+        "dist/react/index.d.ts"
+      ],
+      "styles": [
+        "dist/styles/index.d.ts"
+      ],
+      "react/view": [
+        "dist/react/view.d.ts"
       ]
     }
   }

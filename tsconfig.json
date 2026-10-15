@@ -1,6 +1,11 @@
 {
   "files": [],
   "references": [
-    { "path": "packages/disnote" }
+    {
+      "path": "packages/disnote"
+    },
+    {
+      "path": "./packages/react"
+    }
   ]
 }

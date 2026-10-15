@@ -50,6 +50,7 @@ import {
 } from "../i18n/dictionary.js";
 import { EditorI18nProvider } from "./EditorI18nContext.js";
 import { mentionSuggestions } from "./mention-suggestions.js";
+import { DISNOTE_SURFACES, joinClassNames, type DisNoteStyle } from "../../styles/index.js";
 
 export interface DocumentCapabilities {
   canRead: boolean;
@@ -87,6 +88,8 @@ export interface DisNoteEditorProps {
   theme?: "light" | "dark";
   onDocumentChange?: (document: DisNoteDocument) => void;
   className?: string;
+  /** CSS and --disnote-* variables scoped to this editor instance. */
+  style?: DisNoteStyle;
   /** English/Vietnamese selection and application-supplied locale metadata. */
   locale?: EditorLocale;
   /** Partial UI overrides; the selected bundled dictionary supplies fallbacks. */
@@ -758,6 +761,7 @@ function DisNoteEditorImpl(
 
   const editorOptions = {
     schema: disNoteBlockNoteSchema,
+    domAttributes: { editor: { "data-disnote-slot": "content", class: "disnote-editor__content" } },
     dictionary: i18n.locale.toLowerCase().split("-")[0] === "vi" ? vi : en,
     ...(props.collaborationRuntime
       ? { ...props.collaborationRuntime, disableExtensions: [EDITOR_COLLABORATION.HISTORY], initialContent: [{ type: "paragraph", id: EDITOR_COLLABORATION.INITIAL_BLOCK }] as never }
@@ -887,11 +891,15 @@ function DisNoteEditorImpl(
 
   return (
     <div
-      className={props.className ?? "disnote-editor"}
+      className={joinClassNames("disnote-editor", props.className)}
+      style={props.style}
+      data-disnote-surface={DISNOTE_SURFACES.EDITOR}
+      data-disnote-theme={props.theme ?? "light"}
       onPasteCapture={handlePaste}
     >
       <EditorI18nProvider i18n={i18n}>
         <BlockNoteView
+          className="disnote-editor__surface"
           editor={editor}
           editable={editable}
           theme={props.theme ?? "light"}
