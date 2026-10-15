@@ -14,3 +14,5 @@ export {
   type MathEquationEditorProps,
 } from "./MathEquationEditor.js";
 export { disNoteBlockNoteSchema, type DisNoteBlockNoteSchema } from "./schema.js";
+export * from "./MobileEditorBridge.js";
+export * from "./OfflineEditor.js";

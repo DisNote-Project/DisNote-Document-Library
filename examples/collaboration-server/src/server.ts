@@ -7,6 +7,7 @@ import { CollaborationMetrics } from "./metrics.js";
 import { MongoUpdateStore } from "./mongo-update-store.js";
 
 const MAX_UPDATE_BYTES = 1_000_000;
+const PRESENCE_KINDS = new Set(["awareness", "request", "leave"]);
 
 export async function startServer(options: {
   mongoUri: string;
@@ -77,12 +78,21 @@ export async function startServer(options: {
       }
     });
 
-    for (const update of await store.loadUpdates(documentId)) {
-      ws.send(update, { binary: true });
-    }
-
     ws.on("message", (data, isBinary) => {
-      if (!isBinary) return;
+      if (!isBinary) {
+        try {
+          const text = data.toString();
+          if (text.length > MAX_UPDATE_BYTES) { ws.close(1009); return; }
+          const packet = JSON.parse(text) as { kind: string; data?: number[]; clientId?: number };
+          if (!PRESENCE_KINDS.has(packet.kind)) return;
+          if (packet.kind === "awareness" && (!Array.isArray(packet.data) || packet.data.length > MAX_UPDATE_BYTES || packet.data.some(n => !Number.isInteger(n) || n < 0 || n > 255))) return;
+          if (packet.kind === "leave" && !Number.isInteger(packet.clientId)) return;
+          // Presence is ephemeral and must never enter durable document updates.
+          for (const peer of room) if (peer !== ws && peer.readyState === WebSocket.OPEN) peer.send(text);
+          if (packet.kind === "request") void store.loadUpdates(documentId).then(updates => { for (const update of updates) if (ws.readyState === WebSocket.OPEN) ws.send(update, { binary: true }); }).catch(() => ws.close(1011));
+        } catch { ws.close(1007); }
+        return;
+      }
       const update = new Uint8Array(data as Buffer);
       if (update.byteLength > MAX_UPDATE_BYTES) {
         ws.close(1009, "Update too large");
@@ -102,6 +112,10 @@ export async function startServer(options: {
           ws.close(1011, "Collaboration update was not persisted");
         });
     });
+
+    for (const update of await store.loadUpdates(documentId)) {
+      if (ws.readyState === WebSocket.OPEN) ws.send(update, { binary: true });
+    }
 
     ws.on("error", () => {
       if (ws.readyState === WebSocket.OPEN) {

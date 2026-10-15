@@ -30,77 +30,180 @@
   "main": "./dist/core/index.js",
   "types": "./dist/core/index.d.ts",
   "exports": {
+    "./actions": {
+      "types": "./dist/actions/index.d.ts",
+      "import": "./dist/actions/index.js",
+      "default": "./dist/actions/index.js"
+    },
+    "./actions/react": {
+      "types": "./dist/actions/react/index.d.ts",
+      "import": "./dist/actions/react/index.js",
+      "default": "./dist/actions/react/index.js"
+    },
+    "./storage/browser": {
+      "types": "./dist/storage/browser/index.d.ts",
+      "import": "./dist/storage/browser/index.js",
+      "default": "./dist/storage/browser/index.js"
+    },
+    "./workspace/react": {
+      "types": "./dist/workspace/react/index.d.ts",
+      "import": "./dist/workspace/react/index.js",
+      "default": "./dist/workspace/react/index.js"
+    },
+    "./search-ai/react": {
+      "types": "./dist/search-ai/react/index.d.ts",
+      "import": "./dist/search-ai/react/index.js",
+      "default": "./dist/search-ai/react/index.js"
+    },
+    "./persistence/browser": {
+      "types": "./dist/persistence/index.d.ts",
+      "import": "./dist/persistence/index.js",
+      "default": "./dist/persistence/index.js"
+    },
+    "./ui": {
+      "types": "./dist/ui/messages.d.ts",
+      "import": "./dist/ui/messages.js",
+      "default": "./dist/ui/messages.js"
+    },
+    "./offline": {
+      "types": "./dist/offline/index.d.ts",
+      "import": "./dist/offline/index.js",
+      "default": "./dist/offline/index.js"
+    },
+    "./mobile": {
+      "types": "./dist/mobile/index.d.ts",
+      "import": "./dist/mobile/index.js",
+      "default": "./dist/mobile/index.js"
+    },
+    "./collaboration/browser": {
+      "types": "./dist/collaboration/browser/index.d.ts",
+      "import": "./dist/collaboration/browser/index.js",
+      "default": "./dist/collaboration/browser/index.js"
+    },
+    "./comments/react": {
+      "types": "./dist/comments/react/index.d.ts",
+      "import": "./dist/comments/react/index.js",
+      "default": "./dist/comments/react/index.js"
+    },
+    "./storage/react": {
+      "types": "./dist/storage/react/index.d.ts",
+      "import": "./dist/storage/react/index.js",
+      "default": "./dist/storage/react/index.js"
+    },
+    "./import-export/react": {
+      "types": "./dist/import-export/react/index.d.ts",
+      "import": "./dist/import-export/react/index.js",
+      "default": "./dist/import-export/react/index.js"
+    },
+    "./database": {
+      "types": "./dist/database/index.d.ts",
+      "import": "./dist/database/index.js",
+      "default": "./dist/database/index.js"
+    },
+    "./database/react": {
+      "types": "./dist/database/react/index.d.ts",
+      "import": "./dist/database/react/index.js",
+      "default": "./dist/database/react/index.js"
+    },
+    "./workspace": {
+      "types": "./dist/workspace/index.d.ts",
+      "import": "./dist/workspace/index.js",
+      "default": "./dist/workspace/index.js"
+    },
     ".": {
       "types": "./dist/core/index.d.ts",
-      "import": "./dist/core/index.js"
+      "import": "./dist/core/index.js",
+      "default": "./dist/core/index.js"
     },
     "./assets": {
       "types": "./dist/assets/index.d.ts",
-      "import": "./dist/assets/index.js"
+      "import": "./dist/assets/index.js",
+      "default": "./dist/assets/index.js"
     },
     "./collaboration": {
       "types": "./dist/collaboration/index.d.ts",
-      "import": "./dist/collaboration/index.js"
+      "import": "./dist/collaboration/index.js",
+      "default": "./dist/collaboration/index.js"
     },
     "./comments": {
       "types": "./dist/comments/index.d.ts",
-      "import": "./dist/comments/index.js"
+      "import": "./dist/comments/index.js",
+      "default": "./dist/comments/index.js"
     },
     "./editor": {
       "types": "./dist/editor/index.d.ts",
-      "import": "./dist/editor/index.js"
+      "import": "./dist/editor/index.js",
+      "default": "./dist/editor/index.js"
     },
     "./editor/react": {
       "types": "./dist/editor/react/index.d.ts",
-      "import": "./dist/editor/react/index.js"
+      "import": "./dist/editor/react/index.js",
+      "default": "./dist/editor/react/index.js"
     },
     "./import-export": {
       "types": "./dist/import-export/index.d.ts",
-      "import": "./dist/import-export/index.js"
+      "import": "./dist/import-export/index.js",
+      "default": "./dist/import-export/index.js"
     },
     "./legal": {
       "types": "./dist/legal/index.d.ts",
-      "import": "./dist/legal/index.js"
+      "import": "./dist/legal/index.js",
+      "default": "./dist/legal/index.js"
     },
     "./math": {
       "types": "./dist/math/index.d.ts",
-      "import": "./dist/math/index.js"
+      "import": "./dist/math/index.js",
+      "default": "./dist/math/index.js"
     },
     "./renderer/html": {
       "types": "./dist/renderer-html/index.d.ts",
-      "import": "./dist/renderer-html/index.js"
+      "import": "./dist/renderer-html/index.js",
+      "default": "./dist/renderer-html/index.js"
     },
     "./renderer/native": {
       "types": "./dist/renderer-native/index.d.ts",
-      "import": "./dist/renderer-native/index.js"
+      "import": "./dist/renderer-native/index.js",
+      "default": "./dist/renderer-native/index.js"
     },
     "./renderer/react": {
       "types": "./dist/renderer-react/index.d.ts",
-      "import": "./dist/renderer-react/index.js"
+      "import": "./dist/renderer-react/index.js",
+      "default": "./dist/renderer-react/index.js"
     },
     "./search-ai": {
       "types": "./dist/search-ai/index.d.ts",
-      "import": "./dist/search-ai/index.js"
+      "import": "./dist/search-ai/index.js",
+      "default": "./dist/search-ai/index.js"
     },
     "./storage": {
       "types": "./dist/storage/index.d.ts",
-      "import": "./dist/storage/index.js"
+      "import": "./dist/storage/index.js",
+      "default": "./dist/storage/index.js"
     },
     "./testing": {
       "types": "./dist/testing/index.d.ts",
-      "import": "./dist/testing/index.js"
+      "import": "./dist/testing/index.js",
+      "default": "./dist/testing/index.js"
     },
     "./presets/article": {
       "types": "./dist/presets/article/index.d.ts",
-      "import": "./dist/presets/article/index.js"
+      "import": "./dist/presets/article/index.js",
+      "default": "./dist/presets/article/index.js"
     },
     "./presets/legal": {
       "types": "./dist/presets/legal/index.d.ts",
-      "import": "./dist/presets/legal/index.js"
+      "import": "./dist/presets/legal/index.js",
+      "default": "./dist/presets/legal/index.js"
     },
     "./presets/workspace": {
       "types": "./dist/presets/workspace/index.d.ts",
-      "import": "./dist/presets/workspace/index.js"
+      "import": "./dist/presets/workspace/index.js",
+      "default": "./dist/presets/workspace/index.js"
+    },
+    "./editor/react/collaboration": {
+      "import": "./dist/editor/react/collaboration-seed.js",
+      "types": "./dist/editor/react/collaboration-seed.d.ts",
+      "default": "./dist/editor/react/collaboration-seed.js"
     }
   },
   "files": [
@@ -124,9 +227,21 @@
     "@blocknote/react": "0.52.1",
     "@blocknote/xl-multi-column": "^0.52.1",
     "react": "^18.3.0 || ^19.0.0",
+    "react-dom": "^18.3.0 || ^19.0.0",
+    "y-prosemirror": "^1.3.7",
+    "y-protocols": "^1.0.6",
     "yjs": "^13.6.18"
   },
   "peerDependenciesMeta": {
+    "react-dom": {
+      "optional": true
+    },
+    "y-prosemirror": {
+      "optional": true
+    },
+    "y-protocols": {
+      "optional": true
+    },
     "@blocknote/core": {
       "optional": true
     },
@@ -147,7 +262,114 @@
     }
   },
   "dependencies": {
-    "katex": "^0.18.1",
+    "fflate": "^0.8.3",
+    "katex": "^0.19.0",
     "mathlive": "^0.110.0"
+  },
+  "typesVersions": {
+    "*": {
+      "renderer/native": [
+        "dist/renderer-native/index.d.ts"
+      ],
+      "presets/workspace": [
+        "dist/presets/workspace/index.d.ts"
+      ],
+      "editor/react": [
+        "dist/editor/react/index.d.ts"
+      ],
+      "import-export": [
+        "dist/import-export/index.d.ts"
+      ],
+      "offline": [
+        "dist/offline/index.d.ts"
+      ],
+      "mobile": [
+        "dist/mobile/index.d.ts"
+      ],
+      "database/react": [
+        "dist/database/react/index.d.ts"
+      ],
+      "storage": [
+        "dist/storage/index.d.ts"
+      ],
+      "actions": [
+        "dist/actions/index.d.ts"
+      ],
+      "legal": [
+        "dist/legal/index.d.ts"
+      ],
+      "renderer/html": [
+        "dist/renderer-html/index.d.ts"
+      ],
+      "database": [
+        "dist/database/index.d.ts"
+      ],
+      "workspace/react": [
+        "dist/workspace/react/index.d.ts"
+      ],
+      "comments/react": [
+        "dist/comments/react/index.d.ts"
+      ],
+      "workspace": [
+        "dist/workspace/index.d.ts"
+      ],
+      "search-ai": [
+        "dist/search-ai/index.d.ts"
+      ],
+      "assets": [
+        "dist/assets/index.d.ts"
+      ],
+      "storage/browser": [
+        "dist/storage/browser/index.d.ts"
+      ],
+      "renderer/react": [
+        "dist/renderer-react/index.d.ts"
+      ],
+      "presets/article": [
+        "dist/presets/article/index.d.ts"
+      ],
+      "collaboration/browser": [
+        "dist/collaboration/browser/index.d.ts"
+      ],
+      "storage/react": [
+        "dist/storage/react/index.d.ts"
+      ],
+      "actions/react": [
+        "dist/actions/react/index.d.ts"
+      ],
+      "editor": [
+        "dist/editor/index.d.ts"
+      ],
+      "import-export/react": [
+        "dist/import-export/react/index.d.ts"
+      ],
+      "comments": [
+        "dist/comments/index.d.ts"
+      ],
+      "collaboration": [
+        "dist/collaboration/index.d.ts"
+      ],
+      "math": [
+        "dist/math/index.d.ts"
+      ],
+      "ui": [
+        "dist/ui/messages.d.ts"
+      ],
+      "search-ai/react": [
+        "dist/search-ai/react/index.d.ts"
+      ],
+      "presets/legal": [
+        "dist/presets/legal/index.d.ts"
+      ],
+      "persistence/browser": [
+        "dist/persistence/index.d.ts"
+      ],
+      "testing": [
+        "dist/testing/index.d.ts"
+      ],
+      "editor/react/collaboration": [
+        "dist/editor/react/collaboration-seed.d.ts"
+      ]
+    }
   }
 }

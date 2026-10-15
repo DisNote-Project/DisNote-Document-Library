@@ -7,6 +7,15 @@ import { InMemoryUpdateStore, seedYDoc, snapshotFromYDoc, snapshotToRevision } f
 const registry = createDefaultRegistry();
 const NOW = "2026-01-01T00:00:00.000Z";
 
+test("JSON snapshot binding rejects an editor XML document instead of silently publishing an empty body", () => {
+  const document = createDocument({ id: "doc", blocks: [] });
+  const xml = new Y.Doc(); xml.getXmlFragment("editor");
+  assert.throws(() => snapshotFromYDoc(xml, document), /different binding/);
+  const empty = new Y.Doc(); seedYDoc(empty, document);
+  assert.deepEqual(snapshotFromYDoc(empty, document), document);
+  xml.destroy(); empty.destroy();
+});
+
 test("update store appends and compacts at the threshold", async () => {
   const store = new InMemoryUpdateStore({ now: () => NOW, compactThreshold: 3 });
   const source = new Y.Doc();

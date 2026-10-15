@@ -1,4 +1,5 @@
 import { Fragment, type ComponentType, type ReactNode } from "react";
+import { uiMessages } from "../ui/messages.js";
 import {
   safeColor,
   safeUrl,
@@ -32,6 +33,7 @@ export type NativeBlockRenderers = Readonly<
 >;
 
 export interface DocumentNativeRendererProps {
+  locale?: string;
   document: DisNoteDocument;
   registry?: BlockRegistry;
   primitives: NativeRendererPrimitives;
@@ -41,6 +43,7 @@ export interface DocumentNativeRendererProps {
 }
 
 export function DocumentNativeRenderer(props: DocumentNativeRendererProps): ReactNode {
+  const messages = uiMessages(props.locale ?? props.document.metadata.locale);
   const { View } = props.primitives;
 
   const renderText = (node: TextInline, key: number): ReactNode => {
@@ -89,7 +92,7 @@ export function DocumentNativeRenderer(props: DocumentNativeRendererProps): Reac
       const children = renderBlocks(block.children);
       const definition = props.registry?.get(block.type);
       if (props.registry && (!definition || block.version > definition.version)) {
-        return <Text key={block.id} accessibilityLabel={`Unsupported block ${block.type}`}>[{block.type}]</Text>;
+        return <Text key={block.id} accessibilityLabel={`${messages.unknown} ${block.type}`}>[{block.type}]</Text>;
       }
       switch (block.type) {
         case "heading": {
@@ -132,7 +135,7 @@ export function DocumentNativeRenderer(props: DocumentNativeRendererProps): Reac
             : <Text key={block.id}>{String(block.props["alt"] ?? "")}</Text>;
         }
         default:
-          return <Text key={block.id} accessibilityLabel={`Unsupported block ${block.type}`}>[{block.type}]</Text>;
+          return <Text key={block.id} accessibilityLabel={`${messages.unknown} ${block.type}`}>[{block.type}]</Text>;
       }
     });
 

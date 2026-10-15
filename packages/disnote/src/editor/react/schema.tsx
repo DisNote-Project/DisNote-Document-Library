@@ -13,8 +13,15 @@ import { safeUrl } from "../../core/index.js";
 import { EN_EDITOR_MESSAGES } from "../i18n/dictionary.js";
 import { useEditorI18n } from "./EditorI18nContext.js";
 import { MathEquationEditor } from "./MathEquationEditor.js";
+import type { DatabaseViewKind } from "../../database/react/DatabaseView.js";
+import { DatabaseBlockControl } from "./DatabaseBlockControl.js";
+import { WorkspaceBreadcrumb } from "../../workspace/react/WorkspaceBreadcrumb.js";
+import { WorkspaceViewContext } from "../../workspace/react/context.js";
+import { lazy, Suspense, useContext } from "react";
+import { ActionButton } from "../../actions/react/index.js";
 
 type CalloutIntent = "info" | "warning" | "success" | "danger";
+const SharedBlockControl = lazy(() => import("./SharedBlockControl.js").then(module => ({ default: module.SharedBlockControl })));
 
 const CALLOUT_ORDER: CalloutIntent[] = ["info", "warning", "success", "danger"];
 const CALLOUT_ICON: Record<CalloutIntent, string> = {
@@ -336,6 +343,8 @@ const breadcrumbSpec = createReactBlockSpec(
   {
     render: function BreadcrumbRender() {
       const i18n = useEditorI18n();
+      const workspace = useContext(WorkspaceViewContext);
+      if (workspace) return <div contentEditable={false}><WorkspaceBreadcrumb locale={i18n.locale} /></div>;
       return (
         <div
           className="disnote-editor-breadcrumb"
@@ -356,8 +365,10 @@ const syncedBlockSpec = createReactBlockSpec(
     content: "inline",
   },
   {
-    render: function SyncedBlockRender({ contentRef }) {
+    render: function SyncedBlockRender({ block, editor, contentRef }) {
       const i18n = useEditorI18n();
+      const workspace = useContext(WorkspaceViewContext);
+      if (workspace) return <div contentEditable={false}><Suspense fallback={null}><SharedBlockControl canSelect={editor.isEditable} sourceId={block.props.syncedBlockId} locale={i18n.locale} onSelect={id => editor.updateBlock(block, { props: { syncedBlockId: id } })} /></Suspense></div>;
       return (
         <div className="disnote-editor-synced-container">
           <div className="synced-header" contentEditable={false}>
@@ -375,11 +386,14 @@ const templateButtonSpec = createReactBlockSpec(
     type: "templateButton",
     propSchema: {
       label: { default: EN_EDITOR_MESSAGES["templateButton.defaultLabel"] },
+      actionId: { default: "" },
     },
     content: "inline",
   },
   {
-    render: ({ block, editor, contentRef }) => {
+    render: function TemplateButtonRender({ block, editor, contentRef }) {
+      const i18n = useEditorI18n();
+      if (block.props.actionId) return <div contentEditable={false}><ActionButton actionId={block.props.actionId} label={block.props.label} locale={i18n.locale} /></div>;
       const templateBlocks = cloneInsertableBlocks(block.children ?? []);
       return (
         <div className="disnote-editor-template-container">
@@ -436,7 +450,7 @@ const toggleHeading3Spec = createReactBlockSpec(
   }
 );
 
-function makeDbViewSpec(type: string, emoji: string) {
+function makeDbViewSpec(type: string) {
   return createReactBlockSpec(
     {
       type,
@@ -447,34 +461,22 @@ function makeDbViewSpec(type: string, emoji: string) {
       content: "none",
     },
     {
-      render: function DatabaseViewRender({ block }) {
+      render: function DatabaseViewRender({ block, editor }) {
         const i18n = useEditorI18n();
-        return (
-          <div
-            className="disnote-editor-db-view-widget"
-            data-database-id={block.props.databaseId}
-            contentEditable={false}
-          >
-            <div className="db-widget-header">
-              <span>
-                {emoji} {block.props.title} ({type})
-              </span>
-              <small>{i18n.t("database.reference")}</small>
-            </div>
-          </div>
-        );
+        const view = type === "tableDb" ? "table" : type === "listDb" ? "list" : type;
+        return <div contentEditable={false}><DatabaseBlockControl databaseId={block.props.databaseId} view={view as DatabaseViewKind} locale={i18n.locale} editable={editor.isEditable} onSelect={id => editor.updateBlock(block, { props: { databaseId: id } })} /></div>;
       },
     }
   );
 }
 
-const tableDbSpec = makeDbViewSpec("tableDb", "📊");
-const boardSpec = makeDbViewSpec("board", "📋");
-const listDbSpec = makeDbViewSpec("listDb", "📑");
-const gallerySpec = makeDbViewSpec("gallery", "🖼️");
-const calendarSpec = makeDbViewSpec("calendar", "📅");
-const timelineSpec = makeDbViewSpec("timeline", "⏳");
-const mapSpec = makeDbViewSpec("map", "🗺️");
+const tableDbSpec = makeDbViewSpec("tableDb");
+const boardSpec = makeDbViewSpec("board");
+const listDbSpec = makeDbViewSpec("listDb");
+const gallerySpec = makeDbViewSpec("gallery");
+const calendarSpec = makeDbViewSpec("calendar");
+const timelineSpec = makeDbViewSpec("timeline");
+const mapSpec = makeDbViewSpec("map");
 
 // Use official multi-column block specs from @blocknote/xl-multi-column
 

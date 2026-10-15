@@ -18,6 +18,7 @@ export const LIBRARY_MESSAGES = {
     "Document failed repository validation.",
   RENDER_CONTEXT_REQUIRED:
     "DisNote render components must be used inside <DocumentRenderer>.",
+  YJS_BINDING_MISMATCH: "The Y.Doc contains a different binding; materialize editor XML through its editor adapter before creating a DisNote revision.",
   YJS_VALUE_OUTSIDE_CONTRACT:
     "Yjs document contains a value outside the DisNote JSON contract.",
   commentThreadNotFound: (id: string) => `Comment thread ${id} not found`,

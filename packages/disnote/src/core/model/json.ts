@@ -19,8 +19,16 @@ export function isJsonValue(value: unknown): value is JsonValue {
     case "object":
       if (value === null) return true;
       if (Array.isArray(value)) return value.every(isJsonValue);
-      if (Object.getPrototypeOf(value) !== Object.prototype && Object.getPrototypeOf(value) !== null) {
-        return false; // reject class instances, Date, Map, Set, etc.
+      {
+        const prototype: unknown = Object.getPrototypeOf(value);
+        // Structured clones and iframe/VM JSON objects can have another realm's
+        // Object.prototype. Require a root native Object prototype, not identity
+        // with this realm; class/custom prototypes still fail this check.
+        if (prototype !== null) {
+          const constructor = Object.getOwnPropertyDescriptor(prototype, "constructor")?.value;
+          if (Object.getPrototypeOf(prototype) !== null || typeof constructor !== "function"
+            || Function.prototype.toString.call(constructor) !== Function.prototype.toString.call(Object)) return false;
+        }
       }
       return Object.values(value as Record<string, unknown>).every(isJsonValue);
     default:

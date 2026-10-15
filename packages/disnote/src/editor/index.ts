@@ -33,6 +33,7 @@ export {
   defineEditorMessages,
   DEFAULT_EDITOR_LOCALE,
   EN_EDITOR_MESSAGES,
+  VI_EDITOR_MESSAGES,
   type I18n,
   type CreateI18nOptions,
   type EditorLocale,

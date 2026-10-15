@@ -17,10 +17,13 @@ import {
   useRef,
   useState,
   forwardRef,
+  lazy,
+  Suspense,
   type ReactElement,
   type Ref,
 } from "react";
 import { BlockNoteView } from "@blocknote/mantine";
+import { en, vi } from "@blocknote/core/locales";
 import "@blocknote/mantine/style.css";
 import {
   useCreateBlockNote,
@@ -46,6 +49,7 @@ import {
   type I18n,
 } from "../i18n/dictionary.js";
 import { EditorI18nProvider } from "./EditorI18nContext.js";
+import { mentionSuggestions } from "./mention-suggestions.js";
 
 export interface DocumentCapabilities {
   canRead: boolean;
@@ -73,15 +77,19 @@ export interface ExperimentalEditorAccess {
 }
 
 export interface DisNoteEditorProps {
+  mentionProvider?: import("../../comments/index.js").MentionProvider;
+  mentionContext?: import("../../comments/index.js").MentionContext;
+  /** Shared Y.XmlFragment and awareness provider; keep identity stable for this mount. */
+  collaboration?: import("@blocknote/core/yjs").CollaborationOptions;
   initialDocument: DisNoteDocument;
   editable?: boolean;
   /** Visual theme for the editing surface. */
   theme?: "light" | "dark";
   onDocumentChange?: (document: DisNoteDocument) => void;
   className?: string;
-  /** Locale metadata for application-supplied messages. English is bundled. */
+  /** English/Vietnamese selection and application-supplied locale metadata. */
   locale?: EditorLocale;
-  /** Partial UI message overrides. English messages are used as fallback. */
+  /** Partial UI overrides; the selected bundled dictionary supplies fallbacks. */
   messages?: EditorMessageOverrides;
 }
 
@@ -730,8 +738,12 @@ function disNoteSlashItems(
   return [...getDefaultReactSlashMenuItems(ed), ...customItems];
 }
 
+export interface DisNoteEditorRuntimeProps extends DisNoteEditorProps {
+  collaborationRuntime?: { extensions: import("@blocknote/core").ExtensionFactoryInstance[] };
+}
+const EDITOR_COLLABORATION = { INITIAL_BLOCK: "initialBlockId", HISTORY: "history" } as const;
 function DisNoteEditorImpl(
-  props: DisNoteEditorProps,
+  props: DisNoteEditorRuntimeProps,
   ref: Ref<DisNoteEditorHandle>
 ): ReactElement {
   const adapter = useMemo(() => createBlockNoteAdapter(), []);
@@ -744,10 +756,15 @@ function DisNoteEditorImpl(
     adapter.toEditor(props.initialDocument).envelope
   );
 
-  const editor = useCreateBlockNote({
+  const editorOptions = {
     schema: disNoteBlockNoteSchema,
-    initialContent: adapter.toEditor(props.initialDocument).blocks as never,
-  });
+    dictionary: i18n.locale.toLowerCase().split("-")[0] === "vi" ? vi : en,
+    ...(props.collaborationRuntime
+      ? { ...props.collaborationRuntime, disableExtensions: [EDITOR_COLLABORATION.HISTORY], initialContent: [{ type: "paragraph", id: EDITOR_COLLABORATION.INITIAL_BLOCK }] as never }
+      : { initialContent: (adapter.toEditor(props.initialDocument).blocks.length
+        ? adapter.toEditor(props.initialDocument).blocks : undefined) as never }),
+  };
+  const editor = useCreateBlockNote(editorOptions);
 
   useEffect(() => {
     setEditable(props.editable ?? true);
@@ -785,6 +802,7 @@ function DisNoteEditorImpl(
   }));
 
   const handlePaste = (event: React.ClipboardEvent<HTMLDivElement>): void => {
+    if (!event.currentTarget.contains(event.target as Node)) return;
     const text = event.clipboardData.getData("text/plain");
     const html = event.clipboardData.getData("text/html");
 
@@ -886,10 +904,15 @@ function DisNoteEditorImpl(
               filterSuggestionItems(disNoteSlashItems(editor, i18n), query)
             }
           />
+          {props.mentionProvider && <SuggestionMenuController triggerCharacter="@" getItems={query => mentionSuggestions(props.mentionProvider!, query, { ...props.mentionContext, documentId: envelopeRef.current.id }, candidate => editor.insertInlineContent([{ type: "mention", props: candidate } as never, " "]))} />}
         </BlockNoteView>
       </EditorI18nProvider>
     </div>
   );
 }
 
-export const DisNoteEditor = forwardRef(DisNoteEditorImpl);
+export const DisNoteEditorBase = forwardRef(DisNoteEditorImpl);
+const CollaborativeEditor = lazy(() => import("./CollaborativeEditor.js"));
+export const DisNoteEditor = forwardRef<DisNoteEditorHandle, DisNoteEditorProps>((props, ref) => props.collaboration
+  ? <Suspense fallback={null}><CollaborativeEditor {...props} editorRef={ref} /></Suspense>
+  : <DisNoteEditorBase {...props} ref={ref} />);

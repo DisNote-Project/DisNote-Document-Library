@@ -75,6 +75,7 @@ export function snapshotFromYDoc(
   ydoc: Y.Doc,
   envelope: Omit<DisNoteDocument, "blocks">
 ): DisNoteDocument {
+  if (!ydoc.share.has(BLOCKS_KEY) && ydoc.share.size > 0) throw new Error(LIBRARY_MESSAGES.YJS_BINDING_MISMATCH);
   const blocks = ydoc.getArray<Y.Map<unknown>>(BLOCKS_KEY);
   return { ...envelope, blocks: blocks.toArray().map(yMapToBlock) };
 }

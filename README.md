@@ -48,6 +48,11 @@ Current build guarantees and supported versions are recorded in
 
 ## Quick start
 
+Workspace/database, offline, collaborative editing and integration controls are
+documented in [`docs/WORKSPACE_CAPABILITIES.md`](docs/WORKSPACE_CAPABILITIES.md).
+Supported behavior and unverified deployment/native boundaries are tracked in
+[`docs/NOTION_PARITY_ACCEPTANCE.md`](docs/NOTION_PARITY_ACCEPTANCE.md).
+
 For package-by-package features and complete usage examples, read
 [`docs/FEATURES_AND_USAGE.md`](docs/FEATURES_AND_USAGE.md).
 If you are new to React document editors, start with the Vietnamese

@@ -14,7 +14,7 @@ export function canonicalJson(value: JsonValue): string {
 function sortValue(value: JsonValue): JsonValue {
   if (Array.isArray(value)) return value.map(sortValue);
   if (value !== null && typeof value === "object") {
-    const out: Record<string, JsonValue> = {};
+    const out: Record<string, JsonValue> = Object.create(null);
     for (const key of Object.keys(value).sort()) {
       out[key] = sortValue(value[key] as JsonValue);
     }

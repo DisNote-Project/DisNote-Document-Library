@@ -8,6 +8,7 @@
 - KaTeX — MIT — https://katex.org
 - MathLive — MIT — https://mathlive.io
 - CortexJS Compute Engine — MIT — https://cortexjs.io/compute-engine/
+- fflate — MIT — https://github.com/101arrowz/fflate
 
 KaTeX parses stored mathematical source into semantic MathML. MathLive provides
 the visual, slot-based equation input used by the React editor. No third-party

@@ -10,8 +10,13 @@ import { extractDocumentPlainText, extractHeadings } from "../../core/index.js";
 import { escapeHtml } from "../sanitization/escape.js";
 import { safeHref, safeColor, type LinkPolicy } from "../sanitization/url.js";
 import { renderMathToMarkup } from "../../math/index.js";
+import { uiMessages } from "../../ui/messages.js";
+import type { DatabaseQueryResult } from "../../database/index.js";
 
 export interface HtmlRenderPolicy {
+  locale?: string;
+  breadcrumbs?: { id: string; title: string; href?: string }[];
+  databaseViews?: Readonly<Record<string, DatabaseQueryResult>>;
   link?: LinkPolicy;
   /** Resolve an image assetId to a URL. */
   resolveAssetUrl?: (assetId: string) => string | undefined;
@@ -88,6 +93,7 @@ export function renderDocumentToHtml(
 class RenderContext {
   readonly warnings: RenderWarning[] = [];
   readonly assets: AssetReference[] = [];
+  private get messages() { return uiMessages(this.policy.locale ?? this.document.metadata.locale); }
 
   constructor(
     private readonly document: DisNoteDocument,
@@ -270,13 +276,18 @@ class RenderContext {
             (heading) =>
               `<li data-level="${heading.level}"><a href="#${escapeHtml(
                 encodeURIComponent(heading.blockId)
-              )}">${escapeHtml(heading.text || "Untitled heading")}</a></li>`
+              )}">${escapeHtml(heading.text || this.messages.untitledHeading)}</a></li>`
           )
           .join("");
-        return `<nav class="disnote-toc" aria-label="${LIBRARY_MESSAGES.TABLE_OF_CONTENTS}"><ol>${items}</ol></nav>`;
+        return `<nav class="disnote-toc" aria-label="${escapeHtml(this.messages.toc)}"><ol>${items}</ol></nav>`;
       }
-      case "breadcrumb":
-        return `<div class="disnote-breadcrumb" data-unresolved="true">${LIBRARY_MESSAGES.BREADCRUMB_UNAVAILABLE}</div>`;
+      case "breadcrumb": {
+        if (this.policy.breadcrumbs?.length) return `<nav aria-label="${escapeHtml(this.messages.breadcrumb)}">${this.policy.breadcrumbs.map(item => {
+          const href = item.href ? safeHref(item.href, this.policy.link) : null;
+          return href ? `<a href="${escapeHtml(href)}">${escapeHtml(item.title)}</a>` : escapeHtml(item.title);
+        }).join(" / ")}</nav>`;
+        return `<div class="disnote-breadcrumb" data-unresolved="true">${escapeHtml(this.messages.unavailable)}</div>`;
+      }
       case "syncedBlock":
         return `<div class="disnote-synced">${this.renderInline(
           block.content
@@ -285,7 +296,7 @@ class RenderContext {
         const label =
           typeof block.props["label"] === "string"
             ? block.props["label"]
-            : "Template Button";
+            : this.messages.template;
         return `<span class="disnote-template" data-readonly="true">${escapeHtml(
           label
         )}</span>`;
@@ -326,7 +337,7 @@ class RenderContext {
         const name =
           typeof block.props["name"] === "string"
             ? block.props["name"]
-            : "Attachment";
+            : this.messages.attachment;
         const href = this.safeBlockUrl(block, url);
         return href
           ? `<div class="disnote-file"><a href="${escapeHtml(
@@ -344,11 +355,13 @@ class RenderContext {
         const title =
           typeof block.props["title"] === "string"
             ? block.props["title"]
-            : "Database";
+            : this.messages.database;
         const databaseId =
           typeof block.props["databaseId"] === "string"
             ? block.props["databaseId"]
             : "";
+        const view = this.policy.databaseViews?.[databaseId];
+        if (view) return `<section><h3>${escapeHtml(view.database.title)}</h3><table><thead><tr>${view.database.properties.map(property => `<th>${escapeHtml(property.name)}</th>`).join("")}</tr></thead><tbody>${view.records.map(record => `<tr>${view.database.properties.map(property => `<td>${escapeHtml(String(record.values[property.id] ?? ""))}</td>`).join("")}</tr>`).join("")}</tbody></table></section>`;
         return `<div class="disnote-database" data-view="${escapeHtml(
           block.type
         )}" data-database-id="${escapeHtml(databaseId)}"><h3>${escapeHtml(

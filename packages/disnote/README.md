@@ -48,6 +48,10 @@ Current build guarantees and supported versions are recorded in
 
 ## Quick start
 
+For workspace/database APIs, durable browser adapters, offline/collaboration,
+action buttons, Notion interchange and the native bridge, see
+[`WORKSPACE_CAPABILITIES.md`](https://github.com/DisNote-Project/DisNote-Document-Library/blob/main/docs/WORKSPACE_CAPABILITIES.md).
+
 For package-by-package features and complete usage examples, read
 [`FEATURES_AND_USAGE.md`](https://github.com/DisNote-Project/DisNote-Document-Library/blob/main/docs/FEATURES_AND_USAGE.md).
 If you are new to React document editors, start with

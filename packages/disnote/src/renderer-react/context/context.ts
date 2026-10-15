@@ -1,5 +1,6 @@
 import { LIBRARY_MESSAGES } from "../../core/messages.js";
-import { createContext, useContext, type ReactNode } from "react";
+import { uiMessages, type UIMessageKey } from "../../ui/messages.js";
+import { createContext, useContext, useMemo, type ReactNode } from "react";
 import type {
   BlockRegistry,
   DisNoteBlock,
@@ -66,6 +67,9 @@ export interface ReactBlockRenderer {
 export type ReactBlockRenderers = Readonly<Record<string, ReactBlockRenderer>>;
 
 export interface DocumentRenderContextValue {
+  locale?: string;
+  messages?: Record<UIMessageKey, string>;
+  breadcrumbs?: { id: string; title: string; href?: string }[];
   registry: BlockRegistry;
   theme: DocumentTheme;
   mode: "published" | "preview";
@@ -79,8 +83,8 @@ export interface DocumentRenderContextValue {
 export const DocumentRenderContext =
   createContext<DocumentRenderContextValue | null>(null);
 
-export function useDocumentRenderContext(): DocumentRenderContextValue {
+export function useDocumentRenderContext(): DocumentRenderContextValue & { locale: string; messages: Record<UIMessageKey, string> } {
   const ctx = useContext(DocumentRenderContext);
   if (!ctx) throw new Error(LIBRARY_MESSAGES.RENDER_CONTEXT_REQUIRED);
-  return ctx;
+  return useMemo(() => ({ ...ctx, locale: ctx.locale ?? "en", messages: ctx.messages ?? uiMessages(ctx.locale) }), [ctx]);
 }

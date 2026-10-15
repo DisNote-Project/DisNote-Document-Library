@@ -1,11 +1,13 @@
 /**
  * Editor localization.
  *
- * English is the only dictionary bundled by the library. Applications can
+ * English and Vietnamese are bundled by the library. Applications can
  * provide partial message overrides without forking DisNote. Components must
  * use message keys instead of embedding user-facing text directly.
  */
 
+import { VI_EDITOR_MESSAGES } from "./vi.js";
+export { VI_EDITOR_MESSAGES } from "./vi.js";
 export const DEFAULT_EDITOR_LOCALE = "en";
 
 export const EN_EDITOR_MESSAGES = {
@@ -178,8 +180,7 @@ export function defineEditorMessages(
 
 /**
  * Create an editor translator. Passing a locale string remains supported for
- * compatibility; since English is the sole bundled locale, other languages
- * should also provide `messages`.
+ * compatibility. Other languages can provide application message overrides.
  */
 export function createI18n(
   options: EditorLocale | CreateI18nOptions = DEFAULT_EDITOR_LOCALE
@@ -187,7 +188,7 @@ export function createI18n(
   const normalized =
     typeof options === "string" ? { locale: options } : options;
   const locale = normalized.locale ?? DEFAULT_EDITOR_LOCALE;
-  const messages = defineEditorMessages(normalized.messages);
+  const messages = { ...(locale.toLowerCase().split("-")[0] === "vi" ? VI_EDITOR_MESSAGES : EN_EDITOR_MESSAGES), ...normalized.messages };
 
   return {
     locale,

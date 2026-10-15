@@ -8,8 +8,11 @@ import {
 } from "@disnote/core";
 import { DocumentRenderer } from "@disnote/core/renderer/react";
 import { articleRegistry } from "@disnote/core";
+import { PARITY_ROUTES } from "./parity/constants.js";
 
 const EditorPanel = lazy(() => import("./EditorPanel.js"));
+const ParityLab = lazy(() => import("./ParityLab.js").then(module => ({ default: module.ParityLab })));
+const MobileEditorLab = lazy(() => import("./parity/MobileEditorLab.js").then(module => ({ default: module.MobileEditorLab })));
 
 const initialDocument = createDocument({
   metadata: { title: "Demo" },
@@ -22,6 +25,8 @@ const initialDocument = createDocument({
 export function App(): JSX.Element {
   const [doc, setDoc] = useState<DisNoteDocument>(initialDocument);
   const [dark, setDark] = useState(false);
+  if (window.location.pathname === PARITY_ROUTES.LAB) return <Suspense fallback={null}><ParityLab /></Suspense>;
+  if (window.location.pathname === PARITY_ROUTES.MOBILE) return <Suspense fallback={null}><MobileEditorLab /></Suspense>;
 
   return (
     <main className="demo-grid">

@@ -12,3 +12,5 @@ export {
   type ApplyResult,
   type DiffEntry,
 } from "./ai-operations.js";
+export * from "./search.js";
+export * from "./provider.js";

@@ -3,6 +3,19 @@
 This file records what the repository verifies in CI. It is the source of truth
 when older roadmap documents describe a package as a scaffold.
 
+## Local workspace capabilities checkpoint — 2026-10-15
+
+Latest-source `npm run verify` passes, including typecheck, lint, all package and
+example builds and Storybook. Unit result: 153 passed, 0 failed, 8 configured Mongo
+skips (161 total). Desktop/Pixel Playwright result: 29 passed, 1 desktop skip for
+the mobile-only overflow case. Production-only npm audit reports zero advisories.
+Package dry run includes all 34 public exports, README, LICENSE and notices.
+The acceptance ledger and integration limits are maintained in
+[`NOTION_PARITY_ACCEPTANCE.md`](NOTION_PARITY_ACCEPTANCE.md).
+
+Live Mongo collaboration, real AI, notification delivery, generated PDF artifacts
+and Android/iOS WebView integration are not covered by these local results.
+
 ## Supported runtime
 
 - Node.js 20.19 or newer

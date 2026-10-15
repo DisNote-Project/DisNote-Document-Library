@@ -34,4 +34,10 @@ reproduced or referenced below.
 - Homepages: https://mathlive.io and https://cortexjs.io/compute-engine/
 - Usage: provides the visual, slot-based equation input in the React editor.
 
+## fflate
+
+- License: MIT
+- Homepage: https://github.com/101arrowz/fflate
+- Usage: bounded ZIP compression and decompression for document workspace archives.
+
 This file is informational and does not constitute legal advice.

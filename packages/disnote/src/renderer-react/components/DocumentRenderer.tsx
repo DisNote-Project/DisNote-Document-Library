@@ -14,8 +14,11 @@ import {
   type ReactBlockRenderers,
 } from "../context/context.js";
 import { BlockList } from "./blocks.js";
+import { uiMessages } from "../../ui/messages.js";
 
 export interface DocumentRendererProps {
+  locale?: string;
+  breadcrumbs?: { id: string; title: string; href?: string }[];
   document: DisNoteDocument;
   registry: BlockRegistry;
   mode?: "published" | "preview";
@@ -34,6 +37,9 @@ export interface DocumentRendererProps {
 export function DocumentRenderer(props: DocumentRendererProps): ReactNode {
   const theme = props.theme ?? defaultTheme;
   const value = {
+    locale: props.locale ?? props.document.metadata.locale ?? "en",
+    messages: uiMessages(props.locale ?? props.document.metadata.locale),
+    ...(props.breadcrumbs ? { breadcrumbs: props.breadcrumbs } : {}),
     registry: props.registry,
     theme,
     mode: props.mode ?? "published",

@@ -1,4 +1,3 @@
-import { LIBRARY_MESSAGES } from "../../core/messages.js";
 import type { ReactNode } from "react";
 import {
   safeUrl,
@@ -8,6 +7,9 @@ import {
 import { InlineRenderer } from "./InlineRenderer.js";
 import { MathRenderer } from "./MathRenderer.js";
 import { useDocumentRenderContext } from "../context/context.js";
+import { DatabaseView, type DatabaseViewKind } from "../../database/react/DatabaseView.js";
+import { ActionButton } from "../../actions/react/index.js";
+import { ACTION_BLOCK_PROPERTIES } from "../../actions/builders.js";
 
 const LIST_TYPES = new Set(["bulletListItem", "numberedListItem"]);
 const SAFE_INLINE_IMAGE = /^data:image\/(?:png|jpe?g|gif|webp|avif);base64,/i;
@@ -290,6 +292,7 @@ function TableBlock({ block }: { block: DisNoteBlock }): ReactNode {
 }
 
 function MathBlock({ block }: { block: DisNoteBlock }): ReactNode {
+  const { messages } = useDocumentRenderContext();
   const code =
     typeof block.props["code"] === "string" ? block.props["code"] : "";
   return (
@@ -307,7 +310,7 @@ function MathBlock({ block }: { block: DisNoteBlock }): ReactNode {
         code={code}
         fallback={
           <code style={{ color: "#b91c1c" }}>
-            {code || "Invalid math expression"}
+            {code || messages.unavailable}
           </code>
         }
       />
@@ -404,10 +407,10 @@ function BookmarkBlock({ block }: { block: DisNoteBlock }): ReactNode {
 }
 
 function TableOfContentsBlock(): ReactNode {
-  const { headings, theme } = useDocumentRenderContext();
+  const { headings, theme, messages } = useDocumentRenderContext();
   return (
     <nav
-      aria-label={LIBRARY_MESSAGES.TABLE_OF_CONTENTS}
+      aria-label={messages.toc}
       className="disnote-toc-block"
       style={{
         padding: 12,
@@ -426,11 +429,11 @@ function TableOfContentsBlock(): ReactNode {
           marginBottom: 8,
         }}
       >
-        {LIBRARY_MESSAGES.TABLE_OF_CONTENTS}
+        {messages.toc}
       </div>
       {headings.length === 0 ? (
         <span style={{ color: theme.colors.textMuted }}>
-          {LIBRARY_MESSAGES.NO_HEADINGS}
+          {messages.noHeadings}
         </span>
       ) : (
         headings.map((heading) => (
@@ -445,7 +448,7 @@ function TableOfContentsBlock(): ReactNode {
               marginLeft: Math.max(0, heading.level - 1) * 16,
             }}
           >
-            {heading.text || "Untitled heading"}
+            {heading.text || messages.untitledHeading}
           </a>
         ))
       )}
@@ -454,18 +457,24 @@ function TableOfContentsBlock(): ReactNode {
 }
 
 function BreadcrumbBlock(): ReactNode {
+  const { breadcrumbs, messages, urlPolicy } = useDocumentRenderContext();
+  if (breadcrumbs?.length) return <nav aria-label={messages.breadcrumb}>{breadcrumbs.map((item, index) => {
+    const href = item.href ? safeUrl(item.href, urlPolicy) : null;
+    return <span key={item.id}>{index > 0 ? " / " : ""}{href ? <a href={href}>{item.title}</a> : item.title}</span>;
+  })}</nav>;
   return (
     <div
       className="disnote-breadcrumb-block"
       data-unresolved="true"
       style={{ fontSize: 12, color: "#64748b", margin: "12px 0" }}
     >
-      Breadcrumb unavailable
+      {messages.unavailable}
     </div>
   );
 }
 
 function SyncedBlock({ block }: { block: DisNoteBlock }): ReactNode {
+  const { messages } = useDocumentRenderContext();
   return (
     <div
       className="disnote-synced-block"
@@ -483,7 +492,7 @@ function SyncedBlock({ block }: { block: DisNoteBlock }): ReactNode {
           marginBottom: 4,
         }}
       >
-        {LIBRARY_MESSAGES.SYNCED_CONTENT}
+        {messages.syncedBlock}
       </div>
       <InlineRenderer content={block.content} />
       {block.children && block.children.length > 0 ? (
@@ -494,10 +503,13 @@ function SyncedBlock({ block }: { block: DisNoteBlock }): ReactNode {
 }
 
 function TemplateButton({ block }: { block: DisNoteBlock }): ReactNode {
+  const { messages, locale } = useDocumentRenderContext();
   const label =
     typeof block.props["label"] === "string"
       ? block.props["label"]
-      : "Template Button";
+      : messages.template;
+  const actionId = block.props[ACTION_BLOCK_PROPERTIES.ID];
+  if (typeof actionId === "string" && actionId) return <ActionButton actionId={actionId} label={label} locale={locale} />;
   return (
     <span
       className="disnote-template-button"
@@ -547,8 +559,8 @@ function ToggleHeading({
 }
 
 function VideoBlock({ block }: { block: DisNoteBlock }): ReactNode {
-  const { urlPolicy } = useDocumentRenderContext();
-  const url = typeof block.props["url"] === "string" ? block.props["url"] : "";
+  const { urlPolicy, assetResolver } = useDocumentRenderContext();
+  const url = (typeof block.props["assetId"] === "string" ? assetResolver?.(block.props["assetId"]) : undefined) ?? (typeof block.props["url"] === "string" ? block.props["url"] : "");
   const src = safeUrl(url, urlPolicy);
   const caption =
     typeof block.props["caption"] === "string" ? block.props["caption"] : "";
@@ -583,8 +595,8 @@ function VideoBlock({ block }: { block: DisNoteBlock }): ReactNode {
 }
 
 function AudioBlock({ block }: { block: DisNoteBlock }): ReactNode {
-  const { urlPolicy } = useDocumentRenderContext();
-  const url = typeof block.props["url"] === "string" ? block.props["url"] : "";
+  const { urlPolicy, assetResolver } = useDocumentRenderContext();
+  const url = (typeof block.props["assetId"] === "string" ? assetResolver?.(block.props["assetId"]) : undefined) ?? (typeof block.props["url"] === "string" ? block.props["url"] : "");
   const src = safeUrl(url, urlPolicy);
   const caption =
     typeof block.props["caption"] === "string" ? block.props["caption"] : "";
@@ -608,13 +620,13 @@ function AudioBlock({ block }: { block: DisNoteBlock }): ReactNode {
 }
 
 function FileBlock({ block }: { block: DisNoteBlock }): ReactNode {
-  const { urlPolicy } = useDocumentRenderContext();
-  const url = typeof block.props["url"] === "string" ? block.props["url"] : "";
+  const { urlPolicy, assetResolver, messages } = useDocumentRenderContext();
+  const url = (typeof block.props["assetId"] === "string" ? assetResolver?.(block.props["assetId"]) : undefined) ?? (typeof block.props["url"] === "string" ? block.props["url"] : "");
   const href = safeUrl(url, urlPolicy);
   const name =
     typeof block.props["name"] === "string"
       ? block.props["name"]
-      : "Attachment";
+      : messages.attachment;
   const caption =
     typeof block.props["caption"] === "string" ? block.props["caption"] : "";
   return (
@@ -656,14 +668,19 @@ function FileBlock({ block }: { block: DisNoteBlock }): ReactNode {
 }
 
 function DatabaseViewBlock({ block }: { block: DisNoteBlock }): ReactNode {
+  const { locale, messages } = useDocumentRenderContext();
   const title =
     typeof block.props["title"] === "string"
       ? block.props["title"]
-      : "Database";
+      : messages.database;
   const databaseId =
     typeof block.props["databaseId"] === "string"
       ? block.props["databaseId"]
       : "";
+  if (databaseId) {
+    const view = block.type === "tableDb" ? "table" : block.type === "listDb" ? "list" : block.type;
+    return <DatabaseView databaseId={databaseId} view={view as DatabaseViewKind} locale={locale} readonly />;
+  }
   return (
     <div
       className="disnote-database-widget"
@@ -690,7 +707,7 @@ function DatabaseViewBlock({ block }: { block: DisNoteBlock }): ReactNode {
           📊 {title} ({block.type})
         </span>
         <small style={{ color: "#94a3b8", fontSize: 11 }}>
-          {LIBRARY_MESSAGES.DATABASE_REFERENCE}
+          {messages.database}
         </small>
       </div>
     </div>
@@ -698,10 +715,10 @@ function DatabaseViewBlock({ block }: { block: DisNoteBlock }): ReactNode {
 }
 
 function ImageBlock({ block }: { block: DisNoteBlock }): ReactNode {
-  const { assetResolver } = useDocumentRenderContext();
+  const { assetResolver, urlPolicy } = useDocumentRenderContext();
 
   // BlockNote stores the image URL directly in block.props.url (base64 or remote).
-  // assetId / assetResolver is an optional secondary lookup for custom asset stores.
+  // An explicit asset resolver is authoritative, including prepared offline blobs.
   const directUrl =
     typeof block.props["url"] === "string"
       ? (block.props["url"] as string).trim()
@@ -711,7 +728,7 @@ function ImageBlock({ block }: { block: DisNoteBlock }): ReactNode {
       ? (block.props["assetId"] as string)
       : "";
   const alt =
-    typeof block.props["name"] === "string"
+    typeof block.props["alt"] === "string" ? block.props["alt"] : typeof block.props["name"] === "string"
       ? (block.props["name"] as string)
       : "";
   const caption =
@@ -727,12 +744,15 @@ function ImageBlock({ block }: { block: DisNoteBlock }): ReactNode {
     SAFE_INLINE_IMAGE.test(value)
       ? value
       : safeUrl(value, {
-          allowedSchemes: ["https:", "http:"],
-          allowRelative: true,
+          ...urlPolicy,
+          allowedSchemes: (urlPolicy.allowedSchemes ?? ["https:", "http:"]).filter(scheme => ["https:", "http:", "blob:"].includes(scheme)),
         });
 
   let url: string | undefined;
-  if (directUrl && safeImageUrl(directUrl)) {
+  const resolvedUrl = assetId ? assetResolver?.(assetId)?.trim() : undefined;
+  if (resolvedUrl && safeImageUrl(resolvedUrl)) {
+    url = safeImageUrl(resolvedUrl)!;
+  } else if (directUrl && safeImageUrl(directUrl)) {
     url = safeImageUrl(directUrl)!;
   } else if (assetId) {
     const candidate = assetResolver?.(assetId)?.trim() ?? "";
@@ -782,7 +802,7 @@ export interface UnknownBlockProps {
 
 /** Read-only fallback that preserves an unknown block instead of dropping it. */
 export function UnknownBlock({ block, reason }: UnknownBlockProps): ReactNode {
-  const { theme } = useDocumentRenderContext();
+  const { theme, messages } = useDocumentRenderContext();
   return (
     <div
       className="disnote-unknown-block"
@@ -795,7 +815,7 @@ export function UnknownBlock({ block, reason }: UnknownBlockProps): ReactNode {
         color: theme.colors.textMuted,
       }}
     >
-      Unsupported block: <code>{block.type}</code>
+      {messages.unknown}: <code>{block.type}</code>
     </div>
   );
 }

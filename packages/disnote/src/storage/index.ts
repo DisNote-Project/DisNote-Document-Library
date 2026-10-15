@@ -5,3 +5,5 @@ export {
   type CreateDocumentInput,
   type InMemoryRepositoryOptions,
 } from "./in-memory-repository.js";
+export * from "./history.js";
+export * from "./revision-repository.js";
