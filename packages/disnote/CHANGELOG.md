@@ -1,5 +1,20 @@
 # @disnote/core
 
+## 0.8.0
+
+### Minor Changes
+
+- 7ba4fa6: Add a lazy React quick-start entry, optional scoped CSS, public design tokens and
+  typed per-instance styles. Preserve stable editor/renderer classes when consumers
+  add their own classes; map renderer themes to overridable CSS variables.
+- 033ed9b: Add typed database/query/formula/relation services, workspace pages and shared
+  sources, atomic button actions, comment/history controls, durable browser adapters,
+  offline document/asset support, collaborative editor transports, authorized search
+  and AI preview, Notion/ZIP interchange, printable output and a mobile editor bridge.
+  Bundle Vietnamese editor messages and localize reader controls. Keep collaboration
+  and shared-source editor dependencies behind lazy boundaries. Preserve prototype-like
+  keys during canonical serialization.
+
 ## 0.7.0
 
 ### Minor Changes
