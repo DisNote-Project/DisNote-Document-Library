@@ -1,6 +1,6 @@
 {
   "name": "@disnote/core",
-  "version": "0.7.0",
+  "version": "0.8.0",
   "description": "DisNote Document unified core library.",
   "license": "Apache-2.0",
   "keywords": [
@@ -217,7 +217,11 @@
     },
     "./styles.css": "./styles/document.css",
     "./database/styles.css": "./styles/database.css",
-    "./diagrams/react": { "types": "./dist/diagrams/index.d.ts", "import": "./dist/diagrams/index.js", "default": "./dist/diagrams/index.js" },
+    "./diagrams/react": {
+      "types": "./dist/diagrams/index.d.ts",
+      "import": "./dist/diagrams/index.js",
+      "default": "./dist/diagrams/index.js"
+    },
     "./react/view": {
       "types": "./dist/react/view.d.ts",
       "import": "./dist/react/view.js",
