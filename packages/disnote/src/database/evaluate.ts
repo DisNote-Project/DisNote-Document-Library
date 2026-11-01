@@ -1,5 +1,6 @@
-import { DATABASE_ERRORS, PROPERTY_TYPES, type CellValue, type DatabaseFilter, type DatabaseProperty, type Formula } from "./model.js";
-const FORMULA_OPERATORS = new Set(["add", "subtract", "multiply", "divide", "concat", "equal", "greater", "and", "or"]);
+import { DATABASE_ERRORS, DATABASE_FILTER_OPERATORS, FORMULA_OPERATORS, PROPERTY_TYPES, type CellValue, type DatabaseFilter, type DatabaseProperty, type Formula } from "./model.js";
+import { DATABASE_VALUE_RULES, isDatabaseDate, isDatabaseUrl } from "./value-rules.js";
+import { evaluateExtendedFormula, FORMULA_ARITY } from "./formula-operations.js";
 export function validateFormula(formula: Formula, propertyIds: Set<string>, depth = 0): void {
   if (!formula || typeof formula !== "object" || depth > 32) throw new Error(DATABASE_ERRORS.INVALID);
   switch (formula.kind) {
@@ -9,7 +10,7 @@ export function validateFormula(formula: Formula, propertyIds: Set<string>, dept
     case "property": if (!propertyIds.has(formula.propertyId)) throw new Error(DATABASE_ERRORS.INVALID); return;
     case "if": validateFormula(formula.condition, propertyIds, depth + 1); validateFormula(formula.yes, propertyIds, depth + 1); validateFormula(formula.no, propertyIds, depth + 1); return;
     case "operation":
-      if (!FORMULA_OPERATORS.has(formula.operator) || !Array.isArray(formula.args) || formula.args.length > 100 || (["divide", "equal", "greater"].includes(formula.operator) && formula.args.length !== 2)) throw new Error(DATABASE_ERRORS.INVALID);
+      if (!FORMULA_OPERATORS.includes(formula.operator) || !Array.isArray(formula.args) || formula.args.length > 100 || (FORMULA_ARITY[formula.operator] !== undefined && formula.args.length !== FORMULA_ARITY[formula.operator])) throw new Error(DATABASE_ERRORS.INVALID);
       for (const arg of formula.args) validateFormula(arg, propertyIds, depth + 1);
       return;
     default: throw new Error(DATABASE_ERRORS.INVALID);
@@ -20,7 +21,7 @@ export function validateFilter(filter: DatabaseFilter, propertyIds: Set<string>,
   if (filter.kind === "all" || filter.kind === "any") {
     if (!Array.isArray(filter.filters) || filter.filters.length > 100) throw new Error(DATABASE_ERRORS.INVALID);
     for (const nested of filter.filters) validateFilter(nested, propertyIds, depth + 1);
-  } else if (filter.kind !== "condition" || !propertyIds.has(filter.propertyId) || !["equal", "contains", "greater", "less", "empty"].includes(filter.operator)) throw new Error(DATABASE_ERRORS.INVALID);
+  } else if (filter.kind !== "condition" || !propertyIds.has(filter.propertyId) || !DATABASE_FILTER_OPERATORS.includes(filter.operator)) throw new Error(DATABASE_ERRORS.INVALID);
 }
 
 export function validateCell(property: DatabaseProperty, value: CellValue): boolean {
@@ -29,7 +30,11 @@ export function validateCell(property: DatabaseProperty, value: CellValue): bool
     case PROPERTY_TYPES.TEXT: return typeof value === "string";
     case PROPERTY_TYPES.NUMBER: return typeof value === "number" && Number.isFinite(value);
     case PROPERTY_TYPES.CHECKBOX: return typeof value === "boolean";
-    case PROPERTY_TYPES.DATE: return typeof value === "string" && Number.isFinite(Date.parse(value));
+    case PROPERTY_TYPES.DATE: return typeof value === "string" && isDatabaseDate(value);
+    case PROPERTY_TYPES.URL: return typeof value === "string" && isDatabaseUrl(value);
+    case PROPERTY_TYPES.EMAIL: return typeof value === "string" && value.length <= 254 && DATABASE_VALUE_RULES.EMAIL.test(value);
+    case PROPERTY_TYPES.PHONE: return typeof value === "string" && DATABASE_VALUE_RULES.PHONE.test(value) && value.replace(/\D/g, "").length >= 3;
+    case PROPERTY_TYPES.STATUS:
     case PROPERTY_TYPES.SELECT: return typeof value === "string" && (property.options ?? []).includes(value);
     case PROPERTY_TYPES.MULTI_SELECT: return Array.isArray(value) && value.every(v => typeof v === "string" && (property.options ?? []).includes(v));
     case PROPERTY_TYPES.PERSON:
@@ -62,9 +67,10 @@ export async function evaluateFormula(formula: Formula, get: (id: string) => Pro
     case "greater": { const n = numeric(); result = (n[0] ?? 0) > (n[1] ?? 0); break; }
     case "and": result = args.every(Boolean); break;
     case "or": result = args.some(Boolean); break;
-    default: throw new Error(DATABASE_ERRORS.INVALID);
+    default: result = evaluateExtendedFormula(formula.operator, args);
   }
   if (typeof result === "number" && !Number.isFinite(result)) throw new Error(DATABASE_ERRORS.INVALID);
+  if ((typeof result === "string" && result.length > 1000000) || (Array.isArray(result) && result.length > 10000)) throw new Error(DATABASE_ERRORS.LIMIT);
   return result;
 }
 
@@ -74,12 +80,21 @@ export function matchesFilter(values: Record<string, CellValue>, filter: Databas
   if (filter.kind === "any") return filter.filters.some(f => matchesFilter(values, f, depth + 1));
   if (filter.kind !== "condition") return false;
   const value = values[filter.propertyId] ?? null;
+  const empty = value === null || value === "" || (Array.isArray(value) && value.length === 0);
+  const contains = Array.isArray(value) ? value.includes(String(filter.value)) : typeof value === "string" && value.toLocaleLowerCase().includes(String(filter.value ?? "").toLocaleLowerCase());
   switch (filter.operator) {
     case "equal": return JSON.stringify(value) === JSON.stringify(filter.value);
-    case "contains": return Array.isArray(value) ? value.includes(String(filter.value)) : typeof value === "string" && value.toLocaleLowerCase().includes(String(filter.value ?? "").toLocaleLowerCase());
+    case "notEqual": return JSON.stringify(value) !== JSON.stringify(filter.value);
+    case "contains": return contains;
+    case "notContains": return !contains;
     case "greater": return typeof value === "number" && typeof filter.value === "number" && value > filter.value;
+    case "greaterOrEqual": return typeof value === "number" && typeof filter.value === "number" && value >= filter.value;
     case "less": return typeof value === "number" && typeof filter.value === "number" && value < filter.value;
-    case "empty": return value === null || value === "" || (Array.isArray(value) && value.length === 0);
+    case "lessOrEqual": return typeof value === "number" && typeof filter.value === "number" && value <= filter.value;
+    case "empty": return empty;
+    case "notEmpty": return !empty;
+    case "before": return typeof value === "string" && typeof filter.value === "string" && Date.parse(value) < Date.parse(filter.value);
+    case "after": return typeof value === "string" && typeof filter.value === "string" && Date.parse(value) > Date.parse(filter.value);
   }
 }
 

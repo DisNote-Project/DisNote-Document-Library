@@ -40,4 +40,10 @@ reproduced or referenced below.
 - Homepage: https://github.com/101arrowz/fflate
 - Usage: bounded ZIP compression and decompression for document workspace archives.
 
+## Mermaid, maxGraph and DOMPurify
+
+- Mermaid (MIT): https://github.com/mermaid-js/mermaid — local diagram rendering.
+- maxGraph (Apache-2.0): https://github.com/maxGraph/maxGraph — local mxGraph XML rendering. This is not the complete diagrams.net editor or stencil library.
+- DOMPurify (Apache-2.0 OR MPL-2.0): https://github.com/cure53/DOMPurify — sanitizes rendered Mermaid SVG.
+
 This file is informational and does not constitute legal advice.

@@ -1,0 +1,11 @@
+import { useState } from "react";
+import type { DatabaseProperty, DatabaseTaskSchedule } from "../model.js";
+import { useDatabaseMessages } from "./customization.js";
+export function TaskScheduleSettings({ properties, value, revision, save, locale }: { properties: DatabaseProperty[]; value?: DatabaseTaskSchedule; revision: number; save(value: DatabaseTaskSchedule | null, revision: number): Promise<void>; locale?: string }) {
+  const [draft, setDraft] = useState(value), [base] = useState(revision), [busy, setBusy] = useState(false), [failed, setFailed] = useState(false), m = useDatabaseMessages(locale), dates = properties.filter(property => property.type === "date");
+  return <form className="disnote-db__form" aria-label={m.taskSchedule} onSubmit={event => { event.preventDefault(); setBusy(true); setFailed(false); void save(draft ?? null, base).catch(() => setFailed(true)).finally(() => setBusy(false)); }}>
+    <label>{m.scheduleStart}<select value={draft?.startPropertyId ?? ""} onChange={event => setDraft(event.target.value ? { startPropertyId: event.target.value, autoShift: draft?.autoShift ?? false, avoidWeekends: draft?.avoidWeekends ?? false, ...(draft?.endPropertyId && draft.endPropertyId !== event.target.value ? { endPropertyId: draft.endPropertyId } : {}) } : undefined)}><option value="">{m.emptyCell}</option>{dates.map(property => <option key={property.id} value={property.id}>{property.name}</option>)}</select></label>
+    {draft && <><label>{m.scheduleEnd}<select value={draft.endPropertyId ?? ""} onChange={event => setDraft({ ...draft, endPropertyId: event.target.value || undefined })}><option value="">{m.emptyCell}</option>{dates.filter(property => property.id !== draft.startPropertyId).map(property => <option key={property.id} value={property.id}>{property.name}</option>)}</select></label><label><input type="checkbox" checked={draft.autoShift} onChange={event => setDraft({ ...draft, autoShift: event.target.checked })} />{m.autoShift}</label><label><input type="checkbox" checked={draft.avoidWeekends ?? false} onChange={event => setDraft({ ...draft, avoidWeekends: event.target.checked })} />{m.avoidWeekends}</label></>}
+    {failed && <p role="alert">{m.conflict}</p>}<button type="submit" disabled={busy}>{m.save}</button>
+  </form>;
+}

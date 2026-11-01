@@ -1,4 +1,21 @@
 /* Optional, scoped defaults. Import once; override tokens on any instance/ancestor. */
+@import './database.css';
+
+.disnote-diagram-editor { border:1px solid var(--disnote-border,#dfe7e7); border-radius:var(--disnote-radius,8px); overflow:hidden; width:100%; }
+.disnote-diagram-editor > header { display:flex; justify-content:space-between; align-items:center; padding:10px 14px; background:var(--disnote-surface,#f5f8f8); font-size:13px; }
+.disnote-diagram-editor button { padding:5px 9px; border:1px solid var(--disnote-border,#dfe7e7); border-radius:5px; cursor:pointer; background:var(--disnote-background,#fff); color:inherit; }
+.disnote-diagram-editor textarea { display:block; width:100%; box-sizing:border-box; min-height:160px; resize:vertical; padding:14px; border:0; border-bottom:1px solid var(--disnote-border,#dfe7e7); background:var(--disnote-background,#fff); color:inherit; font:13px/1.6 monospace; }
+.disnote-diagram { padding:16px; min-width:0; overflow:auto; }
+.disnote-diagram__canvas > svg { max-width:100%; height:auto; display:block; margin:auto; }
+.disnote-diagram[data-diagram-format="mermaid"] svg { font:14px system-ui,sans-serif; }
+.disnote-diagram[data-diagram-format="mermaid"] svg text { fill:var(--disnote-text,#243438); }
+.disnote-diagram[data-diagram-format="mermaid"] svg .node rect,
+.disnote-diagram[data-diagram-format="mermaid"] svg .node polygon,
+.disnote-diagram[data-diagram-format="mermaid"] svg .actor,
+.disnote-diagram[data-diagram-format="mermaid"] svg .labelBox { fill:var(--disnote-surface,#e5f2f1); stroke:var(--disnote-focus,#649d99); }
+.disnote-diagram[data-diagram-format="mermaid"] svg .flowchart-link,
+.disnote-diagram[data-diagram-format="mermaid"] svg .messageLine0,
+.disnote-diagram[data-diagram-format="mermaid"] svg .actor-line { fill:none; stroke:var(--disnote-text-muted,#648080); }
 :where(.disnote-editor, .disnote-document) {
   box-sizing: border-box;
   font-family: var(--disnote-font-family, system-ui, sans-serif);

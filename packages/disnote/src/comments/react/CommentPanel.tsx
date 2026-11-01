@@ -8,14 +8,17 @@ export interface CommentPanelProvider {
   reply(documentId: string, threadId: string, body: string, expectedRevision: number): Promise<void>;
   status(documentId: string, threadId: string, status: "open" | "resolved", expectedRevision: number): Promise<void>;
 }
-export function CommentPanel({ documentId, revision, provider, anchor = { type: "document" }, locale = "en", canComment = true, canResolve = true }: { documentId: string; revision: number; provider: CommentPanelProvider; anchor?: CommentAnchor; locale?: string; canComment?: boolean; canResolve?: boolean }): ReactNode {
+export function CommentPanel({ documentId, revision, provider, anchor = { type: "document" }, onClearAnchor, locale = "en", canComment = true, canResolve = true, onBusyChange }: { documentId: string; revision: number; provider: CommentPanelProvider; anchor?: CommentAnchor; onClearAnchor?(): void; locale?: string; canComment?: boolean; canResolve?: boolean; onBusyChange?(busy: boolean): void }): ReactNode {
   const messages = uiMessages(locale);
   const [state, setState] = useState<CommentState | null>(null), [error, setError] = useState(false), [busy, setBusy] = useState(false), [drafts, setDrafts] = useState<Record<string, string>>({});
-  const generation = useRef(0);
+  const generation = useRef(0), busyChanged = useRef(onBusyChange);
+  busyChanged.current = onBusyChange;
+  useEffect(() => () => { busyChanged.current?.(false); }, []);
   const reload = useCallback(async (expected = generation.current) => { const next = await provider.list(documentId); if (generation.current === expected) setState(next); }, [provider, documentId]);
   useEffect(() => { const current = ++generation.current; setState(null); setDrafts({}); setError(false); setBusy(false); void provider.list(documentId).then(next => { if (generation.current === current) setState(next); }, () => { if (generation.current === current) setError(true); }); return () => { generation.current++; }; }, [provider, documentId]);
-  const run = async (work: () => Promise<void>, draft?: string) => { const current = generation.current; setBusy(true); setError(false); try { await work(); await reload(current); if (draft && generation.current === current) setDrafts(value => ({ ...value, [draft]: "" })); } catch { if (generation.current === current) setError(true); } finally { if (generation.current === current) setBusy(false); } };
+  const run = async (work: () => Promise<void>, draft?: string) => { const current = generation.current; setBusy(true); busyChanged.current?.(true); setError(false); try { await work(); await reload(current); if (draft && generation.current === current) setDrafts(value => ({ ...value, [draft]: "" })); } catch { if (generation.current === current) setError(true); } finally { if (generation.current === current) { setBusy(false); busyChanged.current?.(false); } } };
   return <aside aria-label={messages.comments}><h3>{messages.comments}</h3>{error && <p role="alert">{messages.failed}<button type="button" onClick={() => void run(() => reload())}>{messages.retry}</button></p>}
+    {canComment && anchor.type !== "document" && <p role="status">{anchor.type === "inline-range" ? messages.commentOnSelection : messages.commentOnBlock}{onClearAnchor && <button type="button" onClick={onClearAnchor}>{messages.commentWholeDocument}</button>}</p>}
     {!state && !error && <p role="status">{messages.loading}</p>}
     {state?.threads.map(thread => <article key={thread.id}>
       {thread.orphaned && <p>{messages.orphaned}</p>}

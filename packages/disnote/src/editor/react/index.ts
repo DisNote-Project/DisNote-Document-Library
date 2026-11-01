@@ -5,6 +5,7 @@ export {
   type DocumentCapabilities,
   type ExperimentalEditorAccess,
 } from "./DisNoteEditor.js";
+export type { EditorInsertCommand } from "../insert-commands.js";
 export { Toolbar, type ToolbarProps, type ToolbarAction } from "./Toolbar.js";
 export { LinkEditor, type LinkEditorProps } from "./LinkEditor.js";
 export { ImageUploadButton, type ImageUploadButtonProps, type UploadProvider } from "./ImageUploadButton.js";

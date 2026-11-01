@@ -107,6 +107,7 @@ export function DocumentNativeRenderer(props: DocumentNativeRendererProps): Reac
           return <View key={block.id} style={{ flexDirection: "row" }}><Text>- </Text><Text>{renderInline(block.content)}</Text>{children}</View>;
         case "checklistItem":
           return <View key={block.id} style={{ flexDirection: "row" }}><Text>{block.props["checked"] === true ? "[x] " : "[ ] "}</Text><Text>{renderInline(block.content)}</Text>{children}</View>;
+        case "diagram":
         case "codeBlock":
           return <Text key={block.id} style={{ fontFamily: "monospace" }}>{String(block.props["code"] ?? "")}</Text>;
         case "math":

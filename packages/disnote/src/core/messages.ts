@@ -4,6 +4,7 @@
  * to implementation modules.
  */
 export const LIBRARY_MESSAGES = {
+  DIAGRAM_INVALID: "Diagram requires a supported format and bounded source code",
   duplicateBlockId: (id: string) => `block id "${id}" already exists`,
   parentNotFound: (id: string) => `parent "${id}" not found`,
   blockNotFound: (id: string) => `block "${id}" not found`,

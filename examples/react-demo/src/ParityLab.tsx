@@ -7,6 +7,7 @@ import { DocumentRenderer } from "@disnote/core/renderer/react";
 import { WorkspaceProvider, PageNavigator } from "@disnote/core/workspace/react";
 import { HistoryPanel } from "@disnote/core/storage/react";
 import { uiMessages } from "@disnote/core/ui";
+import "@disnote/core/database/styles.css";
 import { createParityRuntime, PARITY_LAB, parityRegistry, type ParityRuntime } from "./parity/runtime.js";
 export function ParityLab(): JSX.Element {
   const [selectedPage, setSelectedPage] = useState<DisNoteDocument | null>(null);
@@ -27,7 +28,7 @@ export function ParityLab(): JSX.Element {
   const refresh = () => { if (runtime) void runtime.latestDocument().then(setLatest, () => setFailed(true)); };
   const openPage = (id: string) => { if (runtime) void runtime.workspace.pages(false).then(pages => setSelectedPage(pages.find(page => page.id === id)?.document ?? null), () => setFailed(true)); };
   const reconnect = async () => { if (!runtime) return; const available = !remote; setRemote(available); runtime.setRemoteAvailable(available); if (available) { try { await runtime.offline.flush(PARITY_LAB.DOCUMENT); refresh(); } catch { setFailed(true); } } };
-  return <main style={{ padding: 16, maxWidth: 1100, margin: "auto" }}>
+  return <main className="parity-lab" style={{ padding: 16, maxWidth: 1100, margin: "auto" }}>
     <button type="button" onClick={() => setLocale(locale === "vi" ? "en" : "vi")}>{locale === "vi" ? "en" : "vi"}</button>
     {failed && <p role="alert">{m.failed}</p>}
     {runtime && <>

@@ -172,6 +172,8 @@ class RenderContext {
           block.content
         )}</span></div>`;
       }
+      case "diagram":
+        return `<pre data-diagram-format="${escapeHtml(String(block.props["format"]))}"><code>${escapeHtml(String(block.props["code"] ?? ""))}</code></pre>`;
       case "codeBlock": {
         const code =
           typeof block.props["code"] === "string"

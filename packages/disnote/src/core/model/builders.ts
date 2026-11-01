@@ -87,6 +87,10 @@ export function codeBlock(code: string, language = "text"): DisNoteBlock {
   return block("codeBlock", 1, { props: { language, code } });
 }
 
+export function diagram(code: string, format: "mermaid" | "drawio" = "mermaid", init: BlockInit = {}): DisNoteBlock {
+  return block("diagram", 1, { ...init, props: { ...init.props, code, format } });
+}
+
 /** A block-level mathematical expression stored as portable LaTeX source. */
 export function mathEquation(code = "", init: BlockInit = {}): DisNoteBlock {
   return block("math", 1, {

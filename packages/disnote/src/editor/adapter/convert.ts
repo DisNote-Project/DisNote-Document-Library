@@ -33,6 +33,7 @@ const FROM_BN_TYPE: Record<string, string> = {
  * the generic `disnoteBlock` wrapper so no data is ever lost.
  */
 const DIRECT_TYPES = new Set([
+  "diagram",
   "paragraph",
   "heading",
   "bulletListItem",
@@ -70,6 +71,7 @@ const DIRECT_TYPES = new Set([
 
 /** DisNote types that carry no inline `content` (data lives in props). */
 const NO_CONTENT_TYPES = new Set([
+  "diagram",
   "divider",
   "codeBlock",
   "table",

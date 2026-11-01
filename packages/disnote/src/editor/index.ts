@@ -6,6 +6,7 @@
  * (it requires BlockNote + React as peer dependencies) so importing the adapter
  * never pulls the editor bundle into a read-only build.
  */
+export { validateEditorInsertCommands, EDITOR_EXTENSION_ERRORS, type EditorInsertCommand } from "./insert-commands.js";
 export {
   createBlockNoteAdapter,
   type EditorAdapter,

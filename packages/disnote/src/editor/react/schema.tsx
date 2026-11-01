@@ -19,6 +19,8 @@ import { WorkspaceBreadcrumb } from "../../workspace/react/WorkspaceBreadcrumb.j
 import { WorkspaceViewContext } from "../../workspace/react/context.js";
 import { lazy, Suspense, useContext } from "react";
 import { ActionButton } from "../../actions/react/index.js";
+import { DiagramEditor } from "./DiagramEditor.js";
+import { DIAGRAM_FORMATS } from "../../diagrams/model.js";
 
 type CalloutIntent = "info" | "warning" | "success" | "danger";
 const SharedBlockControl = lazy(() => import("./SharedBlockControl.js").then(module => ({ default: module.SharedBlockControl })));
@@ -232,6 +234,13 @@ const mathSpec = createReactBlockSpec(
     },
   }
 );
+
+const diagramSpec = createReactBlockSpec({ type: "diagram", propSchema: { code: { default: "" }, format: { default: DIAGRAM_FORMATS.MERMAID, values: [DIAGRAM_FORMATS.MERMAID, DIAGRAM_FORMATS.DRAWIO] } }, content: "none" }, {
+  render: function DiagramRender({ block, editor }) {
+    const i18n = useEditorI18n();
+    return <DiagramEditor code={block.props.code} format={block.props.format} locale={i18n.locale} editable={editor.isEditable} onChange={code => editor.updateBlock(block, { props: { code } })} />;
+  },
+});
 
 const bookmarkSpec = createReactBlockSpec(
   {
@@ -456,6 +465,7 @@ function makeDbViewSpec(type: string) {
       type,
       propSchema: {
         databaseId: { default: "" },
+        viewId: { default: "" },
         title: { default: EN_EDITOR_MESSAGES["database.defaultTitle"] },
       },
       content: "none",
@@ -464,7 +474,7 @@ function makeDbViewSpec(type: string) {
       render: function DatabaseViewRender({ block, editor }) {
         const i18n = useEditorI18n();
         const view = type === "tableDb" ? "table" : type === "listDb" ? "list" : type;
-        return <div contentEditable={false}><DatabaseBlockControl databaseId={block.props.databaseId} view={view as DatabaseViewKind} locale={i18n.locale} editable={editor.isEditable} onSelect={id => editor.updateBlock(block, { props: { databaseId: id } })} /></div>;
+        return <div contentEditable={false}><DatabaseBlockControl databaseId={block.props.databaseId} viewId={block.props.viewId} view={view as DatabaseViewKind} locale={i18n.locale} editable={editor.isEditable} onSelect={(id, viewId) => editor.updateBlock(block, { props: { databaseId: id, viewId: viewId ?? "" } })} /></div>;
       },
     }
   );
@@ -503,6 +513,7 @@ export const disNoteBlockNoteSchema = BlockNoteSchema.create({
     audio: defaultBlockSpecs.audio,
     file: defaultBlockSpecs.file,
     math: mathSpec(),
+    diagram: diagramSpec(),
     bookmark: bookmarkSpec(),
     tableOfContents: tableOfContentsSpec(),
     breadcrumb: breadcrumbSpec(),

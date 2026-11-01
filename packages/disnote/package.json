@@ -216,6 +216,8 @@
       "default": "./dist/styles/index.js"
     },
     "./styles.css": "./styles/document.css",
+    "./database/styles.css": "./styles/database.css",
+    "./diagrams/react": { "types": "./dist/diagrams/index.d.ts", "import": "./dist/diagrams/index.js", "default": "./dist/diagrams/index.js" },
     "./react/view": {
       "types": "./dist/react/view.d.ts",
       "import": "./dist/react/view.js",
@@ -232,7 +234,8 @@
   ],
   "sideEffects": [
     "./dist/editor/react/DisNoteEditor.js",
-    "./styles/document.css"
+    "./styles/document.css",
+    "./styles/database.css"
   ],
   "scripts": {
     "build": "tsc -b",
@@ -280,9 +283,12 @@
     }
   },
   "dependencies": {
+    "@maxgraph/core": "^0.25.0",
+    "dompurify": "^3.4.17",
     "fflate": "^0.8.3",
     "katex": "^0.19.0",
-    "mathlive": "^0.110.0"
+    "mathlive": "^0.110.0",
+    "mermaid": "^12.2.0"
   },
   "typesVersions": {
     "*": {

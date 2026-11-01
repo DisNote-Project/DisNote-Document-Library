@@ -1,4 +1,5 @@
 "use client";
+export { DocumentPage, DOCUMENT_PAGE_WIDTHS, type DocumentPageProps, type DocumentPageWidth } from "./DocumentPage.js";
 import { useMemo } from "react";
 import { createDefaultRegistry } from "../core/index.js";
 import { DocumentRenderer, type DocumentRendererProps } from "../renderer-react/index.js";

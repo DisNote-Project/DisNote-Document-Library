@@ -100,6 +100,8 @@ function blockToMd(
     }
     case "quote":
       return [`${indent}> ${inline}`, ...childLines];
+    case "diagram":
+      return [`${indent}\`\`\`${String(block.props["format"])}`, ...String(block.props["code"] ?? "").split("\n").map(line => indent + line), `${indent}\`\`\``];
     case "codeBlock": {
       const code =
         typeof block.props["code"] === "string"

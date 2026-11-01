@@ -13,6 +13,8 @@ import {
   checklistItem,
   quote,
   codeBlock,
+  diagram,
+  isDiagramFormat,
   mathEquation,
   divider,
   safeUrl,
@@ -154,7 +156,7 @@ export function importMarkdown(
         i++;
       }
       i++; // closing fence
-      blocks.push(codeBlock(body.join("\n"), lang));
+      blocks.push(isDiagramFormat(lang) ? diagram(body.join("\n"), lang) : codeBlock(body.join("\n"), lang));
       continue;
     }
     const h = /^(#{1,3})\s+(.*)$/.exec(trimmed);

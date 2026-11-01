@@ -3,20 +3,29 @@ import type { DatabaseQuery, DatabaseQueryResult, DatabaseRecord } from "../mode
 import { DatabaseViewContext, type DatabaseViewProvider } from "./context.js";
 export function useDatabaseView(id: string, query: DatabaseQuery, supplied?: DatabaseViewProvider) {
   const context = useContext(DatabaseViewContext), provider = supplied ?? context;
-  const [data, setData] = useState<DatabaseQueryResult | null>(null), [loading, setLoading] = useState(false), [failed, setFailed] = useState(false);
+  const [snapshot, setSnapshot] = useState<{ id: string; provider: DatabaseViewProvider; data: DatabaseQueryResult } | null>(null), [loading, setLoading] = useState(false), [failed, setFailed] = useState(false);
+  const data = snapshot?.id === id && snapshot.provider === provider ? snapshot.data : null;
   const generation = useRef(0), active = useRef(true);
+  const controller = useRef<AbortController | null>(null), inFlight = useRef(false), queued = useRef(false), reloadLatest = useRef<() => Promise<void>>(async () => undefined);
   const queryKey = JSON.stringify(query);
   const reload = useCallback(async () => {
     const current = ++generation.current;
-    if (!provider || !id) { setData(null); return; }
+    controller.current?.abort();
+    if (!provider || !id) { setSnapshot(null); return; }
+    const request = new AbortController(); controller.current = request; inFlight.current = true;
     setLoading(true); setFailed(false);
     try {
-      const result = await provider.query(id, JSON.parse(queryKey));
-      if (active.current && generation.current === current) setData(result);
-    } catch { if (active.current && generation.current === current) { setFailed(true); setData(null); } }
-    finally { if (active.current && generation.current === current) setLoading(false); }
+      const result = await provider.query(id, JSON.parse(queryKey), { signal: request.signal });
+      if (active.current && generation.current === current) setSnapshot({ id, provider, data: result });
+    } catch { if (active.current && generation.current === current && !request.signal.aborted) { setFailed(true); setSnapshot(null); } }
+    finally { if (active.current && generation.current === current) {
+      setLoading(false); inFlight.current = false;
+      if (queued.current) { queued.current = false; void reloadLatest.current(); }
+    } }
   }, [id, provider, queryKey]);
-  useEffect(() => { active.current = true; void reload(); return () => { active.current = false; generation.current++; }; }, [reload]);
+  reloadLatest.current = reload;
+  useEffect(() => { active.current = true; queued.current = false; void reload(); return () => { active.current = false; generation.current++; controller.current?.abort(); inFlight.current = false; queued.current = false; }; }, [reload]);
+  useEffect(() => provider?.subscribe?.(id, () => { if (inFlight.current) queued.current = true; else void reload(); }), [provider, id, reload]);
   const save = async (record: DatabaseRecord, revision?: number) => {
     if (!provider?.upsertRecord || !data) return;
     await provider.upsertRecord(id, record, revision ?? data.database.revision); await reload();

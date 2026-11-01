@@ -51,6 +51,10 @@ import {
 import { EditorI18nProvider } from "./EditorI18nContext.js";
 import { mentionSuggestions } from "./mention-suggestions.js";
 import { DISNOTE_SURFACES, joinClassNames, type DisNoteStyle } from "../../styles/index.js";
+import { DIAGRAM_FORMATS, DIAGRAM_SAMPLES } from "../../diagrams/model.js";
+import { uiMessages } from "../../ui/messages.js";
+import { selectionCommentAnchor } from "./selection-anchor.js";
+import { validateEditorInsertCommands, type EditorInsertCommand } from "../insert-commands.js";
 
 export interface DocumentCapabilities {
   canRead: boolean;
@@ -78,6 +82,11 @@ export interface ExperimentalEditorAccess {
 }
 
 export interface DisNoteEditorProps {
+  /** Stable extension point: host commands build canonical DisNote blocks. */
+  insertCommands?: readonly EditorInsertCommand[];
+  includeDefaultCommands?: boolean;
+  /** Presentation switches only; persisted data authorization remains server-owned. */
+  chrome?: { formattingToolbar?: boolean; sideMenu?: boolean; linkToolbar?: boolean; slashMenu?: boolean };
   mentionProvider?: import("../../comments/index.js").MentionProvider;
   mentionContext?: import("../../comments/index.js").MentionContext;
   /** Shared Y.XmlFragment and awareness provider; keep identity stable for this mount. */
@@ -87,6 +96,8 @@ export interface DisNoteEditorProps {
   /** Visual theme for the editing surface. */
   theme?: "light" | "dark";
   onDocumentChange?: (document: DisNoteDocument) => void;
+  /** Stable block/inline anchor for comments; vendor-specific offsets are not exposed. */
+  onCommentAnchorChange?: (anchor: import("../../comments/model.js").CommentAnchor) => void;
   className?: string;
   /** CSS and --disnote-* variables scoped to this editor instance. */
   style?: DisNoteStyle;
@@ -105,6 +116,10 @@ function disNoteSlashItems(
 ): DefaultReactSuggestionItem[] {
   const ed = editor as never;
   const customItems: DefaultReactSuggestionItem[] = [
+    ...Object.values(DIAGRAM_FORMATS).map(format => ({
+      title: uiMessages(i18n.locale)[format], aliases: [format], group: i18n.t("group.advanced"),
+      onItemClick: () => insertOrUpdateBlockForSlashMenu(ed, { type: "diagram", props: { format, code: DIAGRAM_SAMPLES[format] } } as never),
+    })),
     {
       title: i18n.t("custom.callout.title"),
       subtext: i18n.t("custom.callout.subtext"),
@@ -749,6 +764,7 @@ function DisNoteEditorImpl(
   props: DisNoteEditorRuntimeProps,
   ref: Ref<DisNoteEditorHandle>
 ): ReactElement {
+  useMemo(() => validateEditorInsertCommands(props.insertCommands ?? []), [props.insertCommands]);
   const adapter = useMemo(() => createBlockNoteAdapter(), []);
   const i18n = useMemo(
     () => createI18n({ locale: props.locale, messages: props.messages }),
@@ -904,14 +920,28 @@ function DisNoteEditorImpl(
           editable={editable}
           theme={props.theme ?? "light"}
           slashMenu={false}
+          formattingToolbar={props.chrome?.formattingToolbar}
+          sideMenu={props.chrome?.sideMenu}
+          linkToolbar={props.chrome?.linkToolbar}
           onChange={() => props.onDocumentChange?.(readCurrentDocument())}
+          onSelectionChange={() => { if (props.onCommentAnchorChange) props.onCommentAnchorChange(selectionCommentAnchor(editor._tiptapEditor.state, readCurrentDocument())); }}
         >
-          <SuggestionMenuController
+          {props.chrome?.slashMenu !== false && <SuggestionMenuController
             triggerCharacter="/"
             getItems={async (query) =>
-              filterSuggestionItems(disNoteSlashItems(editor, i18n), query)
+              filterSuggestionItems([
+                ...(props.includeDefaultCommands === false ? [] : disNoteSlashItems(editor, i18n)),
+                ...(props.insertCommands ?? []).map(command => ({
+                  title: command.title, subtext: command.description, group: command.group ?? i18n.t("group.advanced"), aliases: command.keywords ?? [command.id],
+                  onItemClick: () => {
+                    if (!editor.isEditable) return;
+                    const block = adapter.toEditor({ ...readCurrentDocument(), blocks: [command.create()] }).blocks[0];
+                    if (block) insertOrUpdateBlockForSlashMenu(editor as never, block as never);
+                  },
+                })),
+              ], query)
             }
-          />
+          />}
           {props.mentionProvider && <SuggestionMenuController triggerCharacter="@" getItems={query => mentionSuggestions(props.mentionProvider!, query, { ...props.mentionContext, documentId: envelopeRef.current.id }, candidate => editor.insertInlineContent([{ type: "mention", props: candidate } as never, " "]))} />}
         </BlockNoteView>
       </EditorI18nProvider>

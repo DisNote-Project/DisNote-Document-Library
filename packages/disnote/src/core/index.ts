@@ -67,6 +67,7 @@ export * from "./messages.js";
 export * from "./security/index.js";
 
 // Presets
+export { DIAGRAM_FORMATS, DIAGRAM_SAMPLES, isDiagramFormat, type DiagramFormat } from "../diagrams/model.js";
 export * from "./presets.js";
 
 // Selection Engine

@@ -1,6 +1,7 @@
 import type { CSSProperties } from "react";
 /** Public design tokens shared by the editor and React renderer. */
 export const DISNOTE_CSS_VARIABLES = {
+  pageWidth: "--disnote-page-width",
   background: "--disnote-background", surface: "--disnote-surface", text: "--disnote-text",
   textMuted: "--disnote-text-muted", border: "--disnote-border", focus: "--disnote-focus",
   selection: "--disnote-selection", link: "--disnote-link", danger: "--disnote-danger",

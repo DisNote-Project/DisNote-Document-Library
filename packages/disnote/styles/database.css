@@ -1,0 +1,101 @@
+/* Opt-in database surfaces. All selectors remain inside the public root. */
+.disnote-db { --disnote-drag-accent:var(--disnote-focus,#62aaa5); --disnote-drag-surface:var(--disnote-selection,#e4f1ef); --disnote-drag-duration:160ms; --disnote-drag-shadow:0 12px 32px #152f3826,0 2px 6px #152f3812; }
+.disnote-db [draggable=true] { cursor:grab; }
+.disnote-db[data-drag-active=true], .disnote-db[data-drag-active=true] [draggable=true] { cursor:grabbing; }
+.disnote-db .disnote-db__card { transition:box-shadow var(--disnote-drag-duration) ease,border-color var(--disnote-drag-duration) ease,opacity var(--disnote-drag-duration) ease; }
+.disnote-db .disnote-db__card[draggable=true]:hover { border-color:var(--disnote-drag-accent); box-shadow:0 4px 12px #152f3810; }
+.disnote-db [data-dragging=true] { opacity:.3; }
+.disnote-db .disnote-db__column, .disnote-db .disnote-db__calendar-day { transition:background-color var(--disnote-drag-duration) ease,box-shadow var(--disnote-drag-duration) ease; }
+.disnote-db [data-drop-active=true] { background:var(--disnote-drag-surface) !important; box-shadow:inset 0 0 0 2px var(--disnote-drag-accent); }
+.disnote-db .disnote-db__column[data-drop-active=true]::after { content:""; display:block; height:72px; margin-top:10px; border:2px dashed var(--disnote-drag-accent); border-radius:var(--disnote-radius,8px); opacity:.6; animation:disnote-db-drop-enter var(--disnote-drag-duration) ease-out; }
+.disnote-db tr[data-drop-edge=before] > td { box-shadow:inset 0 3px var(--disnote-drag-accent); background:var(--disnote-drag-surface); }
+.disnote-db tr[data-drop-edge=after] > td { box-shadow:inset 0 -3px var(--disnote-drag-accent); background:var(--disnote-drag-surface); }
+.disnote-db.disnote-db__drag-preview { position:fixed; left:-10000px; top:0; width:300px; pointer-events:none; z-index:2147483647; }
+.disnote-db .disnote-db__drag-preview-card { display:flex; align-items:center; gap:12px; box-sizing:border-box; width:280px; min-height:54px; margin:12px; padding:14px 16px; border:1px solid var(--disnote-drag-accent); border-radius:var(--disnote-radius,10px); color:var(--disnote-text,#243438); background:var(--disnote-background,#fff); box-shadow:var(--disnote-drag-shadow); }
+.disnote-db .disnote-db__drag-preview-card strong { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:14px; }
+.disnote-db .disnote-db__drag-grip { flex:0 0 10px; width:10px; height:18px; opacity:.5; background:radial-gradient(circle,currentColor 1.3px,transparent 1.5px) 0 0/5px 6px; }
+@keyframes disnote-db-drop-enter { from { opacity:0; transform:translateY(-4px); } to { opacity:.6; transform:translateY(0); } }
+@media (prefers-reduced-motion:reduce) { .disnote-db { --disnote-drag-duration:0ms; } .disnote-db .disnote-db__column[data-drop-active=true]::after { animation:none; } }
+.disnote-db .disnote-db__chart > svg { width:100%; max-height:360px; }
+.disnote-db .disnote-db__timeline { overflow:auto; }
+.disnote-db .disnote-db__timeline-row { display:grid; grid-template-columns:240px minmax(400px,1fr); gap:16px; padding:12px 0; min-width:700px; border-bottom:1px solid var(--disnote-border,#e2e8e8); }
+.disnote-db .disnote-db__timeline-item { display:grid; gap:8px; }
+.disnote-db .disnote-db__timeline-item label { font-size:12px; display:flex; gap:8px; align-items:center; }
+.disnote-db .disnote-db__timeline-rail { min-height:36px; border-radius:6px; background:var(--disnote-surface,#f3f6f6); }
+.disnote-db .disnote-db__timeline-bar { overflow:hidden; text-overflow:ellipsis; height:34px; min-width:34px; padding:6px; background:var(--disnote-focus,#62aaa5); color:var(--disnote-background,#fff); white-space:nowrap; touch-action:none; }
+.disnote-db .disnote-db__views { display:flex; gap:4px; overflow-x:auto; padding-bottom:12px; border-bottom:1px solid var(--disnote-border,#e2e8e8); }
+.disnote-db .disnote-db__views button { flex-shrink:0; }
+.disnote-db .disnote-db__views button[aria-pressed=true] { background:var(--disnote-selection,#dcefee); border-color:transparent; }
+.disnote-db .disnote-db__settings { padding:12px 0; font-size:12px; }
+.disnote-db .disnote-db__settings summary { cursor:pointer; padding:6px 0; color:var(--disnote-text-muted,#748488); }
+.disnote-db .disnote-db__settings[open] { display:block; }
+.disnote-db .disnote-db__settings label { display:inline-flex; flex-wrap:wrap; align-items:center; gap:6px; margin:6px 10px 6px 0; }
+.disnote-db input:not([type=checkbox]):not([type=range]), .disnote-db select, .disnote-db textarea { box-sizing:border-box; max-width:100%; padding:6px 8px; font:inherit; color:inherit; background:var(--disnote-background,#fff); border:1px solid var(--disnote-border,#e2e8e8); border-radius:5px; }
+.disnote-db .disnote-db__column-setting { display:flex; flex-wrap:wrap; align-items:center; gap:8px; padding:6px; border-bottom:1px solid var(--disnote-border,#e2e8e8); }
+.disnote-db .disnote-db__column-setting > span { min-width:120px; }
+.disnote-db .disnote-db__cell { width:100%; min-height:30px; border-color:transparent; background:transparent; text-align:left; white-space:pre-wrap; overflow-wrap:anywhere; }
+.disnote-db .disnote-db__cell-editor { display:grid; gap:6px; white-space:normal; min-width:0; }
+.disnote-db .disnote-db__cell-editor input, .disnote-db .disnote-db__cell-editor select { min-width:0; width:100%; }
+.disnote-db td:last-child { white-space:normal; }
+.disnote-db th, .disnote-db td { box-sizing:border-box; }
+.disnote-db th { overflow:hidden; text-overflow:ellipsis; }
+.disnote-db td:last-child > button { max-width:100%; overflow:hidden; text-overflow:ellipsis; }
+.disnote-db .disnote-db__cell-editor label { display:grid; gap:5px; }
+.disnote-db .disnote-db__cell-editor [role=alert] { color:var(--disnote-danger,#b91c1c); }
+.disnote-db .disnote-db__bulk { display:flex; flex-wrap:wrap; gap:8px; align-items:center; border:1px solid var(--disnote-border,#e2e8e8); border-radius:8px; margin:0 0 14px; padding:10px; font-size:12px; }
+.disnote-db .disnote-db__filter { border:1px solid var(--disnote-border,#e2e8e8); border-radius:6px; margin:8px 0; padding:10px; }
+.disnote-db .disnote-db__filter-condition { display:flex; flex-wrap:wrap; gap:6px; align-items:center; padding:6px 0; }
+.disnote-db .disnote-db__chart { display:grid; gap:14px; padding:20px 0; margin:0; }
+.disnote-db .disnote-db__bar-row { display:grid; grid-template-columns:minmax(70px,120px) minmax(40px,1fr) 60px; gap:10px; align-items:center; }
+.disnote-db .disnote-db__bar { height:26px; border-radius:4px; background:var(--disnote-focus,#62aaa5); min-width:2px; }
+.disnote-record-page { box-sizing:border-box; width:min(1080px,calc(100vw - 32px)); max-height:90dvh; overflow:auto; border:1px solid var(--disnote-border,#e2e8e8); border-radius:12px; padding:24px; background:var(--disnote-background,#fff); color:var(--disnote-text,#243438); box-shadow:0 24px 80px #142a3033; }
+.disnote-record-page::backdrop { background:#10252a66; }
+.disnote-record-page > header { display:flex; align-items:center; justify-content:space-between; gap:12px; }
+.disnote-record-page > header h2 { margin:0; }
+.disnote-record-page > dl { display:grid; gap:8px; font-size:13px; margin-block:20px; }
+.disnote-record-page > dl > div { display:grid; grid-template-columns:140px 1fr; gap:12px; }
+.disnote-record-page dt { color:var(--disnote-text-muted,#748488); }
+.disnote-record-page dd { margin:0; overflow-wrap:anywhere; }
+.disnote-record-page button { padding:7px 12px; margin:4px; border:1px solid var(--disnote-border,#e2e8e8); border-radius:6px; background:var(--disnote-background,#fff); color:inherit; cursor:pointer; }
+.disnote-record-page .disnote-editor { min-height:180px; border:1px solid var(--disnote-border,#e2e8e8); border-radius:8px; }
+.disnote-record-page textarea { max-width:100%; width:100%; min-height:70px; box-sizing:border-box; }
+.disnote-record-page aside { margin-top:20px; border-top:1px solid var(--disnote-border,#e2e8e8); }
+.disnote-db { color:var(--disnote-text,#243438); font:400 var(--disnote-font-size,14px)/1.5 var(--disnote-font-family,system-ui,sans-serif); min-width:0; }
+.disnote-db .disnote-db__header { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:16px 0; }
+.disnote-db .disnote-db__header h3 { margin:0; font-size:18px; font-weight:650; }
+.disnote-db .disnote-db__header > span { font-size:12px; color:var(--disnote-text-muted,#748488); }
+.disnote-db button { font:inherit; font-size:12px; padding:6px 10px; margin:0; border:1px solid var(--disnote-border,#e2e8e8); border-radius:6px; background:var(--disnote-background,#fff); color:inherit; cursor:pointer; }
+.disnote-db button:hover:not(:disabled) { background:var(--disnote-surface,#f4f7f7); border-color:var(--disnote-focus,#70aaa9); }
+.disnote-db button:disabled { opacity:.45; cursor:default; }
+.disnote-db > button { margin:0 0 16px; color:var(--disnote-link,#287f86); }
+.disnote-db .disnote-db__board { display:flex; gap:16px; overflow-x:auto; align-items:stretch; padding:0 0 12px; }
+.disnote-db .disnote-db__column { flex:1 0 240px; min-width:240px; padding:12px; border-radius:10px; background:var(--disnote-surface,#f3f6f6); }
+.disnote-db .disnote-db__column > h4 { display:flex; align-items:center; justify-content:space-between; margin:0 0 12px; font-size:13px; font-weight:600; }
+.disnote-db .disnote-db__column > h4 small { padding:1px 7px; background:var(--disnote-background,#fff); border-radius:5px; color:var(--disnote-text-muted,#748488); }
+.disnote-db .disnote-db__card { padding:14px; margin-bottom:10px; min-width:0; overflow-wrap:anywhere; border:1px solid var(--disnote-border,#e2e8e8); border-radius:var(--disnote-radius,8px); background:var(--disnote-background,#fff); box-shadow:0 2px 4px #20383806; }
+.disnote-db .disnote-db__card > strong { display:block; font-size:14px; margin-bottom:10px; }
+.disnote-db .disnote-db__card dl { display:grid; gap:7px; margin:0 0 12px; font-size:12px; }
+.disnote-db .disnote-db__card dl > div { display:grid; grid-template-columns:minmax(60px,.65fr) minmax(0,1fr); gap:8px; }
+.disnote-db .disnote-db__card dt { color:var(--disnote-text-muted,#748488); }
+.disnote-db .disnote-db__card dd { margin:0; }
+.disnote-db .disnote-db__card > button + button { margin-left:6px; }
+.disnote-db[data-disnote-view="calendar"] .disnote-db__card { padding:6px; box-shadow:none; }
+.disnote-db[data-disnote-view="calendar"] .disnote-db__card dl { display:none; }
+.disnote-db[data-disnote-view="calendar"] .disnote-db__card > button { display:block; width:100%; margin:4px 0 0; padding:4px; white-space:normal; }
+.disnote-db .disnote-db__table-scroll { overflow:auto; border:1px solid var(--disnote-border,#e2e8e8); border-radius:8px; }
+.disnote-db table { width:100%; border-collapse:collapse; white-space:nowrap; }
+.disnote-db th, .disnote-db td { padding:11px 14px; text-align:left; border-bottom:1px solid var(--disnote-border,#e2e8e8); font-size:13px; }
+.disnote-db th { color:var(--disnote-text-muted,#748488); font-weight:500; background:var(--disnote-surface,#f3f6f6); }
+.disnote-db tbody tr:last-child td { border-bottom:0; }
+.disnote-db tbody tr:hover { background:var(--disnote-surface,#f3f6f6); }
+.disnote-db td button + button { margin-left:6px; }
+.disnote-db .disnote-db__pagination { display:flex; align-items:center; justify-content:flex-end; gap:12px; margin-top:16px; padding-top:12px; border-top:1px solid var(--disnote-border,#e2e8e8); font-size:12px; color:var(--disnote-text-muted,#748488); }
+.disnote-db .disnote-db__form { padding:16px; margin-bottom:16px; border:1px solid var(--disnote-border,#e2e8e8); border-radius:8px; background:var(--disnote-surface,#f3f6f6); }
+.disnote-db .disnote-db__form label { margin-bottom:10px; font-size:12px; }
+.disnote-db .disnote-db__form input:not([type=checkbox]), .disnote-db .disnote-db__form select { display:block; width:100%; box-sizing:border-box; margin-top:5px; padding:8px; font:inherit; border:1px solid var(--disnote-border,#e2e8e8); border-radius:6px; background:var(--disnote-background,#fff); color:inherit; }
+.disnote-db .disnote-db__form button + button { margin-left:8px; }
+.disnote-db .disnote-db__automation-rule { min-inline-size:0; margin:0 0 12px; padding:16px; border:1px solid var(--disnote-border,#e2e8e8); border-radius:8px; background:var(--disnote-background,#fff); }
+.disnote-db .disnote-db__automation-rule legend { padding:0 6px; font-weight:600; overflow-wrap:anywhere; }
+.disnote-db .disnote-db__automation-rule label { display:block; }
+.disnote-db .disnote-db__automation-rule fieldset { min-inline-size:0; margin:12px 0; padding:12px; border:1px solid var(--disnote-border,#e2e8e8); border-radius:6px; }
+.disnote-db .disnote-db__automation-rule input[type=checkbox] { margin:0 6px 0 0; vertical-align:middle; }

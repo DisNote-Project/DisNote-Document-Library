@@ -9,9 +9,9 @@
     "start": "next start"
   },
   "dependencies": {
-    "next": "16.4.0",
+    "@disnote/core": "*",
+    "next": "16.4.3",
     "react": "^19.2.8",
-    "react-dom": "^19.2.8",
-    "@disnote/core": "*"
+    "react-dom": "^19.2.8"
   }
 }

@@ -40,6 +40,21 @@ The forwarded ref supports the same focus/getDocument/insertBlock methods as
 
 ## Read-only installation
 
+### Standard and full-width pages
+
+Wrap an editor or view in `DocumentPage`, exported by both React entries:
+
+```tsx
+import { DocumentPage, DocumentEditor } from '@disnote/react';
+<DocumentPage width="full"><DocumentEditor onChange={save} /></DocumentPage>
+```
+
+`width="standard"` (default) centers content up to 820px; `width="full"` uses
+the parent container's available width. Standard width can be customized with
+`style={{ '--disnote-page-width': '960px' }}`. No stylesheet is required for this
+container. Changing width preserves the mounted child editor and document JSON.
+Applications own the switch and any persistence of this view preference.
+
 Applications that only display documents do not need editor packages:
 
 ```sh

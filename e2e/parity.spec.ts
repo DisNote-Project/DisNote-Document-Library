@@ -78,8 +78,9 @@ test("shared source edits update both occurrences and the resolved renderer", as
   await expect(control.getByRole("button", { name: "Sửa nội dung dùng chung", exact: true })).toBeFocused();
   await control.getByRole("button", { name: "Sửa nội dung dùng chung", exact: true }).click();
   await page.screenshot({ path: test.info().outputPath("shared-edit-dialog.png") });
-  await dialog.getByText("Shared seed", { exact: true }).click();
-  await page.keyboard.press("End"); await page.keyboard.insertText(" changed");
+  // Target the paragraph rather than a visual line boundary or BlockNote's
+  // trailing empty block; this scenario verifies shared-source persistence.
+  await dialog.locator('.bn-editor [data-content-type=paragraph] p').first().fill("Shared seed changed");
   await expect(dialog.getByText("Shared seed changed", { exact: true })).toBeVisible();
   await dialog.getByRole("button", { name: "Lưu", exact: true }).click();
   await expect(preview.getByText("Shared seed changed", { exact: true })).toHaveCount(2);

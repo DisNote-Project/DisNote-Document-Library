@@ -1,4 +1,5 @@
 import { LIBRARY_MESSAGES } from "../messages.js";
+import { isDiagramFormat, validDiagramSource } from "../../diagrams/model.js";
 import type { JsonValue } from "../model/json.js";
 import type {
   CoreBlockDefinition,
@@ -480,7 +481,14 @@ export const columnCore = defineCoreBlock<Record<string, JsonValue>>({
 });
 
 /** All V1 core block definitions. */
+export const diagramCore = defineCoreBlock<Record<string, JsonValue>>({
+  type: "diagram", version: 1, capabilities: VOID,
+  validateProps: input => isObject(input) && isDiagramFormat(input["format"]) && validDiagramSource(input["code"])
+    ? ok(input) : fail([issue("props", "invalid", LIBRARY_MESSAGES.DIAGRAM_INVALID)]),
+  toPlainText: block => typeof block.props["code"] === "string" ? block.props["code"] : "",
+});
 export const coreBlockDefinitions: CoreBlockDefinition[] = [
+  diagramCore,
   paragraphCore,
   headingCore,
   bulletListItemCore,

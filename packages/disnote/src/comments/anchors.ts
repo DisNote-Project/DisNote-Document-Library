@@ -11,6 +11,8 @@ export function remapCommentAnchors(threads: CommentThread[], edits: TextEdit[])
       if (anchor.type !== "inline-range" || anchor.blockId !== edit.blockId || thread.orphaned) continue;
       const deletedEnd = edit.start + edit.deleteCount;
       const map = (offset: number, end: boolean) => {
+        // Text inserted immediately outside a range does not become part of its quote.
+        if (edit.deleteCount === 0 && offset === edit.start) return offset + (end ? 0 : edit.insertLength);
         if (offset < edit.start || (offset === edit.start && !end)) return offset;
         if (offset >= deletedEnd) return offset - edit.deleteCount + edit.insertLength;
         return edit.start + (end ? edit.insertLength : 0);

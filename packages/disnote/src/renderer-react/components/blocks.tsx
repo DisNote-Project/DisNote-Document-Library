@@ -7,9 +7,11 @@ import {
 import { InlineRenderer } from "./InlineRenderer.js";
 import { MathRenderer } from "./MathRenderer.js";
 import { useDocumentRenderContext } from "../context/context.js";
-import { DatabaseView, type DatabaseViewKind } from "../../database/react/DatabaseView.js";
+import type { DatabaseViewKind } from "../../database/react/DatabaseView.js";
 import { ActionButton } from "../../actions/react/index.js";
 import { ACTION_BLOCK_PROPERTIES } from "../../actions/builders.js";
+import { DiagramView } from "../../diagrams/DiagramView.js";
+import { DatabaseLinkedView } from "../../database/react/DatabaseLinkedView.js";
 
 const LIST_TYPES = new Set(["bulletListItem", "numberedListItem"]);
 const SAFE_INLINE_IMAGE = /^data:image\/(?:png|jpe?g|gif|webp|avif);base64,/i;
@@ -56,7 +58,7 @@ export function BlockList({ blocks }: { blocks: DisNoteBlock[] }): ReactNode {
 }
 
 export function BlockRenderer({ block }: { block: DisNoteBlock }): ReactNode {
-  const { theme, blockRenderers, registry } = useDocumentRenderContext();
+  const { theme, blockRenderers, registry, locale } = useDocumentRenderContext();
   const customRenderer = blockRenderers?.[block.type];
   if (customRenderer) {
     return customRenderer({
@@ -123,6 +125,8 @@ export function BlockRenderer({ block }: { block: DisNoteBlock }): ReactNode {
         </div>
       );
     }
+    case "diagram":
+      return <DiagramView code={String(block.props["code"] ?? "")} format={block.props["format"] === "drawio" ? "drawio" : "mermaid"} locale={locale} />;
     case "codeBlock": {
       const code =
         typeof block.props["code"] === "string"
@@ -679,7 +683,7 @@ function DatabaseViewBlock({ block }: { block: DisNoteBlock }): ReactNode {
       : "";
   if (databaseId) {
     const view = block.type === "tableDb" ? "table" : block.type === "listDb" ? "list" : block.type;
-    return <DatabaseView databaseId={databaseId} view={view as DatabaseViewKind} locale={locale} readonly />;
+    return <DatabaseLinkedView databaseId={databaseId} viewId={typeof block.props["viewId"] === "string" ? block.props["viewId"] : ""} fallback={view as DatabaseViewKind} locale={locale} readonly />;
   }
   return (
     <div

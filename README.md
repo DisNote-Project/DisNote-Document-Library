@@ -113,6 +113,12 @@ const { html, plainText, headings } = renderDocumentToHtml({
 
 ## Architecture
 
+For interactive databases, saved views, charts/forms and record documents, see
+[`docs/DATABASE_WORKBENCH.md`](docs/DATABASE_WORKBENCH.md).
+
+Database appearance and local Mermaid/draw.io blocks are documented in
+[`docs/DATABASE_AND_DIAGRAMS.md`](docs/DATABASE_AND_DIAGRAMS.md).
+
 For npm release/versioning instructions, read
 [`docs/PUBLISH_NPM_VI.md`](docs/PUBLISH_NPM_VI.md).
 

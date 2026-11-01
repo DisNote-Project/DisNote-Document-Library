@@ -1,4 +1,5 @@
 "use client";
+export { DocumentPage, DOCUMENT_PAGE_WIDTHS, type DocumentPageProps, type DocumentPageWidth } from "./DocumentPage.js";
 import { forwardRef, lazy, Suspense, useEffect, useState } from "react";
 import { createDocument } from "../core/index.js";
 import type { DisNoteDocument } from "../core/index.js";

@@ -12,6 +12,11 @@ body {
   margin: 0;
 }
 
+.parity-lab { width:100%; min-width:0; overflow-wrap:anywhere; }
+.parity-lab > section { min-width:0; max-width:100%; }
+.parity-lab > section > nav { display:flex; flex-wrap:wrap; gap:6px; }
+.parity-lab li > button { max-width:100%; overflow-wrap:anywhere; }
+
 button {
   min-height: 40px;
   margin-top: 12px;
