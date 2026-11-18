@@ -12,3 +12,6 @@ storybook-static/
 test-results/
 playwright-report/
 .npm-cache/
+
+graphify-out/cache/ast/
+graphify-out/cache/*.tmp

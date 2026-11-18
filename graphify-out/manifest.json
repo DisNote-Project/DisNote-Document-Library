@@ -2016,5 +2016,545 @@
     "seen": 1794807270.5965223,
     "ast_hash": "5419e0ac536ee755efbc0a332b753ad8",
     "semantic_hash": "5419e0ac536ee755efbc0a332b753ad8"
+  },
+  "contracts/go/v1/invalid-document.json": {
+    "mtime": 1794890919.1916993,
+    "seen": 1794995024.3060231,
+    "ast_hash": "6b95594f699093cad7132bd212969e58",
+    "semantic_hash": ""
+  },
+  "contracts/go/v1/manifest.json": {
+    "mtime": 1794890933.6420197,
+    "seen": 1794995024.306029,
+    "ast_hash": "4e6b6c44a613ee71c4634c5545767baa",
+    "semantic_hash": ""
+  },
+  "contracts/go/v1/valid-document.json": {
+    "mtime": 1794890918.1840644,
+    "seen": 1794995024.3060331,
+    "ast_hash": "006cd0f19f13f279146dd2d3a260bcfc",
+    "semantic_hash": ""
+  },
+  "packages/disnote/test/contracts/go-contract.test.ts": {
+    "mtime": 1794890923.1967514,
+    "seen": 1794995024.307072,
+    "ast_hash": "cb9410035966a90cf5271e27e4f64ecd",
+    "semantic_hash": ""
+  },
+  "scripts/export-go-contract.mjs": {
+    "mtime": 1794891294.559652,
+    "seen": 1794995024.307296,
+    "ast_hash": "ae5f6ab40c8984fd4562fe063550474b",
+    "semantic_hash": ""
+  },
+  ".changeset/README.md": {
+    "mtime": 1784899954.1999812,
+    "seen": 1794995024.3073142,
+    "ast_hash": "3d82b5605fa528483151889d48b463b9",
+    "semantic_hash": ""
+  },
+  ".changeset/audit-reliability.md": {
+    "mtime": 1792341456.233707,
+    "seen": 1794995024.3073175,
+    "ast_hash": "82ca1370f7287d5ca186e05765a8b7fb",
+    "semantic_hash": ""
+  },
+  ".changeset/bright-sheets-integrate.md": {
+    "mtime": 1794726104.374816,
+    "seen": 1794995024.3073473,
+    "ast_hash": "58d97c3b9ac1f42e439fcd9d6551018c",
+    "semantic_hash": ""
+  },
+  ".changeset/calm-documents-persist.md": {
+    "mtime": 1794723514.5306742,
+    "seen": 1794995024.3073502,
+    "ast_hash": "a262410a51424adeace4407b89018aba",
+    "semantic_hash": ""
+  },
+  ".changeset/database-automation.md": {
+    "mtime": 1792199713.0897012,
+    "seen": 1794995024.307353,
+    "ast_hash": "5e1cf7fe84b3eaa55c8dd05ee732cc70",
+    "semantic_hash": ""
+  },
+  ".changeset/database-diagrams.md": {
+    "mtime": 1792164806.4988666,
+    "seen": 1794995024.307356,
+    "ast_hash": "7b1ae5ab5c695ae2ed2bc92c25bad35d",
+    "semantic_hash": ""
+  },
+  ".changeset/database-drag-feedback.md": {
+    "mtime": 1792204372.9423964,
+    "seen": 1794995024.307359,
+    "ast_hash": "fea51cd78169b983d929e3c07a84c1fc",
+    "semantic_hash": ""
+  },
+  ".changeset/database-workbench.md": {
+    "mtime": 1792171105.0955737,
+    "seen": 1794995024.3073616,
+    "ast_hash": "3fe53e3db8c51571ded34b6b4a22a47d",
+    "semantic_hash": ""
+  },
+  ".changeset/document-page-width.md": {
+    "mtime": 1792164186.9177463,
+    "seen": 1794995024.307364,
+    "ast_hash": "dd753292f8b029971805e7c3b9cf071c",
+    "semantic_hash": ""
+  },
+  ".changeset/react-integration-styling.md": {
+    "mtime": 1792036995.7510707,
+    "seen": 1794995024.307367,
+    "ast_hash": "d5d1a7af1f3332c27475a306677fc349",
+    "semantic_hash": ""
+  },
+  ".changeset/selection-comment-anchor.md": {
+    "mtime": 1792202605.2011576,
+    "seen": 1794995024.3073697,
+    "ast_hash": "17d13500964dd80adda5e28771485401",
+    "semantic_hash": ""
+  },
+  ".changeset/workspace-document-capabilities.md": {
+    "mtime": 1791985796.9496615,
+    "seen": 1794995024.3073726,
+    "ast_hash": "97f4c0368d6d50315202195b765a6890",
+    "semantic_hash": ""
+  },
+  ".github/ISSUE_TEMPLATE/bug_report.md": {
+    "mtime": 1784899952.5218582,
+    "seen": 1794995024.3073752,
+    "ast_hash": "a43f2b0651d06b8d8f760fefb29fed54",
+    "semantic_hash": ""
+  },
+  ".github/ISSUE_TEMPLATE/schema_rfc.md": {
+    "mtime": 1784899952.4900088,
+    "seen": 1794995024.3073783,
+    "ast_hash": "2b069f661ae470a7693b7e1bee90afeb",
+    "semantic_hash": ""
+  },
+  ".github/PULL_REQUEST_TEMPLATE.md": {
+    "mtime": 1784899952.4583292,
+    "seen": 1794995024.307381,
+    "ast_hash": "ec65abf53cb7839811cd9afc090d233c",
+    "semantic_hash": ""
+  },
+  "CODE_OF_CONDUCT.md": {
+    "mtime": 1784899954.5137417,
+    "seen": 1794995024.3073835,
+    "ast_hash": "aa1fdc9e860d798261f684a4fa40387e",
+    "semantic_hash": ""
+  },
+  "GUIDELINE.md": {
+    "mtime": 1785315808.1344242,
+    "seen": 1794995024.3073866,
+    "ast_hash": "b846dda7c4ac2b80c27023639de2ef79",
+    "semantic_hash": ""
+  },
+  "README.md": {
+    "mtime": 1794807377.773839,
+    "seen": 1794995024.3073893,
+    "ast_hash": "8de670796296e26a2b5243c4c94e9970",
+    "semantic_hash": ""
+  },
+  "THIRD_PARTY_NOTICES.md": {
+    "mtime": 1792164915.073738,
+    "seen": 1794995024.307392,
+    "ast_hash": "513d493284d28f686604de62dba0c847",
+    "semantic_hash": ""
+  },
+  "audit-retest-results/parity-database-CRUD-survi-89de1-ll-six-views-render-records-mobile-chromium/error-context.md": {
+    "mtime": 1792341161.835146,
+    "seen": 1794995024.3073947,
+    "ast_hash": "0a54743e8182e447de1466e0acce1b78",
+    "semantic_hash": ""
+  },
+  "audit-retest-results/parity-history-restore-appends-a-durable-revision-mobile-chromium/error-context.md": {
+    "mtime": 1792341225.007809,
+    "seen": 1794995024.3073978,
+    "ast_hash": "0d60097bf6905241a0e7a05ea42c3334",
+    "semantic_hash": ""
+  },
+  "docs/ARCHITECTURE.md": {
+    "mtime": 1785223217.8411157,
+    "seen": 1794995024.3074007,
+    "ast_hash": "6dac1038c30669814e05f25f8b963a7e",
+    "semantic_hash": ""
+  },
+  "docs/BAT_DAU_CHO_NGUOI_MOI.md": {
+    "mtime": 1785225830.7269118,
+    "seen": 1794995024.3074038,
+    "ast_hash": "336c416ce59b0d8141d949e30a55b37b",
+    "semantic_hash": ""
+  },
+  "docs/BLOCK_DEVELOPMENT.md": {
+    "mtime": 1785223163.3047583,
+    "seen": 1794995024.3074067,
+    "ast_hash": "0e4a0de0ed3bfe2d60afbbb535623d60",
+    "semantic_hash": ""
+  },
+  "docs/COLLABORATION_AND_COMMENTS.md": {
+    "mtime": 1792202967.9127436,
+    "seen": 1794995024.3074095,
+    "ast_hash": "30dc414a4a65c882d0578d5ce4dd0eb0",
+    "semantic_hash": ""
+  },
+  "docs/CONTRIBUTING.md": {
+    "mtime": 1785223242.0214255,
+    "seen": 1794995024.3074121,
+    "ast_hash": "e8f919628792c09490d8349558f03c77",
+    "semantic_hash": ""
+  },
+  "docs/DATABASE_AND_DIAGRAMS.md": {
+    "mtime": 1792165505.7279677,
+    "seen": 1794995024.307415,
+    "ast_hash": "d6ae82b8dc55cd1fed3a5a5465150d1d",
+    "semantic_hash": ""
+  },
+  "docs/DATABASE_AUTOMATIONS.md": {
+    "mtime": 1792200249.3580923,
+    "seen": 1794995024.3074176,
+    "ast_hash": "ae6f484720c07bf6d0f355d2267860ed",
+    "semantic_hash": ""
+  },
+  "docs/DATABASE_DRAG_FEEDBACK.md": {
+    "mtime": 1792204996.176157,
+    "seen": 1794995024.3074203,
+    "ast_hash": "9184e5fce7097a89092f054574d1d73d",
+    "semantic_hash": ""
+  },
+  "docs/DATABASE_WORKBENCH.md": {
+    "mtime": 1792195149.315655,
+    "seen": 1794995024.3074226,
+    "ast_hash": "b830b9aa55b15c8d7d461f4d26e7ef1f",
+    "semantic_hash": ""
+  },
+  "docs/DEMO_INTEGRATION.md": {
+    "mtime": 1792036045.397646,
+    "seen": 1794995024.3074255,
+    "ast_hash": "5278b26fa42f5bec8164f1b684918241",
+    "semantic_hash": ""
+  },
+  "docs/DOCUMENT_FORMAT_V1.md": {
+    "mtime": 1785389905.1242418,
+    "seen": 1794995024.3074281,
+    "ast_hash": "e2731628ea69d8b11884eee952dd4394",
+    "semantic_hash": ""
+  },
+  "docs/DOCX_CONVERSION_ACCEPTANCE_2026-11-15.md": {
+    "mtime": 1794807510.9169898,
+    "seen": 1794995024.307431,
+    "ast_hash": "8f845e6e034f9ec64f238a9c94d290a4",
+    "semantic_hash": ""
+  },
+  "docs/DOCX_MARKDOWN_CONVERSION_ARCHITECTURE.md": {
+    "mtime": 1794723512.1403227,
+    "seen": 1794995024.307434,
+    "ast_hash": "9ba56a791ff67bb2f896dd8cd0ca6a91",
+    "semantic_hash": ""
+  },
+  "docs/FEATURES_AND_USAGE.md": {
+    "mtime": 1794726100.893013,
+    "seen": 1794995024.3074367,
+    "ast_hash": "cee85a401a4e8db156b27f17bb041025",
+    "semantic_hash": ""
+  },
+  "docs/GOVERNANCE.md": {
+    "mtime": 1785223163.3067687,
+    "seen": 1794995024.3074393,
+    "ast_hash": "4841dca524453c6b153954536fca78e0",
+    "semantic_hash": ""
+  },
+  "docs/GO_SDK_ARCHITECTURE.md": {
+    "mtime": 1794891575.8686936,
+    "seen": 1794995024.3074422,
+    "ast_hash": "dca2fc298a359853c57d309c3a59664a",
+    "semantic_hash": ""
+  },
+  "docs/GO_SDK_IMPLEMENTATION_2026-11-17.md": {
+    "mtime": 1794891575.1222808,
+    "seen": 1794995024.307445,
+    "ast_hash": "f18abca0cd07eb89f21826f2922e5996",
+    "semantic_hash": ""
+  },
+  "docs/GRAPHIFY_ARCHITECTURE_2026-11-15.md": {
+    "mtime": 1794807510.1761334,
+    "seen": 1794995024.307448,
+    "ast_hash": "3a8847c23ad0d1b4266e1f3a53438271",
+    "semantic_hash": ""
+  },
+  "docs/HUONG_DAN_SU_DUNG.md": {
+    "mtime": 1785225830.7299225,
+    "seen": 1794995024.3074505,
+    "ast_hash": "b4c692493bd6a83ceda16f74c2a58319",
+    "semantic_hash": ""
+  },
+  "docs/I18N.md": {
+    "mtime": 1791984273.8328757,
+    "seen": 1794995024.3074534,
+    "ast_hash": "1612f151b5084aa71e974235281a85bd",
+    "semantic_hash": ""
+  },
+  "docs/INTEGRATION_STYLING_ACCEPTANCE.md": {
+    "mtime": 1792046625.3362567,
+    "seen": 1794995024.3074565,
+    "ast_hash": "975251fd7f624729a51b8da0b8f9548c",
+    "semantic_hash": ""
+  },
+  "docs/LIBRARY_MECHANISM.md": {
+    "mtime": 1785223242.0204039,
+    "seen": 1794995024.3074594,
+    "ast_hash": "bee36bce3f8172642a0ba01ebc7dc568",
+    "semantic_hash": ""
+  },
+  "docs/LONG_TERM_MAINTENANCE_ARCHITECTURE.md": {
+    "mtime": 1794726101.589389,
+    "seen": 1794995024.3074627,
+    "ast_hash": "9b709959ee674a7488afe0098f97f840",
+    "semantic_hash": ""
+  },
+  "docs/MATH_EDITOR.md": {
+    "mtime": 1785507629.193814,
+    "seen": 1794995024.3074658,
+    "ast_hash": "93d7570ffae2929d63c490530cf1171d",
+    "semantic_hash": ""
+  },
+  "docs/MIGRATION_GUIDE.md": {
+    "mtime": 1785223163.3108933,
+    "seen": 1794995024.3074682,
+    "ast_hash": "78bf2838fb023ba9344dd25e114362e6",
+    "semantic_hash": ""
+  },
+  "docs/NOTION_COMPLETION_QUEUE.md": {
+    "mtime": 1794724419.7925785,
+    "seen": 1794995024.3074713,
+    "ast_hash": "abe564c677596feb8d945bc4d3b2c233",
+    "semantic_hash": ""
+  },
+  "docs/NOTION_PARITY_ACCEPTANCE.md": {
+    "mtime": 1792034859.1123507,
+    "seen": 1794995024.3074741,
+    "ast_hash": "f7f9a6367c635d6312cce471fa85f5b5",
+    "semantic_hash": ""
+  },
+  "docs/PERSISTENCE_AND_CUSTOMIZATION_2026-11-15.md": {
+    "mtime": 1794721291.9344866,
+    "seen": 1794995024.3074768,
+    "ast_hash": "b7f04d2a889e591a2c7069338046f680",
+    "semantic_hash": ""
+  },
+  "docs/PUBLISH_NPM_VI.md": {
+    "mtime": 1792046589.2129972,
+    "seen": 1794995024.3074794,
+    "ast_hash": "93094b9f97cbc8b75d903fde5a158b17",
+    "semantic_hash": ""
+  },
+  "docs/QUALITY_AUDIT_2026-10-18.md": {
+    "mtime": 1792376771.0807898,
+    "seen": 1794995024.307482,
+    "ast_hash": "67621666f308fca177541c963d04bccc",
+    "semantic_hash": ""
+  },
+  "docs/QUALITY_FIXES_2026-10-19.md": {
+    "mtime": 1792376800.0710218,
+    "seen": 1794995024.3074846,
+    "ast_hash": "bfa8fc540884228d38f9616bdee844b4",
+    "semantic_hash": ""
+  },
+  "docs/REACT_INTEGRATION_AND_CSS.md": {
+    "mtime": 1792164219.1729646,
+    "seen": 1794995024.3074872,
+    "ast_hash": "ff5d6a44b64d66f663505a13f9ea5ba8",
+    "semantic_hash": ""
+  },
+  "docs/RELEASING.md": {
+    "mtime": 1785235293.937496,
+    "seen": 1794995024.30749,
+    "ast_hash": "f126f3dc96b43a43a3e5d1dc37bdebee",
+    "semantic_hash": ""
+  },
+  "docs/SECURITY.md": {
+    "mtime": 1785223163.3108933,
+    "seen": 1794995024.3074925,
+    "ast_hash": "aa3e45c068d70b2ab41d47ac43d77093",
+    "semantic_hash": ""
+  },
+  "docs/SPREADSHEET_ACCEPTANCE_2026-11-15.md": {
+    "mtime": 1794807553.2191877,
+    "seen": 1794995024.3074954,
+    "ast_hash": "0b832847abdf7f6d31577b759bc5829d",
+    "semantic_hash": ""
+  },
+  "docs/SPREADSHEET_ARCHITECTURE.md": {
+    "mtime": 1794726102.259045,
+    "seen": 1794995024.3074982,
+    "ast_hash": "308774601482b8192ac838a1559829a1",
+    "semantic_hash": ""
+  },
+  "docs/VERIFICATION.md": {
+    "mtime": 1792028505.397202,
+    "seen": 1794995024.307501,
+    "ast_hash": "2d3a240fb4b230f7745a2d4bb73daba0",
+    "semantic_hash": ""
+  },
+  "docs/WORKSPACE_CAPABILITIES.md": {
+    "mtime": 1792034859.1123507,
+    "seen": 1794995024.3075042,
+    "ast_hash": "183ab0f603d7f64970a06eed6486f825",
+    "semantic_hash": ""
+  },
+  "docs/adr/0001-editor-engine.md": {
+    "mtime": 1784899954.3930607,
+    "seen": 1794995024.3075068,
+    "ast_hash": "82bd3d25f6cecb8cc5b0d57ef74c1fca",
+    "semantic_hash": ""
+  },
+  "docs/adr/0002-docx-canonical-roundtrip.md": {
+    "mtime": 1794723513.3546367,
+    "seen": 1794995024.3075094,
+    "ast_hash": "f800ebe0e1d77a1385a809c36b8516d5",
+    "semantic_hash": ""
+  },
+  "docs/adr/0003-standalone-spreadsheet-engine.md": {
+    "mtime": 1794726103.691036,
+    "seen": 1794995024.3075125,
+    "ast_hash": "b8d6add93f2015d9f019ac8f9061561f",
+    "semantic_hash": ""
+  },
+  "examples/collaboration-server/CHANGELOG.md": {
+    "mtime": 1784973112.9057307,
+    "seen": 1794995024.3075154,
+    "ast_hash": "4f7a6b4b5dc71132eaa63fac1aa15867",
+    "semantic_hash": ""
+  },
+  "examples/collaboration-server/README.md": {
+    "mtime": 1784958322.7287261,
+    "seen": 1794995024.3075187,
+    "ast_hash": "7b0fdd3b765ef3023f47f4aea1342b24",
+    "semantic_hash": ""
+  },
+  "examples/editor-engine-lab/README.md": {
+    "mtime": 1784899953.4863257,
+    "seen": 1794995024.3075216,
+    "ast_hash": "5561f209d0737f247ef4db8178846c2f",
+    "semantic_hash": ""
+  },
+  "examples/legal-service-nest/CHANGELOG.md": {
+    "mtime": 1784973112.8059473,
+    "seen": 1794995024.3075247,
+    "ast_hash": "90431359e7e0daab534bbf9b2394b70a",
+    "semantic_hash": ""
+  },
+  "examples/legal-service-nest/README.md": {
+    "mtime": 1784906702.3107092,
+    "seen": 1794995024.3075275,
+    "ast_hash": "aa708e782fc6c529de1027ab12db7ab0",
+    "semantic_hash": ""
+  },
+  "examples/nextjs-demo/README.md": {
+    "mtime": 1784899953.8126552,
+    "seen": 1794995024.3075302,
+    "ast_hash": "b50ffe273c2d5ae4ad730dd0fea9aca7",
+    "semantic_hash": ""
+  },
+  "examples/react-demo/index.html": {
+    "mtime": 1784899953.2740724,
+    "seen": 1794995024.3075333,
+    "ast_hash": "f0c841bd0a203bffd440ef414893150a",
+    "semantic_hash": ""
+  },
+  "packages/disnote/CHANGELOG.md": {
+    "mtime": 1785508341.0728703,
+    "seen": 1794995024.3075361,
+    "ast_hash": "2546d4139788743c8ad54cd2dcd8fc77",
+    "semantic_hash": ""
+  },
+  "packages/disnote/README.md": {
+    "mtime": 1792037205.9740326,
+    "seen": 1794995024.3075392,
+    "ast_hash": "e017271014f4f4498a231d44bfa1c638",
+    "semantic_hash": ""
+  },
+  "packages/disnote/THIRD_PARTY_NOTICES.md": {
+    "mtime": 1792165348.6050155,
+    "seen": 1794995024.3075426,
+    "ast_hash": "6e23a4e415e3796dd4e0a9302a1d862b",
+    "semantic_hash": ""
+  },
+  "packages/react/README.md": {
+    "mtime": 1792036995.7500732,
+    "seen": 1794995024.3075454,
+    "ast_hash": "d476d6b4120f5e37c59e6d88a192cd58",
+    "semantic_hash": ""
+  },
+  "packages/sheets/README.md": {
+    "mtime": 1794725382.6683586,
+    "seen": 1794995024.307548,
+    "ast_hash": "88336e135ca8136e644bbe9329862e19",
+    "semantic_hash": ""
+  },
+  "audit-retest-results/parity-database-CRUD-survi-89de1-ll-six-views-render-records-mobile-chromium/test-failed-1.png": {
+    "mtime": 1792341161.5812702,
+    "seen": 1794995024.307551,
+    "ast_hash": "6da13c7a12edb8efd3b862dd0c9c6768",
+    "semantic_hash": ""
+  },
+  "audit-retest-results/parity-history-restore-appends-a-durable-revision-mobile-chromium/test-failed-1.png": {
+    "mtime": 1792341224.7776208,
+    "seen": 1794995024.3075538,
+    "ast_hash": "5252bb99fbd44fae4963915d0a88882e",
+    "semantic_hash": ""
+  },
+  "audit-retest-results/parity-shared-source-edits-ff333-s-and-the-resolved-renderer-chromium/shared-edit-dialog.png": {
+    "mtime": 1792341098.4441073,
+    "seen": 1794995024.3075569,
+    "ast_hash": "3d42396ffe479320ad36abe4e4077626",
+    "semantic_hash": ""
+  },
+  "audit-retest-results/parity-shared-source-edits-ff333-s-and-the-resolved-renderer-mobile-chromium/shared-edit-dialog.png": {
+    "mtime": 1792341163.8848028,
+    "seen": 1794995024.3075595,
+    "ast_hash": "6929852dcd7b4b579915b2d963796ced",
+    "semantic_hash": ""
+  },
+  "reliability-repeat-results/parity-shared-source-edits-ff333-s-and-the-resolved-renderer-chromium-repeat1/shared-edit-dialog.png": {
+    "mtime": 1792341664.0845566,
+    "seen": 1794995024.3075624,
+    "ast_hash": "499fdaecc30630b10d7567aa6bc176fe",
+    "semantic_hash": ""
+  },
+  "reliability-repeat-results/parity-shared-source-edits-ff333-s-and-the-resolved-renderer-chromium-repeat2/shared-edit-dialog.png": {
+    "mtime": 1792341667.922285,
+    "seen": 1794995024.3075647,
+    "ast_hash": "ab1cbe59c2669c93489ee86319ec9fe7",
+    "semantic_hash": ""
+  },
+  "reliability-repeat-results/parity-shared-source-edits-ff333-s-and-the-resolved-renderer-chromium/shared-edit-dialog.png": {
+    "mtime": 1792341659.9144256,
+    "seen": 1794995024.3075678,
+    "ast_hash": "499fdaecc30630b10d7567aa6bc176fe",
+    "semantic_hash": ""
+  },
+  "reliability-repeat-results/parity-shared-source-edits-ff333-s-and-the-resolved-renderer-mobile-chromium-repeat1/shared-edit-dialog.png": {
+    "mtime": 1792341676.0216198,
+    "seen": 1794995024.3075707,
+    "ast_hash": "5cfcc72e5277ca874a769a80a68bbff5",
+    "semantic_hash": ""
+  },
+  "reliability-repeat-results/parity-shared-source-edits-ff333-s-and-the-resolved-renderer-mobile-chromium-repeat2/shared-edit-dialog.png": {
+    "mtime": 1792341680.1469395,
+    "seen": 1794995024.3075736,
+    "ast_hash": "f5704c9e3b5da8d08a4ed53444867cc0",
+    "semantic_hash": ""
+  },
+  "reliability-repeat-results/parity-shared-source-edits-ff333-s-and-the-resolved-renderer-mobile-chromium/shared-edit-dialog.png": {
+    "mtime": 1792341671.4120255,
+    "seen": 1794995024.3075762,
+    "ast_hash": "f8c2c9db1ea710179752d72fe1bf91b6",
+    "semantic_hash": ""
+  },
+  "package-lock.json": {
+    "mtime": 1794725878.0473223,
+    "seen": 1794995024.3075788,
+    "ast_hash": "063e84ee813eac6222b9af1af3bb8406",
+    "semantic_hash": ""
   }
 }
