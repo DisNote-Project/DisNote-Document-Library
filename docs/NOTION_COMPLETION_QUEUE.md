@@ -22,6 +22,12 @@ Authorization: implement all gaps from the comparison. Existing source and user
 changes are retained. This ledger distinguishes SDK contracts, reference demo,
 authenticated DisNote hosts and deployed/native verification.
 
+2026-11-15 foundation: custom immutable preset composition plus interchangeable
+MongoDB/PostgreSQL document-state adapters are implemented and unit-tested under
+`DOC-PLATFORM-01..05`. Live database services, normalized large-history storage
+and NEXT-08..12 product boundaries remain open; see
+`PERSISTENCE_AND_CUSTOMIZATION_2026-11-15.md`.
+
 | ID | Acceptance | Status / evidence |
 |---|---|---|
 | NEXT-01 | Inline cells, multi-row atomic edits/deletes, reorder/resize columns/rows, Kanban/date drag with keyboard alternatives | SDK + Mongo demo proven: conflict draft preservation, single-revision bulk, row/column keyboard order, width slider, Kanban/calendar drag and timeline keyboard. Authenticated host API/workbench connected; exhaustive accessibility and cross-client load QA pending |
@@ -34,8 +40,8 @@ authenticated DisNote hosts and deployed/native verification.
 | NEXT-08 | Guest/person/group sharing, public links and access-request workflow | Queued; trusted identity and deployment evidence required |
 | NEXT-09 | Download/manage offline pages, app shell and native adapters/QA | Queued; existing durable queue/blob cache |
 | NEXT-10 | Indexed search, permission-aware sourced workspace Q&A and connector ingestion | Queued; existing injected AI/search foundations |
-| NEXT-11 | Document-scoped assets, persisted workspace import/export and verified PDF artifact | Queued |
-| NEXT-12 | Bounded large-data rendering/server queries, retention, load/a11y/deployment/revocation QA | Queued |
+| NEXT-11 | Document-scoped assets, persisted workspace import/export and verified PDF artifact | Partial foundation: checksummed DisNote DOCX exact round-trip, edited/external Word semantic fallback, Markdown conversion and extensible custom-block codecs are implemented and tested. External Word/LibreOffice visual corpus, images/comments/tracked changes/footnotes, persisted workspace bundles and verified PDF artifacts remain queued |
+| NEXT-12 | Bounded large-data rendering/server queries, retention, load/a11y/deployment/revocation QA | Partial foundation: MongoDB/PostgreSQL CAS adapters now share one repository contract; normalized history retention, live DB/load/a11y/deployment/revocation proof remain queued |
 
 Every row requires applicable UI/API/service/persistence/event and test evidence.
 External delivery, deployed identity, native-device and generated-PDF evidence may

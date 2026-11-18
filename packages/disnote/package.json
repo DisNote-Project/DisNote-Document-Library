@@ -60,6 +60,16 @@
       "import": "./dist/persistence/index.js",
       "default": "./dist/persistence/index.js"
     },
+    "./persistence/mongodb": {
+      "types": "./dist/persistence/mongodb.d.ts",
+      "import": "./dist/persistence/mongodb.js",
+      "default": "./dist/persistence/mongodb.js"
+    },
+    "./persistence/postgres": {
+      "types": "./dist/persistence/postgres.d.ts",
+      "import": "./dist/persistence/postgres.js",
+      "default": "./dist/persistence/postgres.js"
+    },
     "./ui": {
       "types": "./dist/ui/messages.d.ts",
       "import": "./dist/ui/messages.js",
@@ -144,6 +154,11 @@
       "types": "./dist/import-export/index.d.ts",
       "import": "./dist/import-export/index.js",
       "default": "./dist/import-export/index.js"
+    },
+    "./import-export/docx": {
+      "types": "./dist/import-export/docx/index.d.ts",
+      "import": "./dist/import-export/docx/index.js",
+      "default": "./dist/import-export/docx/index.js"
     },
     "./legal": {
       "types": "./dist/legal/index.d.ts",
@@ -304,6 +319,9 @@
       "import-export": [
         "dist/import-export/index.d.ts"
       ],
+      "import-export/docx": [
+        "dist/import-export/docx/index.d.ts"
+      ],
       "offline": [
         "dist/offline/index.d.ts"
       ],
@@ -387,6 +405,12 @@
       ],
       "persistence/browser": [
         "dist/persistence/index.d.ts"
+      ],
+      "persistence/mongodb": [
+        "dist/persistence/mongodb.d.ts"
+      ],
+      "persistence/postgres": [
+        "dist/persistence/postgres.d.ts"
       ],
       "testing": [
         "dist/testing/index.d.ts"

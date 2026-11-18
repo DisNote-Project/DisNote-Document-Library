@@ -1,4 +1,4 @@
-# DisNote Document
+# DisNote Document and Sheets
 
 React integration now has a ready-to-use `@disnote/react` workspace package,
 optional scoped CSS and shared design tokens. See
@@ -25,10 +25,11 @@ use case shares — before those use cases diverge.
 - Custom blocks use the core registry plus a renderer registry for each target
   platform, without modifying core.
 
-## Package
+## Packages
 
-The library ships as one tree-shakable package, `@disnote/core`. Import only
-the subpath needed by the application:
+The document platform ships as tree-shakable `@disnote/core` subpaths. The
+spreadsheet platform is a separate `@disnote/sheets` package, so consumers can
+integrate workbooks without pulling the Docs schema, React or BlockNote.
 
 | Import | Purpose | Optional runtime peers |
 |---|---|---|
@@ -45,6 +46,11 @@ the subpath needed by the application:
 | `@disnote/core/comments` | Comment threads and mention providers | none |
 | `@disnote/core/search-ai` | Search projection and AI operation pipeline | none |
 | `@disnote/core/collaboration` | Yjs binding and update persistence | Yjs |
+| `@disnote/sheets` | Standalone workbook/sheet/cell model, formulas and plugins | none |
+| `@disnote/sheets/import-export` | CSV and bounded XLSX conversion | none |
+| `@disnote/sheets/persistence` | CAS workbook repository contracts | none |
+| `@disnote/sheets/persistence/mongodb` | Structural MongoDB adapter | MongoDB driver supplied by host |
+| `@disnote/sheets/persistence/postgres` | Structural PostgreSQL adapter | PostgreSQL driver supplied by host |
 
 The root import stays independent of React and BlockNote. See
 [`docs/LIBRARY_MECHANISM.md`](docs/LIBRARY_MECHANISM.md)
@@ -58,6 +64,21 @@ Workspace/database, offline, collaborative editing and integration controls are
 documented in [`docs/WORKSPACE_CAPABILITIES.md`](docs/WORKSPACE_CAPABILITIES.md).
 Supported behavior and unverified deployment/native boundaries are tracked in
 [`docs/NOTION_PARITY_ACCEPTANCE.md`](docs/NOTION_PARITY_ACCEPTANCE.md).
+
+MongoDB/PostgreSQL adapters and immutable custom preset composition are documented
+in [`docs/PERSISTENCE_AND_CUSTOMIZATION_2026-11-15.md`](docs/PERSISTENCE_AND_CUSTOMIZATION_2026-11-15.md).
+
+Checksummed DOCX ↔ Markdown conversion, external Word semantic fallback and safe
+custom-block codecs are documented in
+[`docs/DOCX_MARKDOWN_CONVERSION_ARCHITECTURE.md`](docs/DOCX_MARKDOWN_CONVERSION_ARCHITECTURE.md).
+
+The current dependency graph, call-flow/tree exports and regeneration workflow
+are recorded in
+[`docs/GRAPHIFY_ARCHITECTURE_2026-11-15.md`](docs/GRAPHIFY_ARCHITECTURE_2026-11-15.md).
+
+The standalone spreadsheet architecture and supported Excel fidelity are
+documented in
+[`docs/SPREADSHEET_ARCHITECTURE.md`](docs/SPREADSHEET_ARCHITECTURE.md).
 
 For package-by-package features and complete usage examples, read
 [`docs/FEATURES_AND_USAGE.md`](docs/FEATURES_AND_USAGE.md).
@@ -73,6 +94,7 @@ For the typed English message catalog and application-level overrides, read
 
 ```bash
 npm install @disnote/core
+npm install @disnote/sheets
 ```
 
 Repository development:

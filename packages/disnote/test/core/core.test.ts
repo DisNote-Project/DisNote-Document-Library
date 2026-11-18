@@ -26,6 +26,9 @@ import {
   createDefaultRegistry,
   createMigrationRegistry,
   articlePreset,
+  defineCoreBlock,
+  defineDocumentPreset,
+  ok,
   setIdGenerator,
   mathEquation,
 } from "../../src/core/index.js";
@@ -40,6 +43,34 @@ let counter = 0;
 setIdGenerator(() => `id${(counter++).toString().padStart(4, "0")}`);
 
 const registry = createDefaultRegistry();
+
+test("custom presets extend a base immutably", () => {
+  const block = defineCoreBlock({
+    type: "acme.ticket",
+    version: 1,
+    capabilities: {
+      inlineContent: false,
+      children: false,
+      selectable: true,
+      draggable: true,
+      commentable: true,
+    },
+    validateProps: () => ok({}),
+  });
+  const custom = defineDocumentPreset({
+    id: "acme-workspace",
+    base: articlePreset,
+    blocks: [block],
+    maxDepth: 12,
+    allowedExternalHosts: ["assets.example.com"],
+    capabilities: { comments: true, collaboration: true },
+  });
+  assert.equal(articlePreset.registry.has(block.type), false);
+  assert.equal(custom.registry.has(block.type), true);
+  assert.equal(custom.capabilities.publishing, true);
+  assert.equal(custom.capabilities.comments, true);
+  assert.equal(custom.maxDepth, 12);
+});
 
 test("createDocument produces a valid V1 envelope", () => {
   const doc = createDocument({ metadata: { title: "T" }, now: "2026-01-01T00:00:00.000Z" });

@@ -1,0 +1,32 @@
+{
+  "name": "@disnote/sheets",
+  "version": "0.1.0",
+  "description": "Headless, vendor-neutral spreadsheet engine for DisNote and standalone integrations.",
+  "license": "Apache-2.0",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": { "types": "./dist/index.d.ts", "import": "./dist/index.js", "default": "./dist/index.js" },
+    "./formula": { "types": "./dist/formula.d.ts", "import": "./dist/formula.js", "default": "./dist/formula.js" },
+    "./import-export": { "types": "./dist/import-export.d.ts", "import": "./dist/import-export.js", "default": "./dist/import-export.js" },
+    "./persistence": { "types": "./dist/persistence.d.ts", "import": "./dist/persistence.js", "default": "./dist/persistence.js" },
+    "./persistence/mongodb": { "types": "./dist/persistence-mongodb.d.ts", "import": "./dist/persistence-mongodb.js", "default": "./dist/persistence-mongodb.js" },
+    "./persistence/postgres": { "types": "./dist/persistence-postgres.d.ts", "import": "./dist/persistence-postgres.js", "default": "./dist/persistence-postgres.js" }
+  },
+  "files": ["dist", "README.md", "LICENSE"],
+  "sideEffects": false,
+  "engines": { "node": ">=20.19" },
+  "publishConfig": { "access": "public", "registry": "https://registry.npmjs.org/" },
+  "scripts": { "build": "tsc -b", "typecheck": "tsc -b", "lint": "eslint src test --max-warnings=0", "prepack": "npm run build" },
+  "typesVersions": {
+    "*": {
+      "formula": ["dist/formula.d.ts"],
+      "import-export": ["dist/import-export.d.ts"],
+      "persistence": ["dist/persistence.d.ts"],
+      "persistence/mongodb": ["dist/persistence-mongodb.d.ts"],
+      "persistence/postgres": ["dist/persistence-postgres.d.ts"]
+    }
+  },
+  "dependencies": { "fflate": "^0.8.2" }
+}

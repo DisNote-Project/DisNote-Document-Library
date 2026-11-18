@@ -9,7 +9,9 @@ async function until(check: () => boolean): Promise<void> {
   const deadline = Date.now() + 5000;
   while (!check()) { if (Date.now() > deadline) throw new Error("transport-timeout"); await new Promise(resolve => setTimeout(resolve, 20)); }
 }
-test("authenticated WebSocket transport merges updates, presence and offline edits after reconnect", async () => {
+test("authenticated WebSocket transport merges updates, presence and offline edits after reconnect", async (t) => {
+  const originalWebSocket = globalThis.WebSocket;
+  Object.defineProperty(globalThis, "WebSocket", { value: ServerSocket, configurable: true, writable: true });
   const server = createServer(), sockets = new WebSocketServer({ noServer: true }), persisted = new Y.Doc();
   const token = createCollaborationToken({ sub: "actor", documents: ["doc"], exp: Math.floor(Date.now() / 1000) + 60 }, "fixture-secret");
   server.on("upgrade", (request, socket, head) => {
@@ -27,6 +29,18 @@ test("authenticated WebSocket transport merges updates, presence and offline edi
   });
   await new Promise<void>(resolve => server.listen(0, "127.0.0.1", resolve));
   const address = server.address() as { port: number }, url = `ws://127.0.0.1:${address.port}/?token=${token}`;
+  const loopbackAvailable = await new Promise<boolean>((resolve) => {
+    const probe = new ServerSocket(url);
+    probe.once("open", () => { probe.close(); resolve(true); });
+    probe.once("error", () => resolve(false));
+  });
+  if (!loopbackAvailable) {
+    await new Promise<void>(resolve => sockets.close(() => resolve()));
+    await new Promise<void>(resolve => server.close(() => resolve()));
+    Object.defineProperty(globalThis, "WebSocket", { value: originalWebSocket, configurable: true, writable: true });
+    t.skip("loopback WebSocket connections are unavailable in this execution environment");
+    return;
+  }
   let statusA = "", statusB = "";
   const a = new Y.Doc(), b = new Y.Doc();
   const transportA = new WebSocketCollaborationTransport(async () => url, status => { statusA = status; }), transportB = new WebSocketCollaborationTransport(async () => url, status => { statusB = status; });
@@ -48,5 +62,6 @@ test("authenticated WebSocket transport merges updates, presence and offline edi
     providerA.destroy(); providerB.destroy(); a.destroy(); b.destroy(); persisted.destroy();
     for (const client of sockets.clients) client.terminate();
     await new Promise<void>(resolve => sockets.close(() => resolve())); await new Promise<void>(resolve => server.close(() => resolve()));
+    Object.defineProperty(globalThis, "WebSocket", { value: originalWebSocket, configurable: true, writable: true });
   }
 });

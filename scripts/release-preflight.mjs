@@ -4,9 +4,9 @@ import process from "node:process";
 import { URL } from "node:url";
 
 const npmCommand = process.platform === "win32" ? "npm.cmd" : "npm";
-const manifest = JSON.parse(
-  readFileSync(new URL("../packages/disnote/package.json", import.meta.url), "utf8"),
-);
+const manifests = ["disnote", "sheets"].map((directory) => JSON.parse(
+  readFileSync(new URL(`../packages/${directory}/package.json`, import.meta.url), "utf8"),
+));
 const errors = [];
 
 function run(command, args) {
@@ -58,29 +58,22 @@ if (fetchResult.status !== 0) {
   }
 }
 
-const whoami = run(npmCommand, ["whoami", "--registry", manifest.publishConfig.registry]);
-if (whoami.status !== 0) {
-  errors.push("npm is not authenticated. Run `npm login` and try again.");
+const registries = [...new Set(manifests.map((manifest) => manifest.publishConfig.registry))];
+const identities = new Map();
+for (const registry of registries) {
+  const whoami = run(npmCommand, ["whoami", "--registry", registry]);
+  if (whoami.status !== 0) errors.push(`npm is not authenticated for ${registry}. Run npm login and try again.`);
+  else identities.set(registry, whoami.stdout.trim());
 }
 
-const versionsResult = run(npmCommand, [
-  "view",
-  manifest.name,
-  "versions",
-  "--json",
-  "--registry",
-  manifest.publishConfig.registry,
-]);
-if (versionsResult.status !== 0) {
-  errors.push(
-    `Could not read published versions for ${manifest.name}: ${commandError(versionsResult)}`,
-  );
-} else {
-  const publishedVersions = JSON.parse(versionsResult.stdout);
-  if (publishedVersions.includes(manifest.version)) {
-    errors.push(
-      `${manifest.name}@${manifest.version} already exists on npm. Prepare and commit the next version first.`,
-    );
+for (const manifest of manifests) {
+  const versionsResult = run(npmCommand, ["view", manifest.name, "versions", "--json", "--registry", manifest.publishConfig.registry]);
+  if (versionsResult.status !== 0) {
+    if (!/\bE404\b/u.test(versionsResult.stderr ?? "")) errors.push(`Could not read published versions for ${manifest.name}: ${commandError(versionsResult)}`);
+  } else {
+    const value = JSON.parse(versionsResult.stdout);
+    const publishedVersions = Array.isArray(value) ? value : [value];
+    if (publishedVersions.includes(manifest.version)) errors.push(`${manifest.name}@${manifest.version} already exists on npm. Prepare and commit the next version first.`);
   }
 }
 
@@ -89,6 +82,4 @@ if (errors.length > 0) {
   process.exit(1);
 }
 
-console.log(
-  `release preflight: ready to publish ${manifest.name}@${manifest.version} as ${whoami.stdout.trim()}`,
-);
+console.log(`release preflight: ready to publish ${manifests.map((manifest) => `${manifest.name}@${manifest.version}`).join(", ")} as ${[...identities.values()].join(", ")}`);

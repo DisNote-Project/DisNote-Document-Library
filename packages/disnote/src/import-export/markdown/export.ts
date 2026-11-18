@@ -156,6 +156,21 @@ function blockToMd(
       );
       return [`${indent}![${alt}](${assetId})`];
     }
+    case "table": {
+      const rows = Array.isArray(block.props["rows"]) ? block.props["rows"] : [];
+      const cells = rows.map((row) => {
+        if (!row || typeof row !== "object" || !("cells" in row) || !Array.isArray(row.cells)) return [];
+        return row.cells.map((cell) => inlineToMd(cell as unknown as DisNoteInline[], w, block.id).replace(/\|/gu, "\\|"));
+      });
+      if (cells.length === 0) return [];
+      const width = Math.max(...cells.map((row) => row.length));
+      const normalized = cells.map((row) => [...row, ...Array.from({ length: width - row.length }, () => "")]);
+      return [
+        `${indent}| ${normalized[0]!.join(" | ")} |`,
+        `${indent}| ${Array.from({ length: width }, () => "---").join(" | ")} |`,
+        ...normalized.slice(1).map((row) => `${indent}| ${row.join(" | ")} |`),
+      ];
+    }
     default:
       w.add(
         "unknown-block",

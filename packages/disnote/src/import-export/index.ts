@@ -17,3 +17,4 @@ export {
 export * from "./bundle.js";
 export * from "./notion.js";
 export * from "./archive.js";
+export * from "./docx/index.js";

@@ -16,7 +16,20 @@ export class WebSocketCollaborationTransport implements CollaborationTransport {
     this.pending.push(packet);
   }
   subscribe(listener: (packet: CollaborationPacket) => void): () => void { this.listeners.add(listener); return () => this.listeners.delete(listener); }
-  close(): void { this.closed = true; if (this.timer) clearTimeout(this.timer); this.socket?.close(); this.socket = null; this.pending.length = 0; this.listeners.clear(); }
+  close(): void {
+    this.closed = true;
+    if (this.timer) clearTimeout(this.timer);
+    this.timer = null;
+    const socket = this.socket;
+    this.socket = null;
+    if (socket) {
+      socket.onclose = null;
+      socket.onerror = null;
+      socket.close();
+    }
+    this.pending.length = 0;
+    this.listeners.clear();
+  }
   private async connect(): Promise<void> {
     if (this.closed) return;
     this.onStatus?.("connecting");
@@ -48,13 +61,26 @@ export class WebSocketCollaborationTransport implements CollaborationTransport {
           for (const listener of this.listeners) listener(packet);
         } catch { /* Malformed untrusted messages never reach Yjs. */ }
       };
-      socket.onclose = () => this.retry(); socket.onerror = () => socket.close();
+      socket.onclose = () => {
+        if (this.socket === socket) this.socket = null;
+        this.retry();
+      };
+      socket.onerror = () => {
+        // Undici can dispatch another error synchronously from close(). Detach
+        // first so a failed handshake cannot recurse until the stack overflows.
+        socket.onerror = null;
+        socket.close();
+      };
     } catch { this.retry(); }
   }
   private retry(): void {
     if (this.closed) return;
     this.onStatus?.("disconnected");
-    this.timer = setTimeout(() => void this.connect(), Math.min(WEBSOCKET_CONSTANTS.MAX_RETRY_MS, WEBSOCKET_CONSTANTS.RETRY_MS * 2 ** this.retries++));
+    if (this.timer) return;
+    this.timer = setTimeout(() => {
+      this.timer = null;
+      void this.connect();
+    }, Math.min(WEBSOCKET_CONSTANTS.MAX_RETRY_MS, WEBSOCKET_CONSTANTS.RETRY_MS * 2 ** this.retries++));
   }
   private write(packet: CollaborationPacket): void {
     if (packet.kind === COLLABORATION_PROTOCOL.UPDATE) this.socket?.send(Uint8Array.from(packet.data).buffer);

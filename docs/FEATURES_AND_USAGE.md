@@ -1,5 +1,9 @@
 # Features and Usage
 
+Spreadsheet workbooks are intentionally outside the document block model. Use
+the independently installable `@disnote/sheets` package for workbook, formula,
+CSV/XLSX and persistence capabilities; see `SPREADSHEET_ARCHITECTURE.md`.
+
 This is the practical consumer guide for DisNote Document Library. The library
 owns a vendor-neutral JSON document contract; editors, renderers, storage,
 collaboration and product services plug into that contract.
@@ -17,6 +21,7 @@ collaboration and product services plug into that contract.
 | Word-like equation palette and MathML | `@disnote/core/math` |
 | Revision and publishing contracts | `@disnote/core/storage` |
 | Markdown/HTML interchange | `@disnote/core/import-export` |
+| DOCX/Markdown conversion | `@disnote/core/import-export/docx` |
 | Upload validation | `@disnote/core/assets` |
 | Comment threads and mentions | `@disnote/core/comments` |
 | Search projection and AI operations | `@disnote/core/search-ai` |
@@ -346,6 +351,32 @@ const fromClipboard = importHtml(untrustedHtml);
 
 Markdown is not able to represent every DisNote block. Always inspect lossy
 warnings instead of silently dropping content.
+
+For DOCX conversion, use the dedicated entry point with no additional peer
+dependency:
+
+```ts
+import {
+  convertDocxToMarkdown,
+  convertMarkdownToDocx,
+  exportDocx,
+  importDocx,
+} from "@disnote/core/import-export/docx";
+
+const archive = exportDocx(document);
+const restored = importDocx(archive.bytes);
+
+const wordFile = convertMarkdownToDocx(markdown);
+const markdownResult = convertDocxToMarkdown(wordFile.bytes);
+```
+
+An unedited archive exported by DisNote carries a checksummed canonical snapshot
+for exact round-trip. If Word changes the document body, the importer rejects the
+stale snapshot and maps supported WordprocessingML semantics instead. Always
+inspect `diagnostics`; external DOCX features outside the supported mapping are
+not silently claimed as lossless. See
+`DOCX_MARKDOWN_CONVERSION_ARCHITECTURE.md` for the fidelity matrix and extension
+codec contract.
 
 ## 13. Validate and upload assets
 

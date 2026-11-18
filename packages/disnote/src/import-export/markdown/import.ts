@@ -17,6 +17,9 @@ import {
   isDiagramFormat,
   mathEquation,
   divider,
+  image,
+  callout,
+  customBlock,
   safeUrl,
 } from "../../core/index.js";
 import { WarningSink, type ImportResult } from "../warnings.js";
@@ -167,6 +170,24 @@ export function importMarkdown(
       i++;
       continue;
     }
+    const tableSeparator = lines[i + 1]?.trim();
+    if (trimmed.startsWith("|") && tableSeparator && /^\|?(?:\s*:?-{3,}:?\s*\|)+\s*$/u.test(tableSeparator)) {
+      const rows: Array<{ cells: DisNoteInline[][] }> = [];
+      const parseRow = (value: string): { cells: DisNoteInline[][] } => ({
+        cells: value.replace(/^\||\|$/gu, "").split("|").map((cell) => parseInline(cell.trim(), w)),
+      });
+      rows.push(parseRow(trimmed));
+      i += 2;
+      while (i < lines.length && lines[i]!.trim().startsWith("|")) rows.push(parseRow(lines[i++]!.trim()));
+      blocks.push(customBlock("table", 1, { props: { rows: rows as never } }));
+      continue;
+    }
+    const markdownImage = /^!\[([^\]]*)\]\(([^)\s]+)\)$/u.exec(trimmed);
+    if (markdownImage) {
+      blocks.push(image(markdownImage[2]!, markdownImage[1]!));
+      i++;
+      continue;
+    }
     const check = /^[-*+]\s+\[([ xX])\]\s+(.*)$/.exec(trimmed);
     if (check) {
       blocks.push(
@@ -192,7 +213,10 @@ export function importMarkdown(
     }
     const bq = /^>\s?(.*)$/.exec(trimmed);
     if (bq) {
-      blocks.push(quote(parseInline(bq[1]!, w) as never));
+      const calloutMatch = /^\[!(info|warning|success|danger)\]\s*(.*)$/iu.exec(bq[1]!);
+      blocks.push(calloutMatch
+        ? callout(parseInline(calloutMatch[2]!, w) as never, calloutMatch[1]!.toLowerCase() as "info" | "warning" | "success" | "danger")
+        : quote(parseInline(bq[1]!, w) as never));
       i++;
       continue;
     }
