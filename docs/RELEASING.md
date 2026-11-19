@@ -1,51 +1,46 @@
-# Releasing `@disnote/core`
+# Releasing DisNote packages
 
-Releases use Changesets and the `Release packages` GitHub Actions workflow.
-The npm package is public and the repository secret `NPM_TOKEN` supplies the
-publish credential. The workflow exposes that secret as both `NPM_TOKEN` and
-`NODE_AUTH_TOKEN`, as required by Changesets and `actions/setup-node`.
+Public workspaces: `@disnote/core`, `@disnote/react`, `@disnote/sheets`.
+The root is private; do not publish it.
+See [the release instructions](PUBLISH_NPM_VI.md) and
+[the current readiness ledger](RELEASE_READINESS_2026-11-19.md).
 
-## Normal release
+## GitHub Actions
 
-1. Add a changeset with `npm run changeset` whenever a published API changes.
-2. Merge the changeset into `main`, or run `Release packages` manually from the
-   GitHub Actions page.
-3. Changesets opens or updates the `chore: release packages` pull request.
-4. Review the generated package version and `CHANGELOG.md`, then merge that pull
-   request.
-5. The next `Release packages` run publishes the new version to npm and creates
-   the corresponding git tag.
+Configure the Actions secret `NPM_TOKEN` with publish access to all three packages
+and authentication meeting npm's current requirements. The workflow uses a token;
+OIDC trusted publishing requires separate configuration.
 
-The release prepared in this worktree is `@disnote/core@0.6.1` (current npm
-version: `0.6.0`).
+Push changesets to main. The release workflow creates a version PR. Review its
+versions, changelogs, lockfile and React's dependency on core. Require the CI job
+(including MongoDB integration and browser tests) to pass before merging.
+The next main run performs preflight, verify, E2E and pack checks, publishes through
+Changesets in dependency order and pushes tags. Verify each package on npm.
 
-## Local checks
+## Manual fallback
 
-```bash
+Disable the release workflow first to prevent simultaneous publishing.
+Run each command only if the previous succeeds:
+
+```powershell
 npm ci
 npm run release:status
-npm run verify
-npm run release:dry-run
-```
-
-`npm run version-packages` is normally run by GitHub Actions. It updates package
-versions, changelogs, and the npm lockfile together so the release pull request
-always passes `npm ci`.
-
-## Emergency local publish
-
-Only use this when GitHub Actions is unavailable:
-
-```bash
-npm login
 npm run version-packages
-npm run release:preflight
+git diff
+npm run verify
+npm run test:e2e
+npm run release:pack-check
+git add .changeset packages/disnote packages/react packages/sheets package-lock.json
+git diff --cached --check
+git commit -m "chore: version document packages"
+git push origin main
+npm login --registry=https://registry.npmjs.org/
+npm whoami --registry=https://registry.npmjs.org/
 npm run release
 ```
 
-Review and commit all generated version, changelog, and lockfile changes before
-running the preflight. It intentionally rejects a dirty Git tree, missing npm
-authentication, and a package version that already exists. Never commit an npm
-token or a generated `.npmrc`.
-
-The command is `npm run release`, not `npm release`.
+Review generated changes before committing. Preflight requires clean main matching
+origin/main, npm authentication and unpublished versions of every public package.
+Never commit credentials. If a publish is interrupted, inspect the registry before
+recovery: preflight deliberately rejects versions that have already published.
+Re-enable the workflow after a successful manual release.

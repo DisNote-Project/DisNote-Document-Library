@@ -1,12 +1,16 @@
 import { execFileSync, spawnSync } from "node:child_process";
-import { readFileSync } from "node:fs";
+import { readFileSync, readdirSync } from "node:fs";
 import process from "node:process";
 import { URL } from "node:url";
 
 const npmCommand = process.platform === "win32" ? "npm.cmd" : "npm";
-const manifests = ["disnote", "sheets"].map((directory) => JSON.parse(
-  readFileSync(new URL(`../packages/${directory}/package.json`, import.meta.url), "utf8"),
-));
+const defaultRegistry = "https://registry.npmjs.org/";
+const packagesURL = new URL("../packages/", import.meta.url);
+const manifests = readdirSync(packagesURL, { withFileTypes: true })
+  .filter((entry) => entry.isDirectory())
+  .map((entry) => JSON.parse(readFileSync(new URL(`${entry.name}/package.json`, packagesURL), "utf8")))
+  .filter((manifest) => !manifest.private);
+const registryFor = (manifest) => manifest.publishConfig?.registry ?? defaultRegistry;
 const errors = [];
 
 function run(command, args) {
@@ -14,6 +18,7 @@ function run(command, args) {
     encoding: "utf8",
     shell: process.platform === "win32",
     stdio: ["ignore", "pipe", "pipe"],
+    timeout: 30_000,
   });
 }
 
@@ -58,7 +63,7 @@ if (fetchResult.status !== 0) {
   }
 }
 
-const registries = [...new Set(manifests.map((manifest) => manifest.publishConfig.registry))];
+const registries = [...new Set(manifests.map(registryFor))];
 const identities = new Map();
 for (const registry of registries) {
   const whoami = run(npmCommand, ["whoami", "--registry", registry]);
@@ -67,7 +72,7 @@ for (const registry of registries) {
 }
 
 for (const manifest of manifests) {
-  const versionsResult = run(npmCommand, ["view", manifest.name, "versions", "--json", "--registry", manifest.publishConfig.registry]);
+  const versionsResult = run(npmCommand, ["view", manifest.name, "versions", "--json", "--registry", registryFor(manifest)]);
   if (versionsResult.status !== 0) {
     if (!/\bE404\b/u.test(versionsResult.stderr ?? "")) errors.push(`Could not read published versions for ${manifest.name}: ${commandError(versionsResult)}`);
   } else {

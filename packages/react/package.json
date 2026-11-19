@@ -16,7 +16,7 @@
   "files": ["dist", "styles.css", "README.md", "LICENSE"],
   "sideEffects": ["./styles.css"],
   "engines": { "node": ">=20.19" },
-  "publishConfig": { "access": "public" },
+  "publishConfig": { "access": "public", "registry": "https://registry.npmjs.org/" },
   "scripts": { "build": "tsc -b", "prepack": "npm run build" },
   "typesVersions": { "*": { "view": ["dist/view.d.ts"] } },
   "dependencies": {

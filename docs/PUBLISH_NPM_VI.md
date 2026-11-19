@@ -1,29 +1,37 @@
-# Cập nhật thư viện trên npm
+# Phát hành phiên bản mới lên npm
 
-Repository phát hành hai gói public: `@disnote/core` và `@disnote/react`.
-Root workspace là private, không chạy `npm publish` tại root.
+Repository có ba gói public: `@disnote/core`, `@disnote/react`, `@disnote/sheets`.
+Root là private. Không chạy `npm publish` trực tiếp tại root.
 
-## Trạng thái kiểm tra ngày 2026-10-15
+## Phiên bản
 
-- npm public registry: `@disnote/core` đang ở `0.6.1`; `@disnote/react` trả về 404 (chưa có bản public truy cập được).
-- Source: core `0.7.0`, React `0.1.0`; hai changeset đang chờ phát hành.
-- `npm run release:status` yêu cầu minor cho cả hai gói. Khi áp dụng trên source này, dự kiến core `0.8.0`, React `0.2.0`; lấy manifest sau versioning làm kết quả chính thức.
-- Push Git không đồng nghĩa đã publish npm. Tài liệu này không xác nhận quyền tài khoản npm hoặc cấu hình secret GitHub.
+Ngày 19/11/2026, manifest local: core `0.7.0`, React `0.1.0`, sheets `0.1.0`.
+`npm run release:status` xác nhận cả ba có changeset minor đang chờ.
+Dự kiến sau versioning: core `0.8.0`, React `0.2.0`, sheets `0.2.0`.
+Manifest/changelog sau versioning là kết quả chính thức. Chưa xác minh version
+registry hiện tại vì terminal không kết nối được npm.
+Xem [kết quả kiểm tra](RELEASE_READINESS_2026-11-19.md).
 
-## Cách khuyến nghị: workflow GitHub đã có
+## Cách khuyến nghị: GitHub Actions
 
-1. Đăng nhập npm bằng tài khoản có quyền publish trong scope `@disnote`. Gói scoped public cần cấu hình access public; repository đã có cấu hình này. Đáp ứng yêu cầu xác thực publish/2FA của npm theo [tài liệu npm](https://docs.npmjs.com/requiring-2fa-for-package-publishing-and-settings-modification/).
-2. Trong GitHub repository, mở **Settings → Secrets and variables → Actions** và cấu hình secret `NPM_TOKEN` có quyền publish hai gói. Token dùng cho CI phải đáp ứng chính sách 2FA của tài khoản/tổ chức; không ghi token vào source, README hoặc chat.
-3. Workflow [Release packages](../.github/workflows/release.yml) chạy khi push `main`, tạo hoặc cập nhật PR `changeset-release/main`. Nếu tạo PR bị chặn, bật quyền cho GitHub Actions tạo PR trong Settings → Actions → General.
-4. Kiểm tra PR: version/changelog của cả hai gói, và dependency `packages/react/package.json` phải trỏ tới phiên bản core mới (dự kiến `^0.8.0`). Gói React cần các export mới nên không được phát hành với dependency chỉ trỏ core cũ.
-5. Trước khi merge, chạy `npm ci`, `npm run verify` và `npm run test:e2e` trên nhánh PR. Merge PR sau khi các bước này thành công. Workflow trên `main` sẽ kiểm tra preflight, verify, chạy `changeset publish` và đẩy tag. Changesets sắp thứ tự package theo dependency: core trước React.
-6. Kiểm tra job thành công và kiểm tra phiên bản trên registry bằng các lệnh ở cuối tài liệu.
+1. Tài khoản npm cần quyền publish scope `@disnote` cho cả ba gói và đáp ứng
+   [yêu cầu xác thực/2FA](https://docs.npmjs.com/requiring-2fa-for-package-publishing-and-settings-modification/).
+2. GitHub repository → Settings → Secrets and variables → Actions: cấu hình
+   `NPM_TOKEN` có quyền publish phù hợp. Không ghi token vào source/chat.
+3. Push main chạy workflow **Release packages**, tạo/cập nhật PR version.
+   Nếu bị chặn tạo PR, bật quyền Actions tạo PR trong Settings → Actions → General.
+4. Review version/changelog/lockfile và dependency React → core mới.
+5. Chờ CI thành công, gồm MongoDB integration và E2E, rồi merge PR version.
+6. Workflow chạy preflight, verify, E2E, pack-check, publish và push tags.
+   Kiểm tra registry để xác nhận; push source không đồng nghĩa đã publish.
 
-Không merge release PR đồng thời với một lần publish thủ công. Workflow hiện dùng token; nếu chuyển sang OIDC cần cập nhật workflow và cấu hình riêng theo [npm trusted publishing](https://docs.npmjs.com/trusted-publishers/).
+Workflow hiện dùng token. [Trusted publishing](https://docs.npmjs.com/trusted-publishers/)
+cần cấu hình riêng trên npm và sửa workflow nếu chuyển sang OIDC.
 
-## Phát hành thủ công từ PowerShell
+## Phát hành thủ công bằng PowerShell
 
-Để tự publish thay vì workflow: tạm disable workflow **Release packages** trong tab Actions, rồi thực hiện trên `main` sạch và đồng bộ. Không merge release PR trong lúc thực hiện.
+Tạm disable workflow **Release packages** để tránh publish đồng thời.
+Chạy từng lệnh, dừng nếu lỗi:
 
 ```powershell
 Set-Location D:\code\DISNOTE\DisNote-Document-Library
@@ -34,14 +42,13 @@ npm run version-packages
 git diff
 ```
 
-Kiểm tra version/changelog và dependency core của React như bước 4 phía trên. Script version-packages cập nhật cả lockfile. Mỗi lệnh sau phải thành công trước khi chạy lệnh tiếp theo:
+Review version/changelog và dependency core của React trước khi tiếp tục:
 
 ```powershell
 npm run verify
 npm run test:e2e
-npm pack --workspace @disnote/core --dry-run
-npm pack --workspace @disnote/react --dry-run
-git add .changeset packages/disnote packages/react package-lock.json
+npm run release:pack-check
+git add .changeset packages/disnote packages/react packages/sheets package-lock.json
 git diff --cached --check
 git commit -m "chore: version document packages"
 git push origin main
@@ -50,27 +57,32 @@ npm whoami --registry=https://registry.npmjs.org/
 npm run release
 ```
 
-`npm run release` đòi working tree sạch, nhánh main khớp origin/main và phiên bản core chưa tồn tại; nó không tự tăng version. Sau preflight, script chạy verify, publish qua Changesets và push tags. Xác thực OTP trong terminal/trình duyệt nếu npm yêu cầu. Preflight hiện chỉ kiểm tra manifest core; đối chiếu React trong release PR/manifests và kết quả publish. Khi xong có thể enable lại workflow. Nếu publish bị gián đoạn, xem package nào đã lên registry trước khi chạy lại; một version đã publish không thể ghi đè bằng code khác.
+`npm run release` không tự tăng version. Preflight đòi main sạch, khớp origin/main,
+đăng nhập npm và version chưa tồn tại của cả ba gói. Xác thực trong terminal/trình
+ duyệt khi npm yêu cầu. Nếu publish gián đoạn, kiểm tra gói nào đã publish trước
+khi xử lý tiếp; version đã publish không thể ghi đè. Bật lại workflow sau khi xong.
 
-## Xác nhận và cập nhật ứng dụng sử dụng thư viện
+## Xác nhận và sử dụng
 
 ```powershell
 npm view @disnote/core version
 npm view @disnote/react version
+npm view @disnote/sheets version
 npm view @disnote/react dependencies --json
 ```
 
-Trong repository ứng dụng, sau khi cả hai gói đã xuất hiện trên npm:
+Trong ứng dụng tiêu thụ, cài gói phù hợp sau khi xác nhận publish thành công:
 
 ```powershell
 npm install @disnote/react@latest
+# Nếu ứng dụng dùng trực tiếp các gói này:
+npm install @disnote/core@latest @disnote/sheets@latest
 ```
-
-Nếu ứng dụng có dependency trực tiếp `@disnote/core`, cập nhật thêm `npm install @disnote/core@latest`. Demo hiện dùng tarball `file:vendor/...`; muốn dùng npm phải thay dependency tarball bằng bản registry, không chỉ chạy `npm update` trên dependency `file:`.
 
 ```tsx
 import { DocumentEditor } from '@disnote/react';
 import '@disnote/react/styles.css';
 ```
 
-Xem [hướng dẫn tích hợp và custom CSS](REACT_INTEGRATION_AND_CSS.md) cho style tokens, dark mode và reader entry. Quyền scope/public package được mô tả trong [hướng dẫn npm organization packages](https://docs.npmjs.com/creating-and-publishing-an-organization-scoped-package/).
+Dependency `file:vendor/...tgz` phải đổi sang version npm để nhận bản mới.
+Xem [tích hợp React và CSS](REACT_INTEGRATION_AND_CSS.md).
