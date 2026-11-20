@@ -16,6 +16,8 @@
     "test": "tsx --tsconfig tsconfig.test.json --test \"packages/**/*.test.ts\" \"packages/**/*.test.tsx\" \"examples/**/*.test.ts\"",
     "test:e2e": "playwright test --config e2e/playwright.config.ts",
     "test:mongo": "tsx --tsconfig tsconfig.test.json --test \"examples/**/*.integration.test.ts\"",
+    "contracts:export": "node scripts/export-runtime-contracts.mjs",
+    "verify:flutter": "cd sdks/flutter && flutter pub get && dart format --output=none --set-exit-if-changed lib test example && flutter analyze && flutter test && flutter test --platform chrome test/web_compile_test.dart && dart pub publish --dry-run",
     "storybook": "storybook dev -p 6006",
     "build-storybook": "storybook build",
     "verify": "npm run typecheck && npm run lint && npm test && npm run build && npm run build:examples && npm run build-storybook",

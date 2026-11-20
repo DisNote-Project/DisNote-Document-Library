@@ -1,0 +1,45 @@
+{
+  "format": "disnote-document",
+  "schemaVersion": 1,
+  "id": "doc_go_contract",
+  "blocks": [
+    {
+      "id": "heading-1",
+      "type": "heading",
+      "version": 1,
+      "props": { "level": 1 },
+      "content": [
+        { "type": "text", "text": "DisNote Go", "marks": [{ "type": "bold" }] }
+      ]
+    },
+    {
+      "id": "paragraph-1",
+      "type": "paragraph",
+      "version": 1,
+      "props": {},
+      "content": [
+        { "type": "text", "text": "Hello " },
+        { "type": "mention", "entityType": "user", "entityId": "user-1", "label": "Ngoc" },
+        { "type": "text", "text": " — " },
+        { "type": "reference", "targetType": "task", "targetId": "task-1", "label": "Ship Go SDK" },
+        { "type": "link", "href": "https://disnote.app/docs", "content": [{ "type": "text", "text": " docs" }] }
+      ]
+    },
+    {
+      "id": "custom-1",
+      "type": "consumer.acme.card",
+      "version": 3,
+      "props": { "enabled": true, "priority": 2, "tags": ["go", "sdk"] }
+    }
+  ],
+  "metadata": {
+    "title": "Go contract",
+    "description": "Cross-runtime contract fixture",
+    "locale": "vi",
+    "createdAt": "2026-11-17T00:00:00.000Z",
+    "updatedAt": "2026-11-17T00:00:00.000Z",
+    "createdBy": "contract-test",
+    "tags": ["go", "contract"],
+    "attributes": { "public": false, "sequence": 1 }
+  }
+}

@@ -48,4 +48,4 @@ The default CSS is scoped to DisNote classes; semantic content color marks remai
 part of the document. Floating UI needs the same theme scope; the default editor
 portal stays in its own container.
 
-Full contract: repository `docs/REACT_INTEGRATION_AND_CSS.md`.
+Full contract: repository `docs/TYPESCRIPT.md`.

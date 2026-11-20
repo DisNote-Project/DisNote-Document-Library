@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "description": "Ready-to-use DisNote React editor with compatible runtime dependencies and CSS tokens.",
   "license": "Apache-2.0",
-  "homepage": "https://github.com/DisNote-Project/DisNote-Document-Library/blob/main/docs/REACT_INTEGRATION_AND_CSS.md",
+  "homepage": "https://github.com/DisNote-Project/DisNote-Document-Library/blob/main/docs/TYPESCRIPT.md",
   "repository": { "type": "git", "url": "git+https://github.com/DisNote-Project/DisNote-Document-Library.git", "directory": "packages/react" },
   "type": "module",
   "main": "./dist/index.js",

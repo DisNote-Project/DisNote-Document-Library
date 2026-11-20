@@ -1,0 +1,43 @@
+name: Publish disnote_flutter to pub.dev
+
+on:
+  push:
+    tags:
+      - "disnote_flutter-v[0-9]+.[0-9]+.[0-9]+"
+
+jobs:
+  quality:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: sdks/flutter
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - name: Verify tag matches pubspec version
+        shell: bash
+        run: |
+          version="$(sed -n 's/^version: //p' pubspec.yaml)"
+          expected="disnote_flutter-v${version}"
+          if [ "${GITHUB_REF_NAME}" != "${expected}" ]; then
+            echo "Tag ${GITHUB_REF_NAME} must match ${expected}." >&2
+            exit 1
+          fi
+      - run: flutter pub get
+      - run: dart format --output=none --set-exit-if-changed lib test example
+      - run: flutter analyze
+      - run: flutter test
+      - run: flutter test --platform chrome test/web_compile_test.dart
+      - run: dart pub publish --dry-run
+
+  publish:
+    needs: quality
+    permissions:
+      id-token: write
+    uses: dart-lang/setup-dart/.github/workflows/publish.yml@v1
+    with:
+      working-directory: sdks/flutter
+      environment: pub.dev

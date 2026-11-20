@@ -1,11 +1,20 @@
 import { validateDocument, type DisNoteDocument } from "../core/index.js";
-export const MOBILE_BRIDGE = { VERSION: 1, READY: "ready", DOCUMENT: "document", INITIALIZE: "initialize", EDITABLE: "editable", INVALID: "invalid-mobile-editor-message", MAX_BYTES: 5_000_000 } as const;
+export const MOBILE_BRIDGE = { VERSION: 1, READY: "ready", DOCUMENT: "document", INITIALIZE: "initialize", EDITABLE: "editable", HOST_ATTACHED: "disnote-host-attached", INVALID: "invalid-mobile-editor-message", MAX_BYTES: 5_000_000, LOCALES: ["en", "vi"] } as const;
 export type MobileEditorMessage =
   | { version: 1; kind: "ready" }
   | { version: 1; kind: "document"; document: DisNoteDocument };
 export type MobileEditorCommand =
   | { version: 1; kind: "initialize"; document: DisNoteDocument; editable: boolean; locale: string }
   | { version: 1; kind: "editable"; editable: boolean };
+export function isAllowedMobileEditorEvent(input: {
+  readonly source: "self" | "parent" | "foreign" | "none";
+  readonly origin: string;
+  readonly selfOrigin: string;
+  readonly allowedHostOrigins?: readonly string[];
+}): boolean {
+  if (input.source === "none" || input.source === "self") return input.origin === "" || input.origin === input.selfOrigin;
+  return input.source === "parent" && (input.allowedHostOrigins ?? []).includes(input.origin);
+}
 export function parseMobileEditorMessage(data: string): MobileEditorMessage {
   if (data.length > MOBILE_BRIDGE.MAX_BYTES) throw new Error(MOBILE_BRIDGE.INVALID);
   const message = JSON.parse(data) as MobileEditorMessage;

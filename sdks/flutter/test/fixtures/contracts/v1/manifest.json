@@ -1,0 +1,8 @@
+{
+  "contractVersion": 1,
+  "documentSchemaVersion": 1,
+  "canonicalFixture": "valid-document.json",
+  "canonicalSha256": "b56d93f34160a6b5d7c05f4e67f9d06d62dc238a9ea0db0199ff458bb481c26f",
+  "validFixtures": ["valid-document.json"],
+  "invalidFixtures": ["invalid-document.json"]
+}

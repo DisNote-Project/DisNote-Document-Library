@@ -1,0 +1,21 @@
+name: disnote_flutter_example
+description: Responsive reader example for the DisNote Flutter SDK.
+publish_to: none
+version: 0.1.0
+
+environment:
+  sdk: ">=3.13.0 <4.0.0"
+  flutter: ">=3.50.0"
+
+dependencies:
+  disnote_flutter:
+    path: ..
+  flutter:
+    sdk: flutter
+  material_ui: ^1.11.1
+
+dev_dependencies:
+  flutter_lints: ^6.0.0
+
+flutter:
+  uses-material-design: true
