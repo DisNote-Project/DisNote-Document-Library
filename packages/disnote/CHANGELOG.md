@@ -1,5 +1,43 @@
 # @disnote/core
 
+## 0.8.0
+
+### Minor Changes
+
+- 8adeb9d: Add immutable custom document preset composition, replaceable MongoDB/PostgreSQL document-state adapters, and checksummed DOCX/Markdown conversion with semantic fallback and safe extension codecs.
+- 25272da: Add durable database automations with record/schedule triggers, typed conditions and
+  actions, owner-scoped configuration, leased workers, atomic DB checkpoints, stable
+  webhook idempotency keys, retry/history UI and injected host effects.
+- 25272da: Add local Mermaid/draw.io diagram blocks and scoped database presentation styles.
+- 25272da: Add atomic database commands, saved view configuration, interactive database workbench,
+  authorized chart aggregates/private forms, range rescheduling and record document/history UI.
+- 25272da: Add DocumentPage with standard/full width layouts and a typed page-width CSS token.
+- 92e9e4e: Add a host-attachment handshake to the versioned mobile editor bridge so Flutter
+  WebViews can attach after page load without losing the ready event. Ship a Flutter
+  SDK with the canonical model, validation, checksum, typed NestJS client, portable
+  HTTP transport, conflict-safe document session, responsive native renderer,
+  localized UI, conditional Flutter Web iframe and Android/iOS WebView, secure
+  editor bridge, CI gate and cross-runtime contract fixtures.
+- 7ba4fa6: Add a lazy React quick-start entry, optional scoped CSS, public design tokens and
+  typed per-instance styles. Preserve stable editor/renderer classes when consumers
+  add their own classes; map renderer themes to overridable CSS variables.
+- 25272da: Expose canonical block/inline comment anchors from editor selection, display the
+  current comment scope, and preserve database workbench revisions while writes
+  are pending. Record documents require saved content before position-based comments.
+- 033ed9b: Add typed database/query/formula/relation services, workspace pages and shared
+  sources, atomic button actions, comment/history controls, durable browser adapters,
+  offline document/asset support, collaborative editor transports, authorized search
+  and AI preview, Notion/ZIP interchange, printable output and a mobile editor bridge.
+  Bundle Vietnamese editor messages and localize reader controls. Keep collaboration
+  and shared-source editor dependencies behind lazy boundaries. Preserve prototype-like
+  keys during canonical serialization.
+
+### Patch Changes
+
+- 25272da: Keep slow automation reads from being superseded by background polls, and prevent closing a record while a comment is still being persisted. Contain database layouts in the reference demo on narrow screens.
+- 25272da: Add compact themed database drag previews, source fading, Kanban/calendar drop
+  targets and table insertion markers, with cancellation cleanup and reduced motion.
+
 ## 0.7.0
 
 ### Minor Changes
