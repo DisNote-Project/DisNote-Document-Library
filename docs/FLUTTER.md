@@ -2,6 +2,8 @@
 
 SDK `disnote_flutter` ở `sdks/flutter` dùng canonical document chung với React/TypeScript và Go. Backend mặc định của client là NestJS document-channel API. Đọc [kiến trúc](ARCHITECTURE.md), [TypeScript](TYPESCRIPT.md) hoặc [Go](GO_BACKEND.md) khi làm phần tương ứng.
 
+**Lộ trình cho dev mới:** chạy reader độc lập ở mục 13, hiểu ownership dữ liệu ở mục 14, rồi nối session/backend ở mục 6–8 và 15. Mục 16–18 hướng dẫn custom block, theme và draft recovery. Đọc kỹ các tên dependency “host cung cấp” trước khi copy ví dụ; SDK không tự cấp API URL, tài khoản hay database.
+
 ## 1. Khả năng và điều kiện
 
 | Thành phần | Khả năng |
@@ -316,3 +318,296 @@ README/changelog/license tại package root cần giữ để archive pub.dev t�
 | Save conflict | Giữ draft và review; `retry()` tại conflict tải lại server |
 | Flush xong vẫn unsaved | Kiểm tra status/error/conflict; await không đồng nghĩa receipt thành công |
 | Flutter gọi Go lỗi parse/404 | Nest client và Gin routes/envelope khác nhau |
+
+## 13. Ví dụ reader hoàn chỉnh trước khi nối backend
+
+Sau khi cấu hình dependency, thay `lib/main.dart` của ứng dụng thử nghiệm bằng ví dụ này. Nó chạy hoàn toàn từ model Dart, không cần editor URL hay API server:
+
+```dart
+// lib/main.dart
+import 'package:material_ui/material_ui.dart';
+import 'package:disnote_flutter/disnote_flutter.dart';
+
+void main() => runApp(const DemoApp());
+
+class DemoApp extends StatelessWidget {
+  const DemoApp({super.key});
+
+  static const document = DisNoteDocument(
+    id: 'doc_intro',
+    metadata: DisNoteMetadata(
+      title: 'Giới thiệu',
+      locale: 'vi',
+      createdAt: '2026-11-20T00:00:00.000Z',
+      updatedAt: '2026-11-20T00:00:00.000Z',
+    ),
+    blocks: [
+      DisNoteBlock(
+        id: 'block_intro', type: 'paragraph', version: 1,
+        content: [DisNoteText('Xin chào từ Flutter')],
+      ),
+    ],
+  );
+
+  @override
+  Widget build(BuildContext context) => MaterialApp(
+    home: Scaffold(
+      body: SafeArea(
+        child: DisNoteDocumentView(document: document, locale: 'vi'),
+      ),
+    ),
+  );
+}
+```
+
+Tiêu đề và paragraph ở đây là nội dung ví dụ. Với nhãn nút/trạng thái của ứng dụng thật, dùng catalog vi/en của host. Sau khi reader hoạt động, thay biến static bằng document từ `openPage`/session; không tự dựng lại document mới trên mỗi lần build.
+
+## 14. Flutter giữ gì và backend lưu gì?
+
+| Giá trị | Flutter giữ ở đâu? | Nguồn bền vững |
+|---|---|---|
+| Snapshot vừa tải | `session.document` | Backend repository |
+| Base revision | `session.revision` | Save receipt/snapshot response |
+| Draft chưa lưu | Session RAM; local store do host bổ sung nếu cần | Chưa có server guarantee |
+| Pending operation key | Session cho thao tác chưa xác nhận | Receipt ở backend khi commit |
+| Reader theme/scroll state | Widget/preferences của host | Preferences nếu host persist |
+| File ảnh/video | Bộ nhớ/cache theo UI | Object storage + asset records ở backend |
+| Token/device ID | Auth stack và secure storage của host | Auth/session backend |
+
+SDK Flutter không tự tạo MongoDB/PostgreSQL hoặc tự lưu document vào ổ đĩa. `DisNoteDocumentSession` là state manager/autosave coordinator; dispose hoặc app kill có thể làm mất RAM draft. Persistence thật chỉ được xác nhận khi API lưu thành công và load lại thấy cùng nội dung/revision.
+
+### Dữ liệu qua một lần autosave
+
+1. `load()` gọi `openPage`, nhận `{document, revision}` theo Nest contract và giữ base revision.
+2. Bridge gửi canonical document mới vào `acceptEditorChange`.
+3. Session kiểm tra document ID và validation, tạo pending key, chờ debounce.
+4. `savePage` gửi `document.toJson()`, base `revision`, `idempotencyKey` và optional collaboration fields khi host dùng API trực tiếp.
+5. Backend xác thực/quyền/CAS, lưu snapshot và trả revision mới.
+6. Session cập nhật revision; chỉ xóa pending nếu không có edit mới xen giữa.
+7. Reader/editor tiếp tục dùng draft hiện tại, không remount vì receipt.
+
+Session hiện gọi `savePage` với document/revision/key, không tự điều phối đầy đủ collaboration generation fencing cho mọi tích hợp realtime. Nếu host kết hợp Yjs và canonical save, triển khai coordinator theo backend contract thay vì suy ra session đã lo hết realtime.
+
+### JSON được gửi, không phải một string lồng string
+
+`savePage` tự serialize request. Truyền `DisNoteDocument` vào client, không tự `jsonEncode` rồi bọc thêm vào field document. Khi dùng HTTP stack riêng, body là JSON object; `document` bên trong là object có format/schemaVersion/id/metadata/blocks.
+
+Không gửi `session.status`, widget tree, `TextStyle`, callback, token hoặc bytes ảnh trong document JSON. Những giá trị đó không thuộc canonical model.
+
+## 15. Tích hợp một màn hình có lưu dữ liệu thật
+
+### 15.1. Dependency của màn hình
+
+Ứng dụng host cần cung cấp: API base URI, channel/page ID đã được phép truy cập, auth headers provider, operation-key factory, permission projection và UI lỗi/conflict. Dùng repository/auth DI hiện có để không gọi token storage trực tiếp rải rác trong widget.
+
+Màn hình tạo session một lần trong lifecycle, đăng ký listener, gọi load; không tạo session/client mới trong `build()`. Bố trí editor trong `Expanded` để có constraints. Khi có session document rồi mới dựng editor; loading/error được xử lý trước.
+
+### 15.2. Khi người dùng rời màn hình
+
+Navigation coordinator thực hiện:
+
+```dart
+// Hàm của host; dùng trước khi cho phép navigation tiếp tục.
+Future<bool> canLeaveDocument(DisNoteDocumentSession session) async {
+  try {
+    await session.flush();
+  } on Object {
+    return false;
+  }
+  return !session.hasUnsavedChanges &&
+      session.status != DisNoteSessionStatus.conflict &&
+      session.status != DisNoteSessionStatus.failed;
+}
+```
+
+Nếu trả false, hiển thị lựa chọn giữ draft/thử lại/thoát theo ý người dùng. Chỉ sau khi quyết định xong mới dispose screen-owned session/transport. `flush()` có thể hoàn tất Future nhưng status vẫn conflict/failed; vì vậy kiểm tra trạng thái là cần thiết.
+
+### 15.3. Khi nhận conflict
+
+Sao chép draft JSON trước mọi `load()`/`retry()`:
+
+```dart
+final draftBeforeReload = session.document?.toJson();
+final baseRevision = session.revision;
+// Lưu draftBeforeReload + baseRevision vào draft store nếu cần.
+// Chỉ gọi session.load() sau khi người dùng chọn tải bản server.
+```
+
+Nếu muốn merge, tải bản server bằng client riêng để không thay draft session trước khi review, giữ cả hai snapshot, tạo merged document hợp lệ rồi quyết định revision/key mới. `adoptServerRevision` không phải thuật toán merge; nó chỉ thay base và schedule save nên có thể overwrite nội dung server nếu host dùng thiếu review.
+
+### 15.4. Cách kiểm tra lưu thành công
+
+Sửa một đoạn → chờ trạng thái ready và hết unsaved → gọi API load lại → xác nhận revision/nội dung → đóng/mở ứng dụng → xác nhận lần nữa. Chạy thêm hai client cùng revision để kiểm tra conflict. Chỉ thấy chữ trên màn hình hoặc callback chạy chưa đủ chứng minh persistence.
+
+## 16. Custom block `consumer.notice` trên Flutter
+
+Schema JSON dùng chung với ví dụ TypeScript:
+
+```json
+{
+  "id": "block_notice",
+  "type": "consumer.notice",
+  "version": 1,
+  "props": {
+    "title": "Lưu ý",
+    "message": "Nội dung mẫu",
+    "tone": "info"
+  }
+}
+```
+
+Không tự đổi key thành `body` chỉ ở Flutter; backend và React đang dùng `message`. Muốn đổi schema cần version/migration tương ứng.
+
+### 16.1. Parser props và widget custom
+
+```dart
+// lib/notice_view.dart
+import 'package:material_ui/material_ui.dart';
+import 'package:disnote_flutter/disnote_flutter.dart';
+
+const noticeType = 'consumer.notice';
+
+final class NoticeData {
+  const NoticeData({required this.title, required this.message, required this.tone});
+  final String title;
+  final String message;
+  final String tone;
+
+  static NoticeData? parse(DisNoteBlock block) {
+    final title = block.props['title'];
+    final message = block.props['message'];
+    final tone = block.props['tone'];
+    if (block.type != noticeType || block.version != 1 ||
+        title is! String || title.length > 120 ||
+        message is! String || message.length > 2000 ||
+        (tone != 'info' && tone != 'warning')) {
+      return null;
+    }
+    return NoticeData(title: title, message: message, tone: tone as String);
+  }
+}
+
+class NoticeView extends StatelessWidget {
+  const NoticeView({required this.block, required this.locale, super.key});
+  final DisNoteBlock block;
+  final String locale;
+
+  @override
+  Widget build(BuildContext context) {
+    final data = NoticeData.parse(block);
+    if (data == null) {
+      return Text(DisNoteMessages.forLocale(locale).unknownBlock);
+    }
+    final colors = Theme.of(context).colorScheme;
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        border: Border.all(color: data.tone == 'warning' ? colors.error : colors.outline),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(data.title, style: const TextStyle(fontWeight: FontWeight.bold)),
+            const SizedBox(height: 8),
+            Text(data.message),
+          ],
+        ),
+      ),
+    );
+  }
+}
+```
+
+Đăng ký builder trên reader:
+
+```dart
+DisNoteDocumentView(
+  document: document,
+  locale: 'vi',
+  blockBuilders: {
+    noticeType: (context, block) => NoticeView(block: block, locale: 'vi'),
+  },
+)
+```
+
+Custom builder chỉ thay reader. Để server cho lưu notice, registry TypeScript ở backend cần cùng definition hoặc Go host cần validator tương ứng. Dart validator kiểm tra canonical envelope không tự thay thế domain props validation của block này.
+
+### 16.2. Sửa props bằng form Flutter
+
+Sau khi host form đã validate title/message/tone, cập nhật immutable tree và giữ block IDs:
+
+```dart
+DisNoteDocument replaceNotice(
+  DisNoteDocument document,
+  String targetBlockId,
+  NoticeData replacement,
+) {
+  DisNoteBlock rewrite(DisNoteBlock block) {
+    final selected = block.id == targetBlockId && block.type == noticeType;
+    return DisNoteBlock(
+      id: block.id,
+      type: block.type,
+      version: block.version,
+      props: selected
+          ? {...block.props, 'title': replacement.title,
+             'message': replacement.message, 'tone': replacement.tone}
+          : block.props,
+      content: block.content,
+      children: block.children.map(rewrite).toList(growable: false),
+    );
+  }
+  return document.copyWith(blocks: document.blocks.map(rewrite).toList(growable: false));
+}
+```
+
+Host xác nhận target tồn tại và replacement hợp lệ trước gọi `session.acceptEditorChange(next)`. Ví dụ function không tự báo khi target không tìm thấy. Giữ metadata/IDs/content/children khác nguyên vẹn; không serialize widget hoặc màu theme vào props.
+
+Nếu WebView editor đang chỉnh cùng document, cần điều phối một writer: kết thúc/flush lượt edit hiện tại, áp dụng form change rồi reset/reinitialize editor bằng snapshot mới theo quyết định host. Không cập nhật âm thầm session trong khi editor cũ vẫn phát draft từ snapshot cũ vì có thể ghi đè props mới. Builder Flutter không tự tạo form bên trong trang React.
+
+## 17. Custom theme, ngôn ngữ, asset và loading/error UI
+
+### Theme reader
+
+`DisNoteRendererTheme` cho padding, blockSpacing, childIndent, breakpoint, textStyle, headingStyles, quote/code/card decorations và maxContentWidth. Đây là widget configuration, không phải document schema. Chỉ persist theme preferences nếu sản phẩm cần, ở user/app settings riêng.
+
+`Theme.of(context)` cung cấp màu light/dark cho built-in/custom renderer. Editor React có theme/CSS riêng trong trang host; đổi Flutter Material theme không tự đổi toàn bộ CSS bên iframe. Muốn đồng bộ, host cần cơ chế theme bridge/route configuration đã thiết kế và kiểm chứng; public Flutter editor hiện không có prop tùy ý truyền toàn bộ CSS tokens.
+
+### Ngôn ngữ
+
+`locale: 'vi'/'en'` chọn bundled messages. `DisNoteMessages` hiện có constructor yêu cầu đầy đủ fields, không có `copyWith` public; nếu cần override, tạo object đầy đủ từ catalog host. Nhãn custom form/dialog ở app dùng i18n app. Text do người dùng nhập không tự dịch khi đổi locale.
+
+### Asset và reference
+
+`assetResolver` trả `Uri?`, không phải Future: host tải/refresh signed URL trước và rebuild reader khi cache thay đổi. Không thực hiện HTTP async trực tiếp như thể callback này trả Future. `onLinkTap` và `onBlockTap` là nơi host mở approved route/resource sau kiểm tra quyền. Nếu URL hết hạn, refresh asset mapping chứ không ghi URL tạm vào document như ID mới.
+
+### Overlay editor
+
+`loadingBuilder/errorBuilder` nhận context, messages và callback retry. Dùng chúng để hiện UI đã dịch theo host, tránh spinner vô hạn không có đường xử lý lỗi. Retry bridge là tải lại kết nối editor; không đồng nghĩa save lại draft hoặc giải quyết conflict session. Hai tầng lỗi cần được trình bày riêng trong state của màn hình.
+
+## 18. Lưu draft local và khôi phục an toàn
+
+SDK chưa tự cung cấp durable draft store cho session. Nếu sản phẩm cần sống qua app kill, host triển khai storage phù hợp với Web/mobile và schema record như sau:
+
+| Field local | Mục đích |
+|---|---|
+| `draftFormatVersion` | Nâng schema draft store của host |
+| `accountId`, workspace/channel/page ID | Scope theo tài khoản và tài nguyên |
+| `baseRevision` | Phát hiện draft dựa trên server revision nào |
+| `document` | Canonical JSON draft |
+| `savedAt` | Hiển thị thời điểm draft cục bộ |
+| `pendingOperationKey` và payload tương ứng nếu có | Retry đúng thao tác chưa có receipt |
+
+Không lưu access/refresh token cùng draft. Với dữ liệu nhạy cảm, dùng storage mã hóa/quyền truy cập theo nền tảng; dọn namespace khi logout theo policy. Không xem cache cũ như quyền đọc hiện tại sau khi backend thu hồi quyền.
+
+Khi khởi động:
+
+1. Khôi phục auth, kiểm tra actor có quyền mở page.
+2. Load server snapshot và local record thuộc đúng account/page.
+3. Parse/validate local JSON; record hỏng không được đưa thẳng vào editor.
+4. Nếu không có local thay đổi, dùng server. Nếu có, hiển thị thời điểm/base revision và cho chọn phục hồi/so sánh/bỏ.
+5. Nếu base revision khác server, đi qua conflict review; không tự dùng revision mới để overwrite.
+6. Chỉ xóa local record sau receipt cho đúng draft generation hoặc quyết định bỏ của người dùng.
+
+Session không có API import toàn bộ pending key/base state tùy ý. Muốn khôi phục một operation đúng nguyên trạng, host cần coordinator/outbox riêng; không giả định gọi `acceptEditorChange` sẽ giữ nguyên key local đã lưu. Khi chỉ phục hồi nội dung vào một session đã load, đây là một thao tác edit mới với key mới, cần review base/server state trước.

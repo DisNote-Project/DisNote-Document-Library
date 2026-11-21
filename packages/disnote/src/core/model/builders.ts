@@ -8,7 +8,7 @@ import type {
   TextMark,
 } from "./inline.js";
 import type { DisNoteBlock, DisNoteDocument, DocumentMetadata } from "./document.js";
-import { CURRENT_SCHEMA_VERSION, DOCUMENT_FORMAT } from "./document.js";
+import { CORE_BLOCK_TYPES, CURRENT_SCHEMA_VERSION, DOCUMENT_FORMAT } from "./document.js";
 import { createId, createDocumentId } from "./ids.js";
 
 /* ----------------------------- inline builders ---------------------------- */
@@ -55,63 +55,63 @@ function block(type: string, version: number, init: BlockInit = {}): DisNoteBloc
 }
 
 export function paragraph(content: DisNoteInline[] = [], init: BlockInit = {}): DisNoteBlock {
-  return block("paragraph", 1, { ...init, content });
+  return block(CORE_BLOCK_TYPES.PARAGRAPH, 1, { ...init, content });
 }
 
 export function heading(level: 1 | 2 | 3, content: DisNoteInline[] = [], init: BlockInit = {}): DisNoteBlock {
-  return block("heading", 1, { ...init, props: { level, ...(init.props ?? {}) }, content });
+  return block(CORE_BLOCK_TYPES.HEADING, 1, { ...init, props: { level, ...(init.props ?? {}) }, content });
 }
 
 export function bulletListItem(content: DisNoteInline[] = [], children: DisNoteBlock[] = []): DisNoteBlock {
-  return block("bulletListItem", 1, children.length ? { content, children } : { content });
+  return block(CORE_BLOCK_TYPES.BULLET_LIST_ITEM, 1, children.length ? { content, children } : { content });
 }
 
 export function numberedListItem(content: DisNoteInline[] = [], children: DisNoteBlock[] = []): DisNoteBlock {
-  return block("numberedListItem", 1, children.length ? { content, children } : { content });
+  return block(CORE_BLOCK_TYPES.NUMBERED_LIST_ITEM, 1, children.length ? { content, children } : { content });
 }
 
 export function checklistItem(content: DisNoteInline[] = [], checked = false): DisNoteBlock {
-  return block("checklistItem", 1, { props: { checked }, content });
+  return block(CORE_BLOCK_TYPES.CHECKLIST_ITEM, 1, { props: { checked }, content });
 }
 
 /** A collapsible toggle. Its `children` are the blocks revealed when expanded. */
 export function toggle(content: DisNoteInline[] = [], children: DisNoteBlock[] = []): DisNoteBlock {
-  return block("toggle", 1, children.length ? { content, children } : { content });
+  return block(CORE_BLOCK_TYPES.TOGGLE, 1, children.length ? { content, children } : { content });
 }
 
 export function quote(content: DisNoteInline[] = []): DisNoteBlock {
-  return block("quote", 1, { content });
+  return block(CORE_BLOCK_TYPES.QUOTE, 1, { content });
 }
 
 export function codeBlock(code: string, language = "text"): DisNoteBlock {
-  return block("codeBlock", 1, { props: { language, code } });
+  return block(CORE_BLOCK_TYPES.CODE_BLOCK, 1, { props: { language, code } });
 }
 
 export function diagram(code: string, format: "mermaid" | "drawio" = "mermaid", init: BlockInit = {}): DisNoteBlock {
-  return block("diagram", 1, { ...init, props: { ...init.props, code, format } });
+  return block(CORE_BLOCK_TYPES.DIAGRAM, 1, { ...init, props: { ...init.props, code, format } });
 }
 
 /** A block-level mathematical expression stored as portable LaTeX source. */
 export function mathEquation(code = "", init: BlockInit = {}): DisNoteBlock {
-  return block("math", 1, {
+  return block(CORE_BLOCK_TYPES.MATH, 1, {
     ...init,
     props: { ...(init.props ?? {}), code },
   });
 }
 
 export function image(assetId: string, alt = "", extra: Record<string, JsonValue> = {}): DisNoteBlock {
-  return block("image", 1, { props: { assetId, alt, ...extra } });
+  return block(CORE_BLOCK_TYPES.IMAGE, 1, { props: { assetId, alt, ...extra } });
 }
 
 export function divider(): DisNoteBlock {
-  return block("divider", 1, {});
+  return block(CORE_BLOCK_TYPES.DIVIDER, 1, {});
 }
 
 export function callout(
   content: DisNoteInline[] = [],
   intent: "info" | "warning" | "success" | "danger" = "info",
 ): DisNoteBlock {
-  return block("callout", 1, { props: { intent }, content });
+  return block(CORE_BLOCK_TYPES.CALLOUT, 1, { props: { intent }, content });
 }
 
 /** Generic escape hatch for custom / namespaced blocks. */

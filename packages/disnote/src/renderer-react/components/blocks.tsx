@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import {
   safeUrl,
+  CORE_BLOCK_TYPES,
   type DisNoteBlock,
   type DisNoteInline,
 } from "../../core/index.js";
@@ -13,7 +14,10 @@ import { ACTION_BLOCK_PROPERTIES } from "../../actions/builders.js";
 import { DiagramView } from "../../diagrams/DiagramView.js";
 import { DatabaseLinkedView } from "../../database/react/DatabaseLinkedView.js";
 
-const LIST_TYPES = new Set(["bulletListItem", "numberedListItem"]);
+const LIST_TYPES = new Set<string>([
+  CORE_BLOCK_TYPES.BULLET_LIST_ITEM,
+  CORE_BLOCK_TYPES.NUMBERED_LIST_ITEM,
+]);
 const SAFE_INLINE_IMAGE = /^data:image\/(?:png|jpe?g|gif|webp|avif);base64,/i;
 
 /** Render a list of blocks, grouping consecutive list items into <ul>/<ol>. */
@@ -75,13 +79,13 @@ export function BlockRenderer({ block }: { block: DisNoteBlock }): ReactNode {
   }
 
   switch (block.type) {
-    case "paragraph":
+    case CORE_BLOCK_TYPES.PARAGRAPH:
       return (
         <p>
           <InlineRenderer content={block.content} />
         </p>
       );
-    case "heading": {
+    case CORE_BLOCK_TYPES.HEADING: {
       const level =
         block.props["level"] === 2 ? 2 : block.props["level"] === 3 ? 3 : 1;
       const Tag = `h${level}` as "h1" | "h2" | "h3";
@@ -91,7 +95,7 @@ export function BlockRenderer({ block }: { block: DisNoteBlock }): ReactNode {
         </Tag>
       );
     }
-    case "quote":
+    case CORE_BLOCK_TYPES.QUOTE:
       return (
         <blockquote
           style={{
@@ -103,7 +107,7 @@ export function BlockRenderer({ block }: { block: DisNoteBlock }): ReactNode {
           <InlineRenderer content={block.content} />
         </blockquote>
       );
-    case "toggle":
+    case CORE_BLOCK_TYPES.TOGGLE:
       return (
         <details className="disnote-toggle" open>
           <summary>
@@ -114,7 +118,7 @@ export function BlockRenderer({ block }: { block: DisNoteBlock }): ReactNode {
           ) : null}
         </details>
       );
-    case "checklistItem": {
+    case CORE_BLOCK_TYPES.CHECKLIST_ITEM: {
       const checked = block.props["checked"] === true;
       return (
         <div className="disnote-check">
@@ -125,9 +129,9 @@ export function BlockRenderer({ block }: { block: DisNoteBlock }): ReactNode {
         </div>
       );
     }
-    case "diagram":
+    case CORE_BLOCK_TYPES.DIAGRAM:
       return <DiagramView code={String(block.props["code"] ?? "")} format={block.props["format"] === "drawio" ? "drawio" : "mermaid"} locale={locale} />;
-    case "codeBlock": {
+    case CORE_BLOCK_TYPES.CODE_BLOCK: {
       const code =
         typeof block.props["code"] === "string"
           ? (block.props["code"] as string)
@@ -149,7 +153,7 @@ export function BlockRenderer({ block }: { block: DisNoteBlock }): ReactNode {
         </pre>
       );
     }
-    case "divider":
+    case CORE_BLOCK_TYPES.DIVIDER:
       return (
         <hr
           style={{
@@ -158,7 +162,7 @@ export function BlockRenderer({ block }: { block: DisNoteBlock }): ReactNode {
           }}
         />
       );
-    case "callout": {
+    case CORE_BLOCK_TYPES.CALLOUT: {
       const intent =
         typeof block.props["intent"] === "string"
           ? (block.props["intent"] as string)
@@ -180,35 +184,36 @@ export function BlockRenderer({ block }: { block: DisNoteBlock }): ReactNode {
         </aside>
       );
     }
-    case "image":
+    case CORE_BLOCK_TYPES.IMAGE:
       return <ImageBlock block={block} />;
-    case "table":
+    case CORE_BLOCK_TYPES.TABLE:
       return <TableBlock block={block} />;
-    case "math":
+    case CORE_BLOCK_TYPES.MATH:
       return <MathBlock block={block} />;
-    case "bookmark":
+    case CORE_BLOCK_TYPES.BOOKMARK:
       return <BookmarkBlock block={block} />;
-    case "tableOfContents":
+    case CORE_BLOCK_TYPES.TABLE_OF_CONTENTS:
+    case CORE_BLOCK_TYPES.TOC:
       return <TableOfContentsBlock />;
-    case "breadcrumb":
+    case CORE_BLOCK_TYPES.BREADCRUMB:
       return <BreadcrumbBlock />;
-    case "syncedBlock":
+    case CORE_BLOCK_TYPES.SYNCED_BLOCK:
       return <SyncedBlock block={block} />;
-    case "templateButton":
+    case CORE_BLOCK_TYPES.TEMPLATE_BUTTON:
       return <TemplateButton block={block} />;
-    case "toggleHeading1":
+    case CORE_BLOCK_TYPES.TOGGLE_HEADING_1:
       return <ToggleHeading level={1} block={block} />;
-    case "toggleHeading2":
+    case CORE_BLOCK_TYPES.TOGGLE_HEADING_2:
       return <ToggleHeading level={2} block={block} />;
-    case "toggleHeading3":
+    case CORE_BLOCK_TYPES.TOGGLE_HEADING_3:
       return <ToggleHeading level={3} block={block} />;
-    case "video":
+    case CORE_BLOCK_TYPES.VIDEO:
       return <VideoBlock block={block} />;
-    case "audio":
+    case CORE_BLOCK_TYPES.AUDIO:
       return <AudioBlock block={block} />;
-    case "file":
+    case CORE_BLOCK_TYPES.FILE:
       return <FileBlock block={block} />;
-    case "columnList":
+    case CORE_BLOCK_TYPES.COLUMN_LIST:
       return (
         <div
           className="disnote-column-list"
@@ -226,7 +231,7 @@ export function BlockRenderer({ block }: { block: DisNoteBlock }): ReactNode {
           ) : null}
         </div>
       );
-    case "column": {
+    case CORE_BLOCK_TYPES.COLUMN: {
       const width =
         typeof block.props["width"] === "number"
           ? block.props["width"]
@@ -243,13 +248,13 @@ export function BlockRenderer({ block }: { block: DisNoteBlock }): ReactNode {
         </div>
       );
     }
-    case "tableDb":
-    case "board":
-    case "listDb":
-    case "gallery":
-    case "calendar":
-    case "timeline":
-    case "map":
+    case CORE_BLOCK_TYPES.TABLE_DB:
+    case CORE_BLOCK_TYPES.BOARD:
+    case CORE_BLOCK_TYPES.LIST_DB:
+    case CORE_BLOCK_TYPES.GALLERY:
+    case CORE_BLOCK_TYPES.CALENDAR:
+    case CORE_BLOCK_TYPES.TIMELINE:
+    case CORE_BLOCK_TYPES.MAP:
       return <DatabaseViewBlock block={block} />;
     default:
       return <UnknownBlock block={block} reason="unregistered" />;

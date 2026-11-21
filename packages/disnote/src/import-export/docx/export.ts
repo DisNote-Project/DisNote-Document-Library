@@ -9,7 +9,8 @@ import {
   type TextMark,
 } from "../../core/index.js";
 import { sha256Hex } from "../../core/serialization/sha256.js";
-import { DOCX_DIAGNOSTIC_CODES, DOCX_ERRORS, DOCX_PATHS, DOCX_STYLES } from "./constants.js";
+import { DOCX_DIAGNOSTIC_CODES, DOCX_PATHS, DOCX_STYLES } from "./constants.js";
+import { codecMap } from "./codec.js";
 import type { DocxBlockCodec, DocxDiagnostic, DocxExportOptions, DocxExportResult } from "./model.js";
 import { escapeXml } from "./xml.js";
 
@@ -115,12 +116,3 @@ function styles(): string { return `${XML_DECLARATION}<w:styles xmlns:w="http://
 function numbering(): string { return `${XML_DECLARATION}<w:numbering xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:abstractNum w:abstractNumId="1"><w:lvl w:ilvl="0"><w:numFmt w:val="bullet"/><w:lvlText w:val="•"/></w:lvl></w:abstractNum><w:abstractNum w:abstractNumId="2"><w:lvl w:ilvl="0"><w:numFmt w:val="decimal"/><w:lvlText w:val="%1."/></w:lvl></w:abstractNum><w:num w:numId="1"><w:abstractNumId w:val="1"/></w:num><w:num w:numId="2"><w:abstractNumId w:val="2"/></w:num></w:numbering>`; }
 function coreProperties(document: DisNoteDocument): string { return `${XML_DECLARATION}<cp:coreProperties xmlns:cp="http://schemas.openxmlformats.org/package/2006/metadata/core-properties" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:dcterms="http://purl.org/dc/terms/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"><dc:title>${escapeXml(document.metadata.title ?? "")}</dc:title><dcterms:created xsi:type="dcterms:W3CDTF">${escapeXml(document.metadata.createdAt)}</dcterms:created><dcterms:modified xsi:type="dcterms:W3CDTF">${escapeXml(document.metadata.updatedAt)}</dcterms:modified></cp:coreProperties>`; }
 function appProperties(): string { return `${XML_DECLARATION}<Properties xmlns="http://schemas.openxmlformats.org/officeDocument/2006/extended-properties"><Application>DisNote Document Library</Application></Properties>`; }
-
-function codecMap(codecs: readonly DocxBlockCodec[] | undefined): Map<string, DocxBlockCodec> {
-  const result = new Map<string, DocxBlockCodec>();
-  for (const codec of codecs ?? []) {
-    if (!codec.blockType || result.has(codec.blockType)) throw new Error(DOCX_ERRORS.EXTENSION_CODEC_INVALID);
-    result.set(codec.blockType, codec);
-  }
-  return result;
-}

@@ -2,6 +2,8 @@
 
 Đọc [kiến trúc](ARCHITECTURE.md) để hiểu định dạng chung; [Go](GO_BACKEND.md) và [Flutter](FLUTTER.md) mô tả các SDK khác. Các ví dụ dùng API trong checkout ngày 20/11/2026. Giá trị tiêu đề, ID và URL trong ví dụ là dữ liệu minh họa; khi tích hợp DisNote, đưa nhãn UI vào i18n và cấu hình kỹ thuật vào constants.
 
+**Bắt đầu từ đâu:** mục 1–3 giúp chạy editor; mục 13 thực hành toàn bộ vòng đời dữ liệu; mục 14 nối database; mục 15–17 hướng dẫn custom block/renderer/editor; mục 18 xử lý migration. Mỗi code block có tên file là một phần của ví dụ nhiều file; đặt chung trong thư mục ví dụ như hướng dẫn, không ghép các import trùng vào một file.
+
 ## 1. Chọn package và cách cài
 
 | Nhu cầu | Package/import |
@@ -397,3 +399,379 @@ Review manifest, changelog, archive, license và public exports sau versioning. 
 | Custom block bị từ chối | Đồng bộ registry, props version và strict validation phía server |
 | Native không hiện như web | Viết native projection/builder hoặc dùng WebView editor |
 | Hai client thấy nội dung nhân đôi | Kiểm tra seed Yjs duy nhất và generation fence |
+
+## 13. Bài thực hành: create → load → save → publish → restore
+
+### 13.1. Chạy một vòng đời trước khi nối UI
+
+Tạo `document-lifecycle.mts` trong Node consumer đã cài core. Chạy bằng TypeScript runner của host, ví dụ `npx tsx document-lifecycle.mts` sau khi cài `tsx` như dev dependency. File này dùng memory repository nên tập trung vào hành vi; bước 14 thay persistence bằng database thật.
+
+```ts
+// document-lifecycle.mts
+import assert from 'node:assert/strict';
+import {
+  createDocument, createDefaultRegistry, paragraph, text,
+} from '@disnote/core';
+import { InMemoryDocumentRepository } from '@disnote/core/storage';
+
+const repository = new InMemoryDocumentRepository({
+  registry: createDefaultRegistry(),
+});
+const actor = 'user_01'; // Trong API thật lấy từ session đã verify.
+const initial = createDocument({
+  id: 'doc_intro',
+  metadata: { title: 'Giới thiệu', locale: 'vi' },
+  blocks: [paragraph([text('Bản đầu tiên')])],
+});
+await repository.create({
+  document: initial, actor, slug: 'gioi-thieu',
+  locale: 'vi', kind: 'ARTICLE', title: 'Giới thiệu',
+});
+
+const stored = await repository.getById(initial.id);
+if (!stored) throw new Error('document.not_found');
+const opened = await repository.getRevision(initial.id, stored.currentRevision);
+if (!opened) throw new Error('document.revision_missing');
+assert.equal(opened.document.id, initial.id);
+
+const edited = {
+  ...opened.document,
+  metadata: { ...opened.document.metadata, updatedAt: new Date().toISOString() },
+  blocks: [paragraph([text('Nội dung đã sửa')])],
+};
+const saveInput = {
+  documentId: initial.id, document: edited, actor,
+  expectedRevision: stored.currentRevision,
+  idempotencyKey: 'op_intro_edit_01',
+};
+const saved = await repository.saveDraft(saveInput);
+if (!saved.ok) throw new Error(saved.reason);
+assert.equal(saved.revision, 2);
+
+// Retry cùng thao tác không tạo revision mới.
+const retried = await repository.saveDraft(saveInput);
+assert.deepEqual(retried, saved);
+
+await repository.publish({ documentId: initial.id, revision: saved.revision, actor });
+const published = await repository.getPublishedBySlug({ slug: 'gioi-thieu', locale: 'vi' });
+assert.equal(published?.revision.revision, 2);
+
+// Restore bản đầu bằng cách append snapshot cũ thành revision mới.
+const old = await repository.getRevision(initial.id, 1);
+if (!old) throw new Error('document.revision_missing');
+const restored = await repository.saveDraft({
+  documentId: initial.id, document: old.document, actor,
+  expectedRevision: saved.revision, idempotencyKey: 'op_intro_restore_01',
+});
+if (!restored.ok) throw new Error(restored.reason);
+assert.equal(restored.revision, 3);
+assert.equal((await repository.listRevisions(initial.id)).length, 3);
+// Restore chỉ tạo draft; public vẫn là revision 2.
+assert.equal((await repository.getPublishedBySlug({
+  slug: 'gioi-thieu', locale: 'vi',
+}))?.revision.revision, 2);
+```
+
+Các block ID mới trong ví dụ được tạo bằng builder. Trong editor thật, sửa paragraph đang có nên giữ ID của block để comment anchors/reference còn liên kết đúng; không dựng lại toàn bộ cây với ID mới sau mỗi keystroke.
+
+### 13.2. Response gửi cho editor
+
+`getById()` trả `StoredDocument`, không chứa toàn bộ body. Để mở editor, service đọc revision tương ứng và tạo DTO, ví dụ:
+
+```json
+{
+  "document": {
+    "format": "disnote-document",
+    "schemaVersion": 1,
+    "id": "doc_intro",
+    "metadata": {
+      "createdAt": "2026-11-20T00:00:00.000Z",
+      "updatedAt": "2026-11-20T00:00:00.000Z"
+    },
+    "blocks": []
+  },
+  "revision": 1,
+  "permissions": { "read": true, "write": true, "publish": false }
+}
+```
+
+Đây là DTO ví dụ do host thiết kế, không phải route/envelope mặc định của thư viện. Không trả toàn bộ state/receipt map cho client. Khi đọc stored rồi revision bằng hai lời gọi, có thể gặp writer xen giữa; snapshot vẫn phải nhất quán với revision trả về, hoặc adapter host cung cấp một phép đọc snapshot nguyên tử khi sản phẩm yêu cầu latest-read chặt hơn.
+
+### 13.3. Nối React và autosave
+
+Hook của host giữ ít nhất: `draft`, `baseRevision`, `dirtyGeneration`, pending operation key, `saveStatus` và `lastError`. Quy trình:
+
+1. Load snapshot và quyền từ API, sau đó mới mount editor với `initialDocument`.
+2. `onChange` cập nhật draft và tăng generation; debounce trước khi lưu.
+3. Khi gửi, chụp một bộ bất biến gồm payload, base revision và operation key.
+4. Nếu có thay đổi mới trong khi request chạy, giữ draft mới; response của request cũ chỉ xác nhận generation cũ.
+5. Save thành công cập nhật base revision. Chỉ xóa dirty nếu generation hiện tại trùng generation đã gửi.
+6. Mất mạng: retry cùng payload/key. HTTP 409: giữ draft và dừng automatic overwrite.
+7. Trước khi đổi route, flush/nhắc giữ draft theo UX của sản phẩm; không remount editor mỗi lần nhận receipt.
+
+Không gọi `publish` sau mỗi autosave. Public content và draft là hai nhánh hiển thị khác nhau như ví dụ ở mục 14 của tài liệu kiến trúc.
+
+## 14. Lưu database thật và kiểm tra sau restart
+
+### 14.1. MongoDB consumer
+
+Host cài driver `mongodb` và quản lý URI qua biến môi trường. Ví dụ composition sau chọn collection rõ ràng, khởi tạo index rồi cung cấp repository cho application service:
+
+```ts
+// mongo-composition.mts
+import { MongoClient } from 'mongodb';
+import { createDefaultRegistry } from '@disnote/core';
+import { createMongoDocumentRepository } from '@disnote/core/persistence/mongodb';
+
+const uri = process.env.DOCUMENT_MONGO_URI;
+if (!uri) throw new Error('document.database_uri_missing');
+const client = new MongoClient(uri);
+await client.connect();
+const collection = client.db('disnote').collection<Record<string, unknown>>('document_states');
+const { states, documents } = createMongoDocumentRepository({
+  collection,
+  registry: createDefaultRegistry(),
+});
+await states.initialize();
+
+// Inject documents vào service. Giữ client sống trong lifecycle của server.
+// Khi server shutdown: await client.close().
+```
+
+Nếu phiên bản driver của host không structurally assign được vào port, viết wrapper mapping `createIndex/findOne/insertOne/updateOne` theo `MongoDocumentStateCollection`; không sửa core để phụ thuộc driver của một ứng dụng.
+
+### 14.2. Trình tự chứng minh đã lưu bền vững
+
+1. Chạy create/save bằng repository database, ghi lại document ID và revision nhận được.
+2. Đọc lại qua API, kiểm tra nội dung và revision; trong database kiểm tra `state.revisions` có snapshot mới.
+3. Tắt process server, khởi động lại cùng database/collection/table.
+4. Load bằng ID cũ; body và history phải còn. Nếu mất, kiểm tra có vô tình dùng memory provider không.
+5. Mở hai client cùng base revision và lưu hai nội dung khác nhau: một thao tác phải conflict, không âm thầm ghi đè.
+
+Không thay dữ liệu database bằng tay sau khi kiểm tra để làm UI trông đúng. Luồng thành công cần receipt và readback của cùng repository.
+
+### 14.3. Khi tự viết adapter
+
+`DocumentStateRepository` có `read`, `write`, `findBySlug`. `write(next, null)` nghĩa create-if-absent; `write(next, previousStoreRevision)` nghĩa update-if-version-match. Với SQL, predicate phải gồm ID và revision trong **cùng UPDATE**. Với nhiều bảng normalized, dùng transaction cho metadata, revision và receipt.
+
+Layout mặc định là một state aggregate; xem JSON/DDL chi tiết ở [kiến trúc](ARCHITECTURE.md#13-dữ-liệu-thực-sự-được-lưu-như-thế-nào). Hạn mức lịch sử, receipt retention, backup và tenant slug không được giải quyết chỉ bằng đổi collection name.
+
+## 15. Custom block từ đầu: `consumer.notice`
+
+Mục tiêu: khối thông báo có tiêu đề, nội dung và tone. Cùng JSON này phải được server validate, lưu vào revision, render trên React/HTML và hiển thị trong Flutter. Type/props là hợp đồng versioned của host, không chỉ là CSS.
+
+### 15.1. Schema và validator
+
+```ts
+// notice.ts
+import {
+  customBlock, defineCoreBlock, defineDocumentPreset, workspacePreset,
+  ok, fail, issue, type ValidationResult,
+} from '@disnote/core';
+
+export const NOTICE_TYPE = 'consumer.notice';
+export type NoticeProps = {
+  title: string;
+  message: string;
+  tone: 'info' | 'warning';
+};
+
+export function validateNotice(input: unknown): ValidationResult<NoticeProps> {
+  if (typeof input !== 'object' || input === null || Array.isArray(input)) {
+    return fail([issue('props', 'notice.invalid', 'notice.props_object_required')]);
+  }
+  const value = input as Record<string, unknown>;
+  if (typeof value.title !== 'string' || value.title.length > 120 ||
+      typeof value.message !== 'string' || value.message.length > 2000 ||
+      (value.tone !== 'info' && value.tone !== 'warning')) {
+    return fail([issue('props', 'notice.invalid', 'notice.props_invalid')]);
+  }
+  return ok({ title: value.title, message: value.message, tone: value.tone });
+}
+
+export const noticeDefinition = defineCoreBlock<NoticeProps>({
+  type: NOTICE_TYPE,
+  version: 1,
+  capabilities: {
+    inlineContent: false, children: false,
+    selectable: true, draggable: true, commentable: true,
+  },
+  validateProps: validateNotice,
+  toPlainText: block => `${block.props.title}\n${block.props.message}`,
+});
+
+export const productPreset = defineDocumentPreset({
+  id: 'consumer.documents',
+  base: workspacePreset,
+  blocks: [noticeDefinition],
+  maxDepth: 10,
+});
+
+export function createNotice(props: NoticeProps) {
+  const validated = validateNotice(props);
+  if (!validated.ok) throw new Error('notice.props_invalid');
+  return customBlock(NOTICE_TYPE, 1, { props: validated.value });
+}
+```
+
+`title`/`message` là nội dung do người dùng nhập, không phải nhãn UI cần dịch. Mã lỗi dùng identifier; UI ánh xạ sang catalog vi/en. `validateProps` trả giá trị chuẩn hóa nhưng document validator không tự thay toàn bộ props bằng giá trị đó; factory hoặc service phải áp dụng normalization nếu muốn loại bỏ field thừa. Ví dụ `createNotice` làm việc này trước khi tạo block.
+
+### 15.2. Dùng cùng registry ở client và server
+
+```ts
+// notice-document.ts
+import { createDocument, validateDocument } from '@disnote/core';
+import { createNotice, productPreset } from './notice.js';
+
+export const noticeDocument = createDocument({
+  blocks: [createNotice({ title: 'Lưu ý', message: 'Nội dung mẫu', tone: 'info' })],
+});
+const check = validateDocument(noticeDocument, {
+  registry: productPreset.registry,
+  maxDepth: productPreset.maxDepth,
+  strictUnknownBlocks: true,
+});
+if (!check.ok) throw new Error(JSON.stringify(check.issues));
+```
+
+Inject `productPreset.registry` vào repository thay `createDefaultRegistry()`. Nếu server thiếu definition, strict save sẽ từ chối block dù React hiển thị được. Preset `maxDepth`/allowed hosts/capabilities là cấu hình, host phải truyền xuống validator/policy tương ứng; chỉ khai báo preset không tự cấu hình mọi tầng. Repository revision hiện nhận registry, không nhận toàn bộ preset và không tự enforce mọi giới hạn host.
+
+## 16. Custom React renderer, HTML và React Native
+
+### 16.1. React reader
+
+```tsx
+// NoticeReader.tsx
+import { DocumentView } from '@disnote/core/react/view';
+import type { ReactBlockRenderers } from '@disnote/core/renderer/react';
+import { NOTICE_TYPE, productPreset, validateNotice } from './notice.js';
+import { noticeDocument } from './notice-document.js';
+
+const renderers: ReactBlockRenderers = {
+  [NOTICE_TYPE]: ({ block }) => {
+    const checked = validateNotice(block.props);
+    if (!checked.ok) return null; // Host có thể thay bằng fallback đã i18n.
+    return <aside data-tone={checked.value.tone}>
+      <strong>{checked.value.title}</strong>
+      <p>{checked.value.message}</p>
+    </aside>;
+  },
+};
+
+export function NoticeReader() {
+  return <DocumentView document={noticeDocument}
+    registry={productPreset.registry} blockRenderers={renderers} />;
+}
+```
+
+React escape text mặc định. Không thay `<p>{message}</p>` bằng raw HTML. Custom renderer tự chịu trách nhiệm render children/inline nếu schema của nó cho phép; ví dụ này không cho children nên không render cây con.
+
+### 16.2. HTML phía server
+
+```ts
+// notice-html.ts
+import { renderDocumentToHtml } from '@disnote/core/renderer/html';
+import { NOTICE_TYPE, productPreset, validateNotice } from './notice.js';
+import { noticeDocument } from './notice-document.js';
+
+export const htmlResult = renderDocumentToHtml({
+  document: noticeDocument,
+  registry: productPreset.registry,
+  policy: {
+    blockRenderers: {
+      [NOTICE_TYPE]: ({ block, escape }) => {
+        const checked = validateNotice(block.props);
+        if (!checked.ok) return '';
+        return `<aside><strong>${escape(checked.value.title)}</strong>` +
+          `<p>${escape(checked.value.message)}</p></aside>`;
+      },
+    },
+  },
+});
+```
+
+Chỉ dữ liệu đã escape đi vào HTML string. Nếu props có URL, validate URL trước khi tạo attribute; escape một URL không làm scheme nguy hiểm thành an toàn.
+
+### 16.3. React Native reader
+
+Trong `DocumentNativeRenderer`, truyền `blockRenderers` có key `NOTICE_TYPE`; callback nhận `block`, `renderInline`, `renderChildren`. Render bằng `View/Text` của host và dùng lại validator. Style native dùng object, không phải CSS class. Giữ props JSON chung; không lưu object React Native StyleSheet, function hoặc React element vào document.
+
+## 17. Custom giao diện và trải nghiệm editor
+
+### 17.1. Chọn đúng cấp custom
+
+| Muốn thay đổi | Cách làm | Dữ liệu có cần đổi không? |
+|---|---|---|
+| Font, radius, padding, màu surface | `style`, CSS tokens, className | Không |
+| Nhãn toolbar/menu | `locale`, `messages`, catalog host | Không |
+| Ẩn toolbar/menu | `chrome` | Không |
+| Thêm command chèn mẫu nội dung | `insertCommands` tạo canonical block | Có block mới, schema vẫn như cũ nếu dùng built-in |
+| Render custom block ở reader | `blockRenderers` + registry | Có schema custom nếu type mới |
+| Form chỉnh sửa props custom | Form host + validate + draft update | Có, cần giữ ID/version |
+| UI editor inline hoàn toàn mới | Cần adapter/schema integration tương ứng | Không tự có chỉ từ registry |
+
+Public editor facade hiện không có prop inject tùy ý BlockNote block specs. Registry custom làm core/server hiểu dữ liệu; nó không tự sinh form hoặc toolbar cho block mới. Adapter có generic `disnoteBlock` wrapper cho type không map trực tiếp; kiểm tra round-trip và UX trước khi dùng wrapper như editor production cho custom block.
+
+Với `consumer.notice`, host có thể cung cấp một side form chỉnh title/message/tone, validate rồi cập nhật draft qua luồng editor/adapter được kiểm soát. Nếu cần custom inline UI, xây adapter mở rộng và kiểm tra mapping canonical ↔ vendor; không tự truyền prop `registry`/`blockSpecs` chưa được `DocumentEditorProps` hỗ trợ.
+
+### 17.2. Command chèn block built-in có nhãn i18n
+
+```ts
+// notice-command.ts
+import { callout, text } from '@disnote/core';
+import type { EditorInsertCommand } from '@disnote/core/editor';
+
+const COMMAND_ID = 'consumer.insert-warning';
+export function warningCommands(t: (key: string) => string): EditorInsertCommand[] {
+  return [{
+    id: COMMAND_ID,
+    title: t('document.insertWarning'),
+    description: t('document.insertWarningDescription'),
+    create: () => callout([text(t('document.warningInitialContent'))], 'warning'),
+  }];
+}
+```
+
+Host khai báo đủ ba key trên ở vi/en, memoize `warningCommands(t)` rồi truyền vào `insertCommands`. Ví dụ dùng `callout` built-in nên không cần mở rộng editor schema. `includeDefaultCommands` quyết định giữ command mặc định; kiểm tra accessibility/keyboard sau khi thay menu.
+
+### 17.3. Theme scoped theo instance
+
+Truyền `theme="dark"` cho editor; reader dùng `appearance="dark"` hoặc `theme` renderer theo props thực tế. Hai component không có prop theme cùng kiểu. CSS token override chỉ thay presentation, không đổi textColor/backgroundColor đã lưu trong nội dung. Nếu sản phẩm cần nhiều theme, persist lựa chọn theme ở preferences của người dùng thay vì ghi toàn bộ CSS tokens vào từng document.
+
+## 18. Nâng schema custom và kiểm tra không mất dữ liệu
+
+Giả sử phiên bản 1 dùng `message`, phiên bản 2 đổi thành `body`. Không đổi validator cũ rồi để dữ liệu đã lưu tự hỏng. Tạo definition v2 và migration riêng:
+
+```ts
+// notice-migration.ts
+import { createMigrationRegistry, type DisNoteDocument } from '@disnote/core';
+import { NOTICE_TYPE } from './notice.js';
+
+const migrations = createMigrationRegistry().registerBlockMigration(
+  NOTICE_TYPE, 1, 2,
+  block => {
+    const { message, ...remaining } = block.props;
+    return { ...block, props: { ...remaining, body: String(message ?? '') } };
+  },
+);
+
+export function migrateNoticeDocument(input: DisNoteDocument) {
+  const result = migrations.migrate(structuredClone(input));
+  if (!result.ok) throw new Error(result.error.code);
+  return result.document;
+}
+```
+
+Migration registry tăng block version theo step; example callback không tự tăng lần nữa. Sau migrate, validate bằng registry **v2** của host; registry v1 trong mục 15 chỉ phục vụ ví dụ v1, không được dùng làm registry đích. Lưu kết quả thành revision mới theo policy migration và giữ snapshot cũ để rollback.
+
+Các bước review custom block trước tích hợp:
+
+- Factory tạo JSON đúng props/type/version, ID không trùng trong cây.
+- Server strict validation nhận input hợp lệ và từ chối props sai.
+- Save → restart → load giữ props; publish reader và draft reader nhất quán.
+- Canonical → editor → canonical không mất custom props/ID/version.
+- React, HTML, native/Flutter có renderer hoặc fallback có chủ đích.
+- Migration v1→v2 giữ ID và dữ liệu, không mutate input khi thất bại.
+- Export/import báo rõ mode lossy/semantic; custom DOCX codec không tự sinh từ core definition.
+
+Đọc declarations trong `dist` hoặc source interface khi mở rộng; không copy API tên tương tự của editor vendor rồi coi đó là public API DisNote.

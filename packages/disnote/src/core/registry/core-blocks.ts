@@ -1,6 +1,7 @@
 import { LIBRARY_MESSAGES } from "../messages.js";
 import { isDiagramFormat, validDiagramSource } from "../../diagrams/model.js";
 import type { JsonValue } from "../model/json.js";
+import { CORE_BLOCK_TYPES } from "../model/document.js";
 import type {
   CoreBlockDefinition,
   BlockCapabilities,
@@ -16,6 +17,7 @@ import {
 import type { BlockRegistry } from "./index.js";
 import { extractInlineText } from "../serialization/plaintext.js";
 import { safeUrl } from "../security/index.js";
+import { DEFAULT_SAFE_SCHEMES } from "../security/url.js";
 
 const INLINE: BlockCapabilities = {
   inlineContent: true,
@@ -57,14 +59,14 @@ function safeOptionalUrl(value: JsonValue | undefined): string | null {
   if (value === undefined || value === "") return "";
   if (typeof value !== "string") return null;
   return safeUrl(value, {
-    allowedSchemes: ["https:", "http:", "mailto:", "tel:"],
+    allowedSchemes: DEFAULT_SAFE_SCHEMES,
   });
 }
 
 /* -------------------------------- text blocks ----------------------------- */
 
 export const paragraphCore = defineCoreBlock<Record<string, JsonValue>>({
-  type: "paragraph",
+  type: CORE_BLOCK_TYPES.PARAGRAPH,
   version: 1,
   capabilities: INLINE,
   validateProps: (input) => (isObject(input) ? ok(input) : ok({})),
@@ -76,7 +78,7 @@ interface HeadingProps extends Record<string, JsonValue> {
 }
 
 export const headingCore = defineCoreBlock<HeadingProps>({
-  type: "heading",
+  type: CORE_BLOCK_TYPES.HEADING,
   version: 1,
   capabilities: INLINE,
   validateProps: (input) => {
@@ -105,18 +107,18 @@ function listItem(type: string): CoreBlockDefinition {
   });
 }
 
-export const bulletListItemCore = listItem("bulletListItem");
-export const numberedListItemCore = listItem("numberedListItem");
+export const bulletListItemCore = listItem(CORE_BLOCK_TYPES.BULLET_LIST_ITEM);
+export const numberedListItemCore = listItem(CORE_BLOCK_TYPES.NUMBERED_LIST_ITEM);
 
 /** A collapsible toggle: inline heading text plus revealed child blocks. */
-export const toggleCore = listItem("toggle");
+export const toggleCore = listItem(CORE_BLOCK_TYPES.TOGGLE);
 
 interface ChecklistProps extends Record<string, JsonValue> {
   checked: boolean;
 }
 
 export const checklistItemCore = defineCoreBlock<ChecklistProps>({
-  type: "checklistItem",
+  type: CORE_BLOCK_TYPES.CHECKLIST_ITEM,
   version: 1,
   capabilities: CONTAINER,
   validateProps: (input) => {
@@ -127,7 +129,7 @@ export const checklistItemCore = defineCoreBlock<ChecklistProps>({
 });
 
 export const quoteCore = defineCoreBlock<Record<string, JsonValue>>({
-  type: "quote",
+  type: CORE_BLOCK_TYPES.QUOTE,
   version: 1,
   capabilities: INLINE,
   validateProps: (input) => (isObject(input) ? ok(input) : ok({})),
@@ -142,7 +144,7 @@ interface CodeProps extends Record<string, JsonValue> {
 }
 
 export const codeBlockCore = defineCoreBlock<CodeProps>({
-  type: "codeBlock",
+  type: CORE_BLOCK_TYPES.CODE_BLOCK,
   version: 1,
   capabilities: VOID,
   validateProps: (input) => {
@@ -168,7 +170,7 @@ interface ImageProps extends Record<string, JsonValue> {
 }
 
 export const imageCore = defineCoreBlock<ImageProps>({
-  type: "image",
+  type: CORE_BLOCK_TYPES.IMAGE,
   version: 1,
   capabilities: VOID,
   validateProps: (input) => {
@@ -194,7 +196,7 @@ export const imageCore = defineCoreBlock<ImageProps>({
 });
 
 export const dividerCore = defineCoreBlock<Record<string, JsonValue>>({
-  type: "divider",
+  type: CORE_BLOCK_TYPES.DIVIDER,
   version: 1,
   capabilities: VOID,
   validateProps: () => ok({}),
@@ -208,7 +210,7 @@ interface CalloutProps extends Record<string, JsonValue> {
 const CALLOUT_INTENTS = ["info", "warning", "success", "danger"] as const;
 
 export const calloutCore = defineCoreBlock<CalloutProps>({
-  type: "callout",
+  type: CORE_BLOCK_TYPES.CALLOUT,
   version: 1,
   capabilities: CONTAINER,
   validateProps: (input) => {
@@ -227,7 +229,7 @@ export const calloutCore = defineCoreBlock<CalloutProps>({
 /* ------------------------------- notion blocks ---------------------------- */
 
 export const tableCore = defineCoreBlock<Record<string, JsonValue>>({
-  type: "table",
+  type: CORE_BLOCK_TYPES.TABLE,
   version: 1,
   capabilities: VOID, // Grid data is stored in props, so no native inline content/children at block root
   validateProps: (input) => {
@@ -247,7 +249,7 @@ interface MathProps extends Record<string, JsonValue> {
 }
 
 export const mathCore = defineCoreBlock<MathProps>({
-  type: "math",
+  type: CORE_BLOCK_TYPES.MATH,
   version: 1,
   capabilities: VOID,
   validateProps: (input) => {
@@ -273,7 +275,7 @@ export const mathCore = defineCoreBlock<MathProps>({
 });
 
 export const tableOfContentsCore = defineCoreBlock<Record<string, JsonValue>>({
-  type: "tableOfContents",
+  type: CORE_BLOCK_TYPES.TABLE_OF_CONTENTS,
   version: 1,
   capabilities: VOID,
   validateProps: () => ok({}),
@@ -281,7 +283,7 @@ export const tableOfContentsCore = defineCoreBlock<Record<string, JsonValue>>({
 });
 
 export const breadcrumbCore = defineCoreBlock<Record<string, JsonValue>>({
-  type: "breadcrumb",
+  type: CORE_BLOCK_TYPES.BREADCRUMB,
   version: 1,
   capabilities: VOID,
   validateProps: () => ok({}),
@@ -289,7 +291,7 @@ export const breadcrumbCore = defineCoreBlock<Record<string, JsonValue>>({
 });
 
 export const syncedBlockCore = defineCoreBlock<Record<string, JsonValue>>({
-  type: "syncedBlock",
+  type: CORE_BLOCK_TYPES.SYNCED_BLOCK,
   version: 1,
   capabilities: CONTAINER,
   validateProps: (input) => {
@@ -305,7 +307,7 @@ export const syncedBlockCore = defineCoreBlock<Record<string, JsonValue>>({
 });
 
 export const templateButtonCore = defineCoreBlock<Record<string, JsonValue>>({
-  type: "templateButton",
+  type: CORE_BLOCK_TYPES.TEMPLATE_BUTTON,
   version: 1,
   capabilities: CONTAINER,
   validateProps: (input) => {
@@ -320,7 +322,7 @@ export const templateButtonCore = defineCoreBlock<Record<string, JsonValue>>({
 });
 
 export const toggleHeading1Core = defineCoreBlock<Record<string, JsonValue>>({
-  type: "toggleHeading1",
+  type: CORE_BLOCK_TYPES.TOGGLE_HEADING_1,
   version: 1,
   capabilities: CONTAINER,
   validateProps: (input) => (isObject(input) ? ok(input) : ok({})),
@@ -328,7 +330,7 @@ export const toggleHeading1Core = defineCoreBlock<Record<string, JsonValue>>({
 });
 
 export const toggleHeading2Core = defineCoreBlock<Record<string, JsonValue>>({
-  type: "toggleHeading2",
+  type: CORE_BLOCK_TYPES.TOGGLE_HEADING_2,
   version: 1,
   capabilities: CONTAINER,
   validateProps: (input) => (isObject(input) ? ok(input) : ok({})),
@@ -336,7 +338,7 @@ export const toggleHeading2Core = defineCoreBlock<Record<string, JsonValue>>({
 });
 
 export const toggleHeading3Core = defineCoreBlock<Record<string, JsonValue>>({
-  type: "toggleHeading3",
+  type: CORE_BLOCK_TYPES.TOGGLE_HEADING_3,
   version: 1,
   capabilities: CONTAINER,
   validateProps: (input) => (isObject(input) ? ok(input) : ok({})),
@@ -344,7 +346,7 @@ export const toggleHeading3Core = defineCoreBlock<Record<string, JsonValue>>({
 });
 
 export const bookmarkCore = defineCoreBlock<Record<string, JsonValue>>({
-  type: "bookmark",
+  type: CORE_BLOCK_TYPES.BOOKMARK,
   version: 1,
   capabilities: VOID,
   validateProps: (input) => {
@@ -419,9 +421,9 @@ function mediaItem(type: string): CoreBlockDefinition {
   });
 }
 
-export const videoCore = mediaItem("video");
-export const audioCore = mediaItem("audio");
-export const fileCore = mediaItem("file");
+export const videoCore = mediaItem(CORE_BLOCK_TYPES.VIDEO);
+export const audioCore = mediaItem(CORE_BLOCK_TYPES.AUDIO);
+export const fileCore = mediaItem(CORE_BLOCK_TYPES.FILE);
 
 function dbViewItem(type: string): CoreBlockDefinition {
   return defineCoreBlock<Record<string, JsonValue>>({
@@ -441,16 +443,16 @@ function dbViewItem(type: string): CoreBlockDefinition {
   });
 }
 
-export const tableDbCore = dbViewItem("tableDb");
-export const boardCore = dbViewItem("board");
-export const listDbCore = dbViewItem("listDb");
-export const galleryCore = dbViewItem("gallery");
-export const calendarCore = dbViewItem("calendar");
-export const timelineCore = dbViewItem("timeline");
-export const mapCore = dbViewItem("map");
+export const tableDbCore = dbViewItem(CORE_BLOCK_TYPES.TABLE_DB);
+export const boardCore = dbViewItem(CORE_BLOCK_TYPES.BOARD);
+export const listDbCore = dbViewItem(CORE_BLOCK_TYPES.LIST_DB);
+export const galleryCore = dbViewItem(CORE_BLOCK_TYPES.GALLERY);
+export const calendarCore = dbViewItem(CORE_BLOCK_TYPES.CALENDAR);
+export const timelineCore = dbViewItem(CORE_BLOCK_TYPES.TIMELINE);
+export const mapCore = dbViewItem(CORE_BLOCK_TYPES.MAP);
 
 export const columnListCore = defineCoreBlock<Record<string, JsonValue>>({
-  type: "columnList",
+  type: CORE_BLOCK_TYPES.COLUMN_LIST,
   version: 1,
   capabilities: CHILDREN_ONLY,
   validateProps: (input) => (isObject(input) ? ok(input) : ok({})),
@@ -458,7 +460,7 @@ export const columnListCore = defineCoreBlock<Record<string, JsonValue>>({
 });
 
 export const columnCore = defineCoreBlock<Record<string, JsonValue>>({
-  type: "column",
+  type: CORE_BLOCK_TYPES.COLUMN,
   version: 1,
   capabilities: CHILDREN_ONLY,
   validateProps: (input) => {
@@ -482,7 +484,7 @@ export const columnCore = defineCoreBlock<Record<string, JsonValue>>({
 
 /** All V1 core block definitions. */
 export const diagramCore = defineCoreBlock<Record<string, JsonValue>>({
-  type: "diagram", version: 1, capabilities: VOID,
+  type: CORE_BLOCK_TYPES.DIAGRAM, version: 1, capabilities: VOID,
   validateProps: input => isObject(input) && isDiagramFormat(input["format"]) && validDiagramSource(input["code"])
     ? ok(input) : fail([issue("props", "invalid", LIBRARY_MESSAGES.DIAGRAM_INVALID)]),
   toPlainText: block => typeof block.props["code"] === "string" ? block.props["code"] : "",

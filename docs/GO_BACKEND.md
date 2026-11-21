@@ -2,6 +2,8 @@
 
 Go SDK nằm ở repository anh em `../DisNote-Go-SDK`; không nằm trong npm package. SDK dùng chung document contract với TypeScript/Flutter. Đọc [kiến trúc](ARCHITECTURE.md) và [TypeScript](TYPESCRIPT.md) nếu cần frontend hoặc backend NestJS hiện tại.
 
+**Lộ trình thực hành:** mục 13 có chương trình hoàn chỉnh để tạo/đọc/lưu/retry/conflict; mục 14 giải thích state và database; mục 15–16 chỉ cách mở rộng validation, HTTP và repository. Những đoạn ghi rõ “host cung cấp” là dependency ứng dụng cần implement, không phải package ẩn trong SDK.
+
 ## 1. Phạm vi hiện có
 
 | Package Go | Vai trò |
@@ -261,3 +263,224 @@ Phát hành Go bằng semantic Git tag tại repository có module path đúng, 
 | 409 hoặc result không OK | Revision mới nhất và thao tác đang retry |
 | Flutter không parse response Go | Viết adapter HTTP vì Nest client không dùng contract Gin |
 | Ghi thành công nhưng restart mất | Đang dùng memory repository |
+
+## 13. Chương trình đầu tiên chạy được toàn bộ luồng revision
+
+Tạo một module consumer theo mục 2, đặt file sau vào `cmd/document-demo/main.go`, rồi chạy `go run ./cmd/document-demo`. Ví dụ chỉ dùng memory và policy giới hạn một actor/document để học contract; thay policy/repository trước khi expose API thực tế.
+
+```go
+// cmd/document-demo/main.go
+package main
+
+import (
+    "context"
+    "encoding/json"
+    "fmt"
+
+    "github.com/DisNote-Project/disnote-go/document"
+    "github.com/DisNote-Project/disnote-go/revision"
+    "github.com/DisNote-Project/disnote-go/validation"
+)
+
+const (
+    demoActor = "user_01"
+    demoDocumentID = "doc_intro"
+)
+
+func main() {
+    if err := run(); err != nil { panic(err) }
+}
+
+func run() error {
+    ctx := context.Background()
+    policy := revision.PolicyFunc(func(_ context.Context, actor string,
+        action revision.Action, id string) (bool, error) {
+        allowedAction := action == revision.ActionCreate ||
+            action == revision.ActionRead || action == revision.ActionWrite
+        return actor == demoActor && id == demoDocumentID && allowedAction, nil
+    })
+    repo := revision.NewMemoryRepository()
+    service := revision.NewService(repo, validation.New(validation.Options{}), policy)
+
+    title, locale, message := "Giới thiệu", "vi", "Xin chào"
+    content := []document.Inline{{Type: "text", Text: &message}}
+    doc := document.Document{
+        Format: document.Format, SchemaVersion: document.CurrentSchemaVersion,
+        ID: demoDocumentID,
+        Metadata: document.Metadata{
+            Title: &title, Locale: &locale,
+            CreatedAt: "2026-11-20T00:00:00.000Z",
+            UpdatedAt: "2026-11-20T00:00:00.000Z",
+        },
+        Blocks: []document.Block{{
+            ID: "block_intro", Type: "paragraph", Version: 1,
+            Props: map[string]any{}, Content: &content,
+        }},
+    }
+    stored, err := service.Create(ctx, revision.CreateInput{
+        Document: doc, Slug: "gioi-thieu", Locale: locale,
+        Kind: "ARTICLE", Title: title, Actor: demoActor,
+    })
+    if err != nil { return err }
+
+    state, err := service.Get(ctx, demoActor, stored.ID)
+    if err != nil { return err }
+    if state == nil { return fmt.Errorf("document.not_found") }
+    latest := state.Revisions[len(state.Revisions)-1].Document
+    editedText := "Nội dung đã sửa"
+    editedContent := []document.Inline{{Type: "text", Text: &editedText}}
+    latest.Blocks[0].Content = &editedContent
+    input := revision.SaveDraftInput{
+        DocumentID: stored.ID, Document: latest, Actor: demoActor,
+        ExpectedRevision: stored.CurrentRevision, IdempotencyKey: "op_edit_01",
+    }
+    saved, err := service.SaveDraft(ctx, input)
+    if err != nil { return err }
+    if !saved.OK { return fmt.Errorf("save failed: %s", saved.Reason) }
+    fmt.Println("accepted revision", saved.Revision)
+
+    replay, err := service.SaveDraft(ctx, input)
+    if err != nil { return err }
+    fmt.Println("same operation revision", replay.Revision)
+
+    stale := input
+    stale.IdempotencyKey = "op_other_edit_02"
+    conflict, err := service.SaveDraft(ctx, stale)
+    if err != nil { return err }
+    fmt.Println("new operation with old revision", conflict.Reason)
+
+    persisted, err := service.Get(ctx, demoActor, stored.ID)
+    if err != nil { return err }
+    raw, err := json.MarshalIndent(persisted, "", "  ")
+    if err != nil { return err }
+    fmt.Println(string(raw))
+    return nil
+}
+```
+
+Expected: lần lưu đầu được revision 2, retry cùng key vẫn revision 2, thao tác mới dùng expected revision 1 bị `revision-conflict`. JSON cuối có hai snapshot. Demo hết process thì mất dữ liệu; dùng Mongo/PostgreSQL ở mục tiếp theo để thử restart.
+
+`state.Revisions` được dùng trong demo nội bộ. API sản phẩm nên chọn snapshot theo `Stored.CurrentRevision` và trả DTO nhỏ; không dựa vào vị trí cuối mảng nếu host đã đổi retention/layout hoặc cho phép các loại lịch sử khác.
+
+## 14. Hiểu state Go và nối database
+
+### 14.1. Fields và nguồn sở hữu
+
+| Go field | JSON/state | Ai cập nhật? |
+|---|---|---|
+| `State.ID` | `id` | Lúc create, khớp document ID |
+| `State.CASRevision` | `revision` | Repository service khi commit aggregate |
+| `State.Stored.CurrentRevision` | `stored.currentRevision` | Save draft thành công |
+| `State.Stored.UpdatedAt` | `stored.updatedAt` | Clock server của service |
+| `Revision.Document` | `revisions[n].document` | Canonical snapshot của thao tác lưu |
+| `Revision.Checksum` | `revisions[n].checksum` | Canonical serializer/checksum |
+| `State.Idempotency` | `idempotency` | Receipt map key → content revision |
+
+Go model dùng pointer cho nhiều field optional. Khi nil, field có `omitempty` sẽ không xuất JSON. Không thay toàn bộ nil slices bằng mảng rỗng nếu consumer cần bảo toàn optional-field presence/checksum. Ngược lại, `Props` của block cần object hợp lệ; `nil` không tương đương `{}` theo validator hiện tại.
+
+### 14.2. PostgreSQL layout
+
+```sql
+CREATE TABLE IF NOT EXISTS disnote_document_states (
+  id TEXT PRIMARY KEY,
+  revision BIGINT NOT NULL CHECK (revision > 0),
+  slug TEXT NOT NULL,
+  locale TEXT NOT NULL,
+  state JSONB NOT NULL,
+  UNIQUE (slug, locale)
+);
+```
+
+`state` chứa toàn bộ aggregate, không chỉ document body. Adapter tăng store revision và dùng `WHERE id = $1 AND revision = expected`. SQL update match zero rows nghĩa CAS thất bại; không coi `err == nil` là đã lưu. Driver `database/sql` phải được host đăng ký và kết nối có timeout/pool lifecycle.
+
+Mongo adapter cũng lưu wrapper ID/revision/slug/locale và state, với unique indexes tương ứng. Không chọn collection/table theo chuỗi tenant từ request mà không qua policy/config.
+
+### 14.3. Từ demo sang Mongo/PostgreSQL
+
+Thay duy nhất dependency `revision.Repository` tại composition root:
+
+1. Tạo database client/pool từ cấu hình server.
+2. Tạo adapter `mongostore.New(collection)` hoặc `pgstore.New(db, table)`.
+3. Gọi `Initialize(ctx)` trước khi mở listener; lỗi index/schema làm startup thất bại thay vì tiếp tục phục vụ với uniqueness bị thiếu.
+4. Inject adapter vào cùng `revision.NewService` và giữ policy không đổi.
+5. Save một document, shutdown server, mở lại và đọc cùng ID để kiểm tra durability.
+
+Không copy state sang một biến memory để sửa rồi quên ghi repository. Không đưa mật khẩu/connection string vào JSON document hoặc log lỗi trả về client. Với `Fx`, database adapter và HTTP server phải được đóng theo lifecycle host.
+
+### 14.4. API payload trước và sau save
+
+Gin PUT draft nhận envelope sau (thay document object bằng canonical snapshot đầy đủ):
+
+| Vị trí | Key | Ý nghĩa |
+|---|---|---|
+| URL | `documentId` | Target aggregate |
+| Header | `Idempotency-Key` | ID của một thao tác, giữ khi retry |
+| Body | `expectedRevision` | Base content revision client đã đọc |
+| Body | `document` | Toàn bộ canonical document mới |
+| Server context | `disnote.actor` | Actor sau verify, không lấy từ body |
+
+Response thành công có dạng `{"ok":true,"revision":2}`. Xung đột nghiệp vụ có dạng `{"ok":false,"reason":"revision-conflict","currentRevision":2}` và HTTP 409. Một số lỗi trả problem `{code,message}` thay save-result; consumer cần xử lý status và envelope, không parse mọi response như thành công.
+
+## 15. Custom nghiệp vụ: validate `consumer.notice` trên Go
+
+Core Go validator kiểm tra envelope/tree/inline, chưa có registry props tùy biến tương đương TypeScript. Khi host nhận custom type, thêm validator ở application service **trước** gọi Create/SaveDraft. Cùng schema với TypeScript: type `consumer.notice`, version 1, title tối đa 120, message tối đa 2000 UTF-16 code units, tone info/warning.
+
+```go
+// notice_validation.go — package của application host
+package documents
+
+import (
+    "errors"
+    "unicode/utf16"
+    "github.com/DisNote-Project/disnote-go/document"
+)
+
+const NoticeType = "consumer.notice"
+var ErrNoticeInvalid = errors.New("notice.props_invalid")
+
+func ValidateNotices(blocks []document.Block) error {
+    for _, block := range blocks {
+        if block.Type == NoticeType {
+            title, titleOK := block.Props["title"].(string)
+            message, messageOK := block.Props["message"].(string)
+            tone, toneOK := block.Props["tone"].(string)
+            if block.Version != 1 || !titleOK || !messageOK || !toneOK ||
+                len(utf16.Encode([]rune(title))) > 120 ||
+                len(utf16.Encode([]rune(message))) > 2000 ||
+                (tone != "info" && tone != "warning") {
+                return ErrNoticeInvalid
+            }
+        }
+        if block.Children != nil {
+            if err := ValidateNotices(*block.Children); err != nil { return err }
+        }
+    }
+    return nil
+}
+```
+
+Dùng UTF-16 length ở đây để khớp `string.length` của ví dụ TypeScript, kể cả emoji. Ví dụ validator này kiểm tra props/version của notice; policy về children/content/unknown keys phải được host định nghĩa đồng nhất ở cả hai runtime nếu muốn giới hạn thêm.
+
+Chỉ thêm hàm không làm default Gin handler tự gọi nó. Tạo application facade/wrapper và handler riêng dùng facade đó, hoặc mở rộng SDK theo một port validation đã thiết kế rồi kiểm tra hồi quy. Handler hiện nhận cụ thể `*revision.Service`, nên không thể truyền một wrapper bất kỳ vào `gintransport.NewHandler` nếu không thay contract. Không mô tả hook chưa tồn tại như API sẵn dùng.
+
+Go không cần renderer để lưu notice. Canonical props được lưu trong `Revision.Document`, React/Flutter reader dùng renderer riêng. Khi thêm version 2, triển khai migration và validator version tương ứng trước khi chấp nhận dữ liệu mới; không chỉ sửa tên field ở struct rồi mất dữ liệu version 1.
+
+## 16. Custom HTTP và repository mà vẫn giữ Clean Architecture
+
+### Public snapshot DTO
+
+Host nên tạo DTO tối thiểu gồm `document`, `revision`, quyền và thông tin cần thiết. Chỉ lấy document từ revision mà actor được phép đọc. Không expose map receipts hoặc toàn bộ lịch sử mặc định. Khi chuyển sang Go từ NestJS nhưng giữ Flutter client, presenter còn phải giữ envelope, route và error semantics của Nest hiện tại.
+
+### Repository riêng
+
+Implementation phải thỏa `Read`, `FindBySlug`, `Write` của `revision.Repository`. Dùng compile-time assertion `var _ revision.Repository = (*Repository)(nil)` để phát hiện thiếu method. Invariants runtime vẫn cần kiểm tra: unique create, stale CAS reject, concurrent writers, rollback, copy isolation, slug/locale collision và retry receipt.
+
+Nếu tách history ra bảng riêng, một transaction phải commit metadata revision và receipt cùng snapshot. Trả `true` trước transaction commit có thể làm client tưởng nội dung đã lưu. Khi insert revision thành công nhưng update metadata fail, rollback cả hai.
+
+### Phân quyền và tenant
+
+Policy service nên nhận actor đã xác thực, tra membership/role/permissions hiện tại và deny khi tài nguyên ngoài scope. Index slug/locale hiện không kèm tenant; thêm tenant vào JSON không làm uniqueness trở thành per-workspace. Thiết kế namespace hoặc adapter mới và test ranh giới tenant.
+
+### Tự định nghĩa publish/restore
+
+Go service hiện chưa expose hai nghiệp vụ này. Nếu host bổ sung, restore phải append revision mới; publish phải trỏ đến một revision hợp lệ với authorization tương ứng. Đừng cập nhật trực tiếp field `StatusPublished` rồi gọi đó là publish hoàn chỉnh: cần read contract, revision tồn tại, CAS, audit và published reader nhất quán.

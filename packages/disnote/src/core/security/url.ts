@@ -5,7 +5,25 @@ export interface UrlPolicy {
   allowRelative?: boolean;
 }
 
-const DEFAULT_SCHEMES = ["https:", "mailto:", "tel:"] as const;
+export const SAFE_URL_SCHEMES = {
+  HTTPS: "https:",
+  HTTP: "http:",
+  MAILTO: "mailto:",
+  TEL: "tel:",
+} as const;
+
+export const DEFAULT_SAFE_SCHEMES = [
+  SAFE_URL_SCHEMES.HTTPS,
+  SAFE_URL_SCHEMES.HTTP,
+  SAFE_URL_SCHEMES.MAILTO,
+  SAFE_URL_SCHEMES.TEL,
+] as const;
+
+const DEFAULT_SCHEMES = [
+  SAFE_URL_SCHEMES.HTTPS,
+  SAFE_URL_SCHEMES.MAILTO,
+  SAFE_URL_SCHEMES.TEL,
+] as const;
 const SCHEME = /^([a-z][a-z0-9+.-]*):/i;
 
 function containsControlOrWhitespace(value: string): boolean {

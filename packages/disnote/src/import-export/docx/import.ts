@@ -23,7 +23,8 @@ import {
   type JsonValue,
 } from "../../core/index.js";
 import { sha256Hex } from "../../core/serialization/sha256.js";
-import { DOCX_DIAGNOSTIC_CODES, DOCX_ERRORS, DOCX_LIMITS, DOCX_PATHS } from "./constants.js";
+import { DOCX_DIAGNOSTIC_CODES, DOCX_LIMITS, DOCX_PATHS } from "./constants.js";
+import { codecMap } from "./codec.js";
 import type { DocxBlockCodec, DocxDiagnostic, DocxImportOptions, DocxImportResult } from "./model.js";
 import { attribute, elements, textNodes, unescapeXml } from "./xml.js";
 
@@ -198,15 +199,6 @@ function parseRelationships(bytes: Uint8Array | undefined): Map<string, string> 
     const target = attribute(relationship, "Target");
     const type = attribute(relationship, "Type");
     if (id && target && type?.endsWith("/hyperlink")) result.set(id, target);
-  }
-  return result;
-}
-
-function codecMap(codecs: readonly DocxBlockCodec[] | undefined): Map<string, DocxBlockCodec> {
-  const result = new Map<string, DocxBlockCodec>();
-  for (const codec of codecs ?? []) {
-    if (!codec.blockType || result.has(codec.blockType)) throw new Error(DOCX_ERRORS.EXTENSION_CODEC_INVALID);
-    result.set(codec.blockType, codec);
   }
   return result;
 }
