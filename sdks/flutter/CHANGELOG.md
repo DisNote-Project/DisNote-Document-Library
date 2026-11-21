@@ -1,3 +1,7 @@
+# 0.1.1
+
+- Maintenance release synced with DisNote core schema updates and block type standardization.
+
 # 0.1.0
 
 - Added the canonical DisNote document model, validation, deterministic JSON

@@ -1,6 +1,6 @@
 name: disnote_flutter
 description: Flutter SDK, native renderer and secure editor bridge for DisNote documents.
-version: 0.1.0
+version: 0.1.1
 homepage: https://github.com/DisNote-Project/DisNote-Document-Library
 repository: https://github.com/DisNote-Project/DisNote-Document-Library/tree/main/sdks/flutter
 issue_tracker: https://github.com/DisNote-Project/DisNote-Document-Library/issues
